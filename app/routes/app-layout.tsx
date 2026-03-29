@@ -14,7 +14,7 @@
  */
 
 import { Outlet } from "react-router";
-import { lazy, Suspense, type ReactNode } from "react";
+import { lazy, Suspense, useState, useEffect, type ReactNode } from "react";
 import { AppShell } from "~/components/layout/app-shell";
 import { ErrorPage } from "~/components/error/error-boundary";
 
@@ -39,10 +39,17 @@ const AuthProvider = lazy(() =>
  * and while the lazy imports resolve.
  */
 function ClientProviders({ children }: { children: ReactNode }) {
-  // On the server, typeof window is undefined — render without providers.
-  // Providers depend on browser APIs (CIP-30, localStorage) and would
-  // crash if rendered server-side.
-  if (typeof window === "undefined") {
+  // Track whether we're on the client AFTER hydration completes.
+  // Using useEffect instead of typeof window avoids hydration mismatch —
+  // both SSR and client initial render produce the same tree (just children).
+  // After hydration, useEffect fires and we wrap with providers.
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
     return <>{children}</>;
   }
 
