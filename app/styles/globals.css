@@ -13,7 +13,7 @@
   /* Fonts */
   --font-heading: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-body: "Urbanist", ui-sans-serif, system-ui, sans-serif;
-  --font-prose: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-prose: "Lora", Georgia, "Times New Roman", serif;
   --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", "Menlo",
     monospace;
 
@@ -153,9 +153,9 @@ samp {
 
 .prose-midnight {
   font-family: var(--font-prose);
-  font-size: 1.125rem;
-  color: var(--mn-text-on-dark);
-  line-height: 1.85;
+  font-size: 1.1875rem; /* 19px — slightly larger for comfortable reading */
+  color: #c8ccd4; /* light charcoal — softer than pure white, easier on eyes */
+  line-height: 1.7; /* tightened from 1.85 — less airy paragraph spacing */
   max-width: 65ch;
 }
 
@@ -167,11 +167,11 @@ samp {
 .prose-midnight h5,
 .prose-midnight h6 {
   font-family: var(--font-heading);
-  color: var(--mn-text-on-dark);
+  color: var(--mn-text-on-dark); /* headings stay bright white for hierarchy */
   font-weight: 600;
   line-height: 1.3;
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
+  margin-top: 1.75em;
+  margin-bottom: 0.75em; /* more breathing room below subheadings */
 }
 
 .prose-midnight h1 { font-size: 1.875rem; }
