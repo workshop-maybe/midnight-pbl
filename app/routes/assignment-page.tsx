@@ -1,15 +1,27 @@
 /**
- * Assignment Page (shell)
+ * Assignment Page
  *
- * Displays the assignment prompt for a module. The submission form
- * will be added in Unit 5.
+ * Displays the assignment prompt for a module and the interactive
+ * submission/enrollment UI. The prompt renders server-side; the
+ * interactive parts (evidence form, status, enrollment flow) render
+ * client-side only because they depend on the auth context and wallet.
  *
  * Route: /learn/:moduleCode/assignment
+ *
+ * States based on auth + commitment status:
+ *   - Unauthenticated: prompt + "Connect wallet to submit" CTA
+ *   - NOT_STARTED: prompt + evidence form + "Enroll & Submit" button
+ *   - IN_PROGRESS: pre-filled form + "Update Submission" button
+ *   - PENDING_APPROVAL: submitted evidence (read-only) + "Awaiting Review"
+ *   - ASSIGNMENT_ACCEPTED: "Assignment accepted" + link to dashboard
+ *   - ASSIGNMENT_DENIED: feedback + evidence form for resubmission
+ *   - CREDENTIAL_CLAIMED: "Credential earned" badge
  */
 
 import { data } from "react-router";
 import type { MetaFunction, LoaderFunctionArgs } from "react-router";
 import { useLoaderData, Link } from "react-router";
+import { Suspense, lazy } from "react";
 import { fetchAssignment, fetchModuleDetail } from "~/lib/gateway.server";
 import { serverEnv } from "~/env.server";
 import { LessonContent } from "~/components/course/lesson-content";
@@ -18,6 +30,12 @@ import { Card, CardBody } from "~/components/ui/card";
 import { getPageTitle } from "~/config/branding";
 import { MIDNIGHT_PBL } from "~/config/midnight";
 import type { Assignment, CourseModule } from "~/hooks/api/course/use-course";
+
+// Lazy-load the client-only interactive section to avoid SSR issues
+// with Mesh SDK imports (useWallet, etc.)
+const AssignmentInteractive = lazy(
+  () => import("~/components/assignment/assignment-interactive.client")
+);
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const courseId = serverEnv.COURSE_ID;
@@ -56,12 +74,14 @@ export function shouldRevalidate() {
 }
 
 export default function AssignmentPage() {
-  const { assignment, module, moduleCode } =
+  const { assignment, module, courseId, moduleCode } =
     useLoaderData<typeof loader>();
 
   const typedAssignment = assignment as Assignment | null;
   const typedModule = module as CourseModule | null;
   const typedModuleCode = moduleCode as string;
+  const typedCourseId = courseId as string;
+  const sltHash = typedModule?.sltHash ?? null;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
@@ -113,17 +133,34 @@ export default function AssignmentPage() {
         </div>
       )}
 
-      {/* Submission placeholder — Unit 5 */}
-      <Card noHover>
-        <CardBody className="text-center py-8">
-          <p className="text-mn-text-muted mb-2">
-            Connect your wallet to submit your assignment.
-          </p>
-          <p className="text-xs text-mn-text-muted/60">
-            Submission form coming in a future update.
-          </p>
-        </CardBody>
-      </Card>
+      {/* Interactive section (client-only) */}
+      <Suspense fallback={<InteractiveLoadingFallback />}>
+        <AssignmentInteractive
+          courseId={typedCourseId}
+          moduleCode={typedModuleCode}
+          sltHash={sltHash}
+        />
+      </Suspense>
     </div>
+  );
+}
+
+/**
+ * Loading fallback shown while the client-only bundle loads.
+ */
+function InteractiveLoadingFallback() {
+  return (
+    <Card noHover>
+      <CardBody className="py-8 text-center">
+        <p className="text-mn-text-muted mb-2">
+          Loading submission interface...
+        </p>
+        <div className="flex items-center justify-center gap-2">
+          <div className="h-2 w-2 animate-pulse rounded-full bg-mn-primary-light" />
+          <div className="h-2 w-2 animate-pulse rounded-full bg-mn-primary-light delay-100" />
+          <div className="h-2 w-2 animate-pulse rounded-full bg-mn-primary-light delay-200" />
+        </div>
+      </CardBody>
+    </Card>
   );
 }
