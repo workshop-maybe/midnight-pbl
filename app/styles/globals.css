@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+/*
+ * Midnight Design System
+ *
+ * Dark-mode only. Colors derived from Midnight Network brand guidelines.
+ * See docs/brainstorms/2026-03-29-midnight-pbl-site-requirements.md for source.
+ */
+
+/* ── Tailwind v4 theme tokens ─────────────────────────────────────────── */
+
+@theme {
+  /* Fonts */
+  --font-heading: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Urbanist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", "Menlo",
+    monospace;
+
+  /* Midnight palette */
+  --color-midnight: #0b0e1a;
+  --color-midnight-surface: #0a0e19;
+  --color-midnight-card: #0e1220;
+  --color-midnight-border: #ffffff1a;
+
+  --color-mn-blue: #0000fe;
+  --color-mn-primary: #2a48ff;
+  --color-mn-primary-light: #5bb6f2;
+  --color-mn-violet: #7a5cff;
+  --color-mn-purple: #8756ff;
+  --color-mn-sky: #5bb6f2;
+
+  --color-mn-text: #f7f8ff;
+  --color-mn-text-muted: #e1e1e6;
+  --color-mn-glow: #5bb6f240;
+
+  /* Semantic aliases */
+  --color-primary: #2a48ff;
+  --color-primary-light: #5bb6f2;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
+  --color-info: #5bb6f2;
+
+  /* Border radius */
+  --radius-xl: 20px;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+}
+
+/* ── CSS Custom Properties (for non-Tailwind consumers) ───────────────── */
+
+:root {
+  --mn-blue: #0000fe;
+  --mn-primary-light: #2a48ff;
+  --mn-primary-dark: #5bb6f2;
+  --mn-violet: #7a5cff;
+  --mn-purple: #8756ff;
+  --mn-bg-dark: #0b0e1a;
+  --mn-bg-surface: #0a0e19;
+  --mn-bg-card: #0e1220;
+  --mn-text-on-dark: #f7f8ff;
+  --mn-text-muted: #e1e1e6;
+  --mn-sky: #5bb6f2;
+  --mn-glow: #5bb6f240;
+  --mn-border-dark: #ffffff1a;
+  --mn-radius: 20px;
+}
+
+/* ── Base styles ──────────────────────────────────────────────────────── */
+
+html {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background-color: var(--mn-bg-dark);
+  color: var(--mn-text-on-dark);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-mono);
+}
+
+/* ── Utilities ────────────────────────────────────────────────────────── */
+
+/* Glassmorphic card base */
+.glass-card {
+  background-color: #0a0e19eb;
+  border: 1px solid var(--mn-border-dark);
+  border-radius: var(--mn-radius);
+  backdrop-filter: blur(12px);
+  transition: box-shadow 0.2s ease;
+}
+
+.glass-card:hover {
+  box-shadow: 0 0 24px var(--mn-glow);
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: linear-gradient(135deg, #2a48ff 0%, #7a5cff 50%, #5bb6f2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Focus ring for accessibility */
+:focus-visible {
+  outline: 2px solid var(--mn-primary-light);
+  outline-offset: 2px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--mn-bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ffffff1a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ffffff33;
+}

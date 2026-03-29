@@ -12,6 +12,7 @@ dist/
 build/
 .next/
 out/
+.react-router/
 
 # OS
 .DS_Store
