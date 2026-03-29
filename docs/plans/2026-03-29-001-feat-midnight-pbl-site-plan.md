@@ -1,7 +1,7 @@
 ---
 title: "feat: Build Midnight PBL single-course learning app"
 type: feat
-status: active
+status: completed
 date: 2026-03-29
 origin: docs/brainstorms/2026-03-29-midnight-pbl-site-requirements.md
 deepened: 2026-03-29
