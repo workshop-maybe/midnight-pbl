@@ -13,6 +13,7 @@
  */
 
 import { PROXY_BASE } from "~/lib/gateway";
+import { withTimeout } from "~/lib/api-utils";
 import type {
   LoginSession,
   WalletSignature,
@@ -30,14 +31,24 @@ import type {
 export async function buildSession(
   _address: string
 ): Promise<LoginSession> {
-  const response = await fetch(
-    `${PROXY_BASE}/api/v2/auth/login/session`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
+  let response: Response;
+  try {
+    response = await withTimeout(
+      fetch(`${PROXY_BASE}/api/v2/auth/login/session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      }),
+      12_000
+    );
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("timed out")) {
+      throw new Error(
+        "Authentication server is not responding. Please try again."
+      );
     }
-  );
+    throw err;
+  }
 
   if (!response.ok) {
     let errorMessage = `Login session failed (${response.status})`;
@@ -72,20 +83,30 @@ export async function validateSignature(
   address: string,
   accessTokenUnit?: string | null
 ): Promise<ValidateResponse> {
-  const response = await fetch(
-    `${PROXY_BASE}/api/v2/auth/login/validate`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: sessionId,
-        signature,
-        address,
-        convert_utf8: false,
-        andamio_access_token_unit: accessTokenUnit ?? undefined,
+  let response: Response;
+  try {
+    response = await withTimeout(
+      fetch(`${PROXY_BASE}/api/v2/auth/login/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: sessionId,
+          signature,
+          address,
+          convert_utf8: false,
+          andamio_access_token_unit: accessTokenUnit ?? undefined,
+        }),
       }),
+      12_000
+    );
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("timed out")) {
+      throw new Error(
+        "Authentication server is not responding. Please try again."
+      );
     }
-  );
+    throw err;
+  }
 
   if (!response.ok) {
     let errorMessage = `Signature validation failed (${response.status})`;

@@ -219,6 +219,13 @@ export function useDashboard(courseId: string | undefined) {
 
   const allModulesAccepted = acceptedCount >= MIDNIGHT_PBL.moduleCount;
 
+  const refetch = async () => {
+    await Promise.all([
+      commitmentsQuery.refetch(),
+      credentialsQuery.refetch(),
+    ]);
+  };
+
   return {
     commitments,
     credentials,
@@ -226,6 +233,7 @@ export function useDashboard(courseId: string | undefined) {
     allModulesAccepted,
     isLoading: commitmentsQuery.isLoading || credentialsQuery.isLoading,
     error: commitmentsQuery.error ?? credentialsQuery.error,
+    refetch,
   };
 }
 

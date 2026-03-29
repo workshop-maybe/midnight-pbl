@@ -1,4 +1,4 @@
-import { isRouteErrorResponse } from "react-router";
+import { isRouteErrorResponse, useRevalidator } from "react-router";
 import { Button } from "~/components/ui/button";
 import { BRANDING } from "~/config/branding";
 
@@ -9,26 +9,53 @@ interface ErrorPageProps {
 /**
  * Styled error page — Midnight design system.
  *
- * Handles both route error responses (404, 500) and unexpected errors.
- * Provides a retry button and a link back to the landing page.
+ * Handles both route error responses (404, 500, 503, 504) and unexpected errors.
+ * Route errors use revalidator for retry (no full page reload).
+ * Truly unrecoverable errors fall back to window.location.reload().
  */
 export function ErrorPage({ error }: ErrorPageProps) {
+  const revalidator = useRevalidator();
+  const isRouteError = isRouteErrorResponse(error);
+
   let status = 500;
   let title = "Something went wrong";
   let message = "An unexpected error occurred. Please try again.";
 
-  if (isRouteErrorResponse(error)) {
+  if (isRouteError) {
     status = error.status;
-    if (status === 404) {
-      title = "Page not found";
-      message = "The page you're looking for doesn't exist or has been moved.";
-    } else {
-      title = `Error ${status}`;
-      message = error.statusText || message;
+    switch (status) {
+      case 404:
+        title = "Page not found";
+        message =
+          "This page doesn't exist. It may have been moved or the URL might be wrong.";
+        break;
+      case 500:
+        title = "Server Error";
+        message =
+          "Something went wrong loading this page. This is usually temporary.";
+        break;
+      case 503:
+      case 504:
+        title = "Service Unavailable";
+        message =
+          "The service is temporarily unavailable. Please try again in a moment.";
+        break;
+      default:
+        title = `Error ${status}`;
+        message = error.statusText || message;
+        break;
     }
   } else if (error instanceof Error) {
     message = error.message;
   }
+
+  const handleRetry = () => {
+    if (isRouteError) {
+      revalidator.revalidate();
+    } else {
+      window.location.reload();
+    }
+  };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-midnight px-4">
@@ -50,9 +77,10 @@ export function ErrorPage({ error }: ErrorPageProps) {
         <div className="flex items-center justify-center gap-4">
           <Button
             variant="primary"
-            onClick={() => window.location.reload()}
+            onClick={handleRetry}
+            disabled={revalidator.state === "loading"}
           >
-            Try again
+            {revalidator.state === "loading" ? "Retrying..." : "Try again"}
           </Button>
           <Button
             variant="secondary"

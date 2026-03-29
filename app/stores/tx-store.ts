@@ -312,8 +312,15 @@ function connectSSE(
         "[TxStore] SSE connection error:",
         err instanceof Error ? err.message : String(err)
       );
-      // On SSE failure, mark as stalled rather than failed — the TX may still
-      // be processing. The user can check manually.
+      // On SSE failure, transition to stalled rather than silently doing nothing.
+      // The TX may still be processing on-chain.
+      handleTerminal(
+        txHash,
+        "stalled",
+        "Lost connection to transaction monitor. Your transaction may still be processing — check your wallet or refresh shortly.",
+        get,
+        set
+      );
     }
   })();
 }

@@ -48,9 +48,13 @@ async function proxyRequest(
       headers.Authorization = authHeader;
     }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15_000);
+
     const fetchOptions: RequestInit = {
       method,
       headers,
+      signal: controller.signal,
     };
 
     if (method === "POST") {
@@ -58,7 +62,20 @@ async function proxyRequest(
       fetchOptions.body = bodyText;
     }
 
-    const response = await fetch(gatewayUrl, fetchOptions);
+    let response: Response;
+    try {
+      response = await fetch(gatewayUrl, fetchOptions);
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return Response.json(
+          { error: "Gateway timeout" },
+          { status: 504 }
+        );
+      }
+      throw err;
+    }
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorBody = await response.text();

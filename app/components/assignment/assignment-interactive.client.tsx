@@ -24,6 +24,7 @@ import { Link } from "react-router";
 import { useAuth } from "~/contexts/auth-context.client";
 import { useAssignmentCommitment } from "~/hooks/api/course/use-assignment-commitment";
 import { canSubmitAssignment, isPendingStatus, isCompletedStatus } from "~/lib/assignment-status";
+import { AuthExpiredError } from "~/lib/api-utils";
 import { CommitmentStatus } from "~/components/assignment/commitment-status";
 import { EvidenceForm } from "~/components/assignment/evidence-form";
 import { EnrollmentFlow } from "~/components/assignment/enrollment-flow.client";
@@ -59,6 +60,7 @@ export default function AssignmentInteractive({
     data: commitment,
     isLoading: isLoadingCommitment,
     error: commitmentError,
+    refetch: refetchCommitment,
   } = useAssignmentCommitment(courseId, moduleCode, sltHash);
 
   // -------------------------------------------------------------------
@@ -79,14 +81,35 @@ export default function AssignmentInteractive({
   // Error loading commitment
   // -------------------------------------------------------------------
   if (commitmentError) {
+    const isExpired = commitmentError instanceof AuthExpiredError;
     return (
       <Card noHover>
         <CardBody className="py-6">
           <div className="rounded-lg border border-error/30 bg-error/10 p-4">
             <p className="text-sm text-error">
-              Failed to load your submission status. Please try refreshing the
-              page.
+              {isExpired
+                ? "Your session has expired. Please reconnect your wallet."
+                : "Failed to load your submission status. Please try again."}
             </p>
+            <div className="mt-3">
+              {isExpired ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => auth.logout()}
+                >
+                  Reconnect Wallet
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void refetchCommitment()}
+                >
+                  Try Again
+                </Button>
+              )}
+            </div>
           </div>
         </CardBody>
       </Card>

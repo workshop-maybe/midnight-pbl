@@ -76,11 +76,28 @@ export async function action({ request }: ActionFunctionArgs) {
       headers.Authorization = authHeader;
     }
 
-    const response = await fetch(gatewayUrl, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(params),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15_000);
+
+    let response: Response;
+    try {
+      response = await fetch(gatewayUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(params),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return Response.json(
+          { error: "Gateway timeout" },
+          { status: 504 }
+        );
+      }
+      throw err;
+    }
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorBody = await response.text();

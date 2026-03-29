@@ -32,16 +32,26 @@ export async function loader({ params }: LoaderFunctionArgs) {
     throw new Response("Module code is required", { status: 400 });
   }
 
-  const [module, slts] = await Promise.all([
+  const [moduleResult, sltsResult] = await Promise.allSettled([
     fetchModuleDetail(courseId, moduleCode),
     fetchSLTs(courseId, moduleCode),
   ]);
 
+  // Module detail is required — throw if it failed
+  if (moduleResult.status === "rejected") {
+    throw new Response("Failed to load module", { status: 502 });
+  }
+
+  const module = moduleResult.value;
   if (!module) {
     throw new Response("Module not found", { status: 404 });
   }
 
-  return data({ module, slts, moduleCode });
+  // SLTs are optional — degrade gracefully if they fail
+  const slts = sltsResult.status === "fulfilled" ? sltsResult.value : [];
+  const sltsFailed = sltsResult.status === "rejected";
+
+  return data({ module, slts, moduleCode, sltsFailed });
 }
 
 export function shouldRevalidate() {
@@ -53,12 +63,13 @@ export function shouldRevalidate() {
 // ---------------------------------------------------------------------------
 
 export default function LearnLayout() {
-  const { module, slts, moduleCode } = useLoaderData<typeof loader>();
+  const { module, slts, moduleCode, sltsFailed } = useLoaderData<typeof loader>();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const typedModule = module as CourseModule;
   const typedSlts = slts as SLT[];
   const typedModuleCode = moduleCode as string;
+  const typedSltsFailed = sltsFailed as boolean;
 
   return (
     <div className="learn-layout">
@@ -101,6 +112,7 @@ export default function LearnLayout() {
           module={typedModule}
           slts={typedSlts}
           moduleCode={typedModuleCode}
+          sltsFailed={typedSltsFailed}
           onNavigate={() => setSidebarOpen(false)}
         />
       </aside>
@@ -121,11 +133,13 @@ function SidebarContent({
   module,
   slts,
   moduleCode,
+  sltsFailed,
   onNavigate,
 }: {
   module: CourseModule;
   slts: SLT[];
   moduleCode: string;
+  sltsFailed: boolean;
   onNavigate: () => void;
 }) {
   const params = useParams();
@@ -174,30 +188,44 @@ function SidebarContent({
         <p className="mb-2 px-2 text-[11px] font-medium uppercase tracking-wider text-mn-text-muted/60">
           Lessons
         </p>
-        <ul className="space-y-0.5">
-          {sortedSlts.map((slt, idx) => {
-            const lessonIndex = slt.moduleIndex ?? idx + 1;
-            const isActive =
-              currentLessonIndex !== null && currentLessonIndex === lessonIndex;
+        {sltsFailed ? (
+          <div className="px-2 py-4 text-center">
+            <p className="text-sm text-mn-text-muted">
+              Could not load lessons.
+            </p>
+            <a
+              href={`/learn/${moduleCode}/1`}
+              className="mt-2 inline-block text-sm text-mn-primary-light underline underline-offset-2 hover:text-mn-primary"
+            >
+              Retry
+            </a>
+          </div>
+        ) : (
+          <ul className="space-y-0.5">
+            {sortedSlts.map((slt, idx) => {
+              const lessonIndex = slt.moduleIndex ?? idx + 1;
+              const isActive =
+                currentLessonIndex !== null && currentLessonIndex === lessonIndex;
 
-            return (
-              <li key={slt.sltId ?? idx}>
-                <Link
-                  to={MIDNIGHT_PBL.routes.lesson(moduleCode, lessonIndex)}
-                  prefetch="intent"
-                  className={`sidebar-slt-item ${isActive ? "sidebar-slt-item--active" : ""}`}
-                  onClick={onNavigate}
-                  aria-current={isActive ? "page" : undefined}
-                >
-                  <span className="sidebar-slt-index">{lessonIndex}</span>
-                  <span className="sidebar-slt-text">
-                    {slt.sltText ?? `Lesson ${lessonIndex}`}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+              return (
+                <li key={slt.sltId ?? idx}>
+                  <Link
+                    to={MIDNIGHT_PBL.routes.lesson(moduleCode, lessonIndex)}
+                    prefetch="intent"
+                    className={`sidebar-slt-item ${isActive ? "sidebar-slt-item--active" : ""}`}
+                    onClick={onNavigate}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    <span className="sidebar-slt-index">{lessonIndex}</span>
+                    <span className="sidebar-slt-text">
+                      {slt.sltText ?? `Lesson ${lessonIndex}`}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
 
       {/* Assignment link */}

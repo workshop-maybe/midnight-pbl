@@ -21,8 +21,10 @@ import { AuthGate } from "~/components/auth/auth-gate";
 import { ModuleProgress } from "~/components/dashboard/module-progress";
 import { CredentialsList } from "~/components/dashboard/credentials-list";
 import { ClaimCredential } from "~/components/dashboard/claim-credential";
+import { Button } from "~/components/ui/button";
 import { SkeletonCard } from "~/components/ui/skeleton";
 import { MIDNIGHT_PBL } from "~/config/midnight";
+import { AuthExpiredError } from "~/lib/api-utils";
 import type { CourseModule } from "~/hooks/api/course/use-course";
 
 // =============================================================================
@@ -64,6 +66,7 @@ function DashboardContent({
   modules,
   courseId,
 }: DashboardInteractiveProps) {
+  const auth = useAuth();
   const {
     commitments,
     credentials,
@@ -71,6 +74,7 @@ function DashboardContent({
     allModulesAccepted,
     isLoading,
     error,
+    refetch,
   } = useDashboard(courseId);
 
   if (isLoading) {
@@ -87,11 +91,56 @@ function DashboardContent({
   }
 
   if (error) {
+    const isExpired = error instanceof AuthExpiredError;
+
+    // Even on error, we can render modules from the server loader.
+    // Show an inline error for the commitments section only.
     return (
-      <div className="rounded-xl border border-error/30 bg-error/10 p-6 text-center">
-        <p className="text-sm text-error">
-          Failed to load dashboard data. Please try refreshing the page.
-        </p>
+      <div className="space-y-10">
+        {/* Module grid — always rendered from server data */}
+        <section>
+          <h2 className="mb-4 text-lg font-semibold font-heading text-mn-text">
+            Module Progress
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {modules.map((module, index) => (
+              <ModuleProgress
+                key={module.sltHash || module.moduleCode || index}
+                module={module}
+                commitment={null}
+                index={index + 1}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* Inline error for commitments */}
+        <div className="rounded-xl border border-error/30 bg-error/10 p-6 text-center">
+          <p className="text-sm text-error">
+            {isExpired
+              ? "Your session has expired. Please reconnect your wallet."
+              : "Failed to load your progress data. Please try again."}
+          </p>
+          <div className="mt-3">
+            {isExpired ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => auth.logout()}
+              >
+                Reconnect Wallet
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void refetch()}
+              >
+                Try Again
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     );
   }

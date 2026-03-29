@@ -10,6 +10,8 @@
  * @see ~/projects/01-projects/cardano-xp/src/lib/gateway.ts — Reference
  */
 
+import { withTimeout } from "~/lib/api-utils";
+
 export const PROXY_BASE = "/api/gateway";
 
 /**
@@ -53,7 +55,18 @@ export type GatewayRequestOptions = Omit<RequestInit, "method" | "body">;
  */
 export async function gateway<T>(path: string): Promise<T> {
   const url = `${PROXY_BASE}${path}`;
-  const response = await fetch(url);
+  let response: Response;
+  try {
+    response = await withTimeout(fetch(url), 15_000);
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("timed out")) {
+      throw new GatewayError(
+        "Request timed out. The server may be temporarily unavailable.",
+        408
+      );
+    }
+    throw err;
+  }
 
   if (!response.ok) {
     const errorData = (await response.json().catch(() => ({}))) as {
@@ -82,15 +95,29 @@ export async function gatewayPost<T>(
   options?: GatewayRequestOptions
 ): Promise<T> {
   const url = `${PROXY_BASE}${path}`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-    ...options,
-  });
+  let response: Response;
+  try {
+    response = await withTimeout(
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...options?.headers,
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        ...options,
+      }),
+      15_000
+    );
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("timed out")) {
+      throw new GatewayError(
+        "Request timed out. The server may be temporarily unavailable.",
+        408
+      );
+    }
+    throw err;
+  }
 
   if (!response.ok) {
     const errorData = (await response.json().catch(() => ({}))) as {
@@ -117,11 +144,25 @@ export async function gatewayAuth<T>(
   jwt: string
 ): Promise<T> {
   const url = `${PROXY_BASE}${path}`;
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${jwt}`,
-    },
-  });
+  let response: Response;
+  try {
+    response = await withTimeout(
+      fetch(url, {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      }),
+      15_000
+    );
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("timed out")) {
+      throw new GatewayError(
+        "Request timed out. The server may be temporarily unavailable.",
+        408
+      );
+    }
+    throw err;
+  }
 
   if (!response.ok) {
     const errorData = (await response.json().catch(() => ({}))) as {
@@ -152,16 +193,30 @@ export async function gatewayAuthPost<T>(
   options?: GatewayRequestOptions
 ): Promise<T> {
   const url = `${PROXY_BASE}${path}`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${jwt}`,
-      ...options?.headers,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-    ...options,
-  });
+  let response: Response;
+  try {
+    response = await withTimeout(
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${jwt}`,
+          ...options?.headers,
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        ...options,
+      }),
+      15_000
+    );
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("timed out")) {
+      throw new GatewayError(
+        "Request timed out. The server may be temporarily unavailable.",
+        408
+      );
+    }
+    throw err;
+  }
 
   if (!response.ok) {
     const errorData = (await response.json().catch(() => ({}))) as {

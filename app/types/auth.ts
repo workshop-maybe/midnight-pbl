@@ -78,6 +78,15 @@ export interface AuthContextValue {
 
   /** Fetch wrapper that injects Authorization header */
   authenticatedFetch: (url: string, options?: RequestInit) => Promise<Response>;
+
+  /** Whether the access token scan failed (transient error) */
+  scanFailed: boolean;
+
+  /** Retry scanning for the access token UTXO */
+  retryScan: () => void;
+
+  /** Skip scan retry and go directly to registration */
+  goToRegistration: () => void;
 }
 
 // =============================================================================

@@ -44,11 +44,28 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       headers.Authorization = authHeader;
     }
 
-    const upstream = await fetch(gatewayUrl, {
-      headers,
-      // Prevent caching of SSE stream
-      cache: "no-store",
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15_000);
+
+    let upstream: Response;
+    try {
+      upstream = await fetch(gatewayUrl, {
+        headers,
+        // Prevent caching of SSE stream
+        cache: "no-store",
+        signal: controller.signal,
+      });
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return Response.json(
+          { error: "Gateway timeout" },
+          { status: 504 }
+        );
+      }
+      throw err;
+    }
+    clearTimeout(timeoutId);
 
     if (!upstream.ok) {
       const errorBody = await upstream.text();

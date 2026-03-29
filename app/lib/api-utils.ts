@@ -24,6 +24,18 @@ export class ApiError extends Error {
 }
 
 /**
+ * Thrown when the user's session (JWT) has expired and they need to
+ * reconnect their wallet. Allows consuming components to show a
+ * "session expired" message instead of a generic error.
+ */
+export class AuthExpiredError extends Error {
+  constructor() {
+    super("Your session has expired. Please reconnect your wallet.");
+    this.name = "AuthExpiredError";
+  }
+}
+
+/**
  * Parse an unknown error into a user-friendly message.
  */
 export function parseApiError(error: unknown): {

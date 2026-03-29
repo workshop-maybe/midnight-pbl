@@ -41,14 +41,22 @@ export async function loader({ params }: LoaderFunctionArgs) {
   }
 
   // Fetch lesson and SLTs in parallel (SLTs needed for prev/next nav)
-  const [lesson, slts] = await Promise.all([
+  const [lessonResult, sltsResult] = await Promise.allSettled([
     fetchLesson(courseId, moduleCode, lessonIndex),
     fetchSLTs(courseId, moduleCode),
   ]);
 
+  // Lesson is required — throw if it failed
+  if (lessonResult.status === "rejected") {
+    throw new Response("Failed to load lesson", { status: 502 });
+  }
+  const lesson = lessonResult.value;
   if (!lesson) {
     throw new Response("Lesson not found", { status: 404 });
   }
+
+  // SLTs are optional for the lesson page (sidebar already has them)
+  const slts = sltsResult.status === "fulfilled" ? sltsResult.value : [];
 
   return data({
     lesson,

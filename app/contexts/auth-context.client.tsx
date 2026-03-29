@@ -36,6 +36,7 @@ import {
 } from "~/lib/andamio-auth";
 import { getWalletAddressBech32 } from "~/lib/wallet-address";
 import { findAccessToken } from "~/lib/access-token-utils";
+import { AuthExpiredError } from "~/lib/api-utils";
 import type { AuthState, AuthUser, AuthContextValue } from "~/types/auth";
 
 // =============================================================================
@@ -79,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [jwt, setJwt] = useState<string | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [scanFailed, setScanFailed] = useState(false);
 
   // Refs for preventing duplicate effects
   const isValidatingRef = useRef(false);
@@ -195,8 +197,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await authenticateInternal(tokenResult.unit);
       } catch (error) {
         console.warn("[Auth] Auto-auth scan failed:", error);
-        // Scan failed — allow retry before assuming registration needed
-        setAuthState("NEEDS_REGISTRATION");
+        // Scan failed — don't immediately assume registration needed.
+        // Set scanFailed so the UI can show a retry option.
+        setScanFailed(true);
+        setAuthError(
+          "Could not check your wallet. This may be temporary."
+        );
+        setAuthState("AUTH_ERROR");
       }
     };
 
@@ -216,6 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setJwt(null);
         setAuthError(null);
         setIsAuthenticating(false);
+        setScanFailed(false);
         lastAddressRef.current = null;
       }
     }
@@ -350,9 +358,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthState("DISCONNECTED");
     setAuthError(null);
     setIsAuthenticating(false);
+    setScanFailed(false);
     lastAddressRef.current = null;
     disconnectWallet();
   }, [disconnectWallet]);
+
+  const retryScan = useCallback(() => {
+    if (!connected || !wallet) return;
+    setScanFailed(false);
+    setAuthError(null);
+    setAuthState("SCANNING_TOKEN");
+
+    const doRetry = async () => {
+      await delay(CIP30_DELAY_MS);
+      try {
+        const tokenResult = await findAccessToken(
+          wallet,
+          ACCESS_TOKEN_POLICY_ID
+        );
+        if (!tokenResult) {
+          setAuthState("NEEDS_REGISTRATION");
+          return;
+        }
+        await authenticateInternal(tokenResult.unit);
+      } catch (error) {
+        console.warn("[Auth] Retry scan failed:", error);
+        setScanFailed(true);
+        setAuthError(
+          "Could not check your wallet. This may be temporary."
+        );
+        setAuthState("AUTH_ERROR");
+      }
+    };
+
+    void doRetry();
+  }, [connected, wallet, authenticateInternal]);
+
+  const goToRegistration = useCallback(() => {
+    setScanFailed(false);
+    setAuthError(null);
+    setAuthState("NEEDS_REGISTRATION");
+  }, []);
 
   const refreshAuth = useCallback(() => {
     const storedJWT = getStoredJWT();
@@ -380,12 +426,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const authenticatedFetch = useCallback(
     async (url: string, options: RequestInit = {}) => {
       if (!jwt) {
-        throw new Error("Not authenticated");
+        throw new AuthExpiredError();
       }
 
       if (isJWTExpired(jwt)) {
         logout();
-        throw new Error("JWT expired, please re-authenticate");
+        throw new AuthExpiredError();
       }
 
       return fetch(url, {
@@ -415,6 +461,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout,
     refreshAuth,
     authenticatedFetch,
+    scanFailed,
+    retryScan,
+    goToRegistration,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -448,6 +497,13 @@ const defaultValue: AuthContextValue = {
   authenticatedFetch: async () => {
     console.warn("[Auth] Provider not loaded yet");
     return new Response(null, { status: 503 });
+  },
+  scanFailed: false,
+  retryScan: () => {
+    console.warn("[Auth] Provider not loaded yet");
+  },
+  goToRegistration: () => {
+    console.warn("[Auth] Provider not loaded yet");
   },
 };
 

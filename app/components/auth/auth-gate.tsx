@@ -85,8 +85,26 @@ function ConnectWalletPrompt({
 
       {/* Show auth error if present */}
       {auth.authError && (
-        <div className="max-w-sm rounded-lg border border-error/30 bg-error/10 px-4 py-2">
+        <div className="max-w-sm rounded-lg border border-error/30 bg-error/10 px-4 py-3">
           <p className="text-sm text-error">{auth.authError}</p>
+          {auth.scanFailed && (
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={auth.retryScan}
+                className="rounded bg-midnight-card px-3 py-1.5 text-xs font-medium text-mn-text hover:bg-midnight-border transition-colors"
+              >
+                Try Again
+              </button>
+              <button
+                type="button"
+                onClick={auth.goToRegistration}
+                className="rounded px-3 py-1.5 text-xs font-medium text-mn-text-muted hover:text-mn-text transition-colors"
+              >
+                Register New Token
+              </button>
+            </div>
+          )}
         </div>
       )}
 
