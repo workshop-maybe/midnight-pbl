@@ -13,7 +13,6 @@ import { useLoaderData } from "react-router";
 import { fetchCourseModules } from "~/lib/gateway.server";
 import { serverEnv } from "~/env.server";
 import { ModuleCard } from "~/components/course/module-card";
-import { Badge } from "~/components/ui/badge";
 import { getPageTitle } from "~/config/branding";
 import { MIDNIGHT_PBL } from "~/config/midnight";
 import type { CourseModule } from "~/hooks/api/course/use-course";
@@ -51,11 +50,8 @@ export default function CourseOverview() {
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
       {/* Page header */}
       <div className="mb-10">
-        <Badge variant="info" className="mb-4">
-          {MIDNIGHT_PBL.moduleCount} Modules
-        </Badge>
         <h1 className="mb-3 text-3xl font-bold font-heading text-mn-text sm:text-4xl">
-          <span className="gradient-text">{MIDNIGHT_PBL.title}</span>
+          {MIDNIGHT_PBL.title}
         </h1>
         <p className="max-w-2xl text-lg text-mn-text-muted">
           {MIDNIGHT_PBL.description}

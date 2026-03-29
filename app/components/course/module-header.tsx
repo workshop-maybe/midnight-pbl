@@ -17,6 +17,7 @@ export function ModuleHeader({ module }: ModuleHeaderProps) {
       <nav className="mb-4 flex items-center gap-2 text-sm text-mn-text-muted">
         <Link
           to={MIDNIGHT_PBL.routes.learn}
+          prefetch="intent"
           className="transition-colors hover:text-mn-text"
         >
           Modules

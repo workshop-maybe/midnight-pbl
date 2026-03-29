@@ -13,7 +13,6 @@ import { useLoaderData, Link } from "react-router";
 import { fetchLesson, fetchSLTs } from "~/lib/gateway.server";
 import { serverEnv } from "~/env.server";
 import { LessonContent } from "~/components/course/lesson-content";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { getPageTitle } from "~/config/branding";
 import { MIDNIGHT_PBL } from "~/config/midnight";
@@ -100,11 +99,12 @@ export default function LessonPage() {
       : null;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
       {/* Breadcrumb */}
       <nav className="mb-6 flex items-center gap-2 text-sm text-mn-text-muted">
         <Link
           to={MIDNIGHT_PBL.routes.learn}
+          prefetch="intent"
           className="transition-colors hover:text-mn-text"
         >
           Modules
@@ -112,38 +112,35 @@ export default function LessonPage() {
         <span>/</span>
         <Link
           to={MIDNIGHT_PBL.routes.module(typedModuleCode)}
+          prefetch="intent"
           className="transition-colors hover:text-mn-text"
         >
           {typedModuleCode}
         </Link>
         <span>/</span>
         <span className="text-mn-text">
-          Lesson {typedLessonIndex}
+          Lesson {typedLessonIndex} of {totalLessons as number}
         </span>
       </nav>
 
       {/* Lesson header */}
       <div className="mb-8">
-        <Badge variant="info" className="mb-3">
-          Lesson {typedLessonIndex} of {totalLessons as number}
-        </Badge>
-
         {typedLesson.title && (
           <h1 className="mb-3 text-3xl font-bold font-heading text-mn-text">
             {typedLesson.title}
           </h1>
         )}
 
-        {/* SLT text */}
+        {/* SLT text — collapsible aside */}
         {typedCurrentSlt?.sltText && (
-          <div className="rounded-lg border border-mn-primary/20 bg-mn-primary/5 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-mn-primary-light mb-1">
+          <details className="text-sm text-mn-text-muted">
+            <summary className="cursor-pointer text-xs font-medium uppercase tracking-wider text-mn-primary-light select-none">
               Learning Target
-            </p>
-            <p className="text-sm text-mn-text">
+            </summary>
+            <p className="mt-1 pl-4 text-sm text-mn-text">
               {typedCurrentSlt.sltText}
             </p>
-          </div>
+          </details>
         )}
       </div>
 
@@ -155,21 +152,22 @@ export default function LessonPage() {
       {/* Previous / Next navigation */}
       <nav className="flex items-center justify-between border-t border-midnight-border pt-6">
         {prevIndex !== null ? (
-          <Link to={MIDNIGHT_PBL.routes.lesson(typedModuleCode, prevIndex)}>
+          <Link prefetch="intent" to={MIDNIGHT_PBL.routes.lesson(typedModuleCode, prevIndex)}>
             <Button variant="secondary">Previous Lesson</Button>
           </Link>
         ) : (
-          <Link to={MIDNIGHT_PBL.routes.module(typedModuleCode)}>
+          <Link prefetch="intent" to={MIDNIGHT_PBL.routes.module(typedModuleCode)}>
             <Button variant="secondary">Back to Module</Button>
           </Link>
         )}
 
         {nextIndex !== null ? (
-          <Link to={MIDNIGHT_PBL.routes.lesson(typedModuleCode, nextIndex)}>
+          <Link prefetch="render" to={MIDNIGHT_PBL.routes.lesson(typedModuleCode, nextIndex)}>
             <Button variant="primary">Next Lesson</Button>
           </Link>
         ) : (
           <Link
+            prefetch="render"
             to={MIDNIGHT_PBL.routes.assignment(typedModuleCode)}
           >
             <Button variant="primary">View Assignment</Button>

@@ -20,7 +20,6 @@ import { useLoaderData } from "react-router";
 import { lazy, Suspense } from "react";
 import { fetchCourseModules } from "~/lib/gateway.server";
 import { serverEnv } from "~/env.server";
-import { Badge } from "~/components/ui/badge";
 import { SkeletonCard } from "~/components/ui/skeleton";
 import { getPageTitle } from "~/config/branding";
 import { MIDNIGHT_PBL } from "~/config/midnight";
@@ -85,11 +84,8 @@ export default function Dashboard() {
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
       {/* Page header */}
       <div className="mb-10">
-        <Badge variant="info" className="mb-4">
-          Dashboard
-        </Badge>
         <h1 className="mb-3 text-3xl font-bold font-heading text-mn-text sm:text-4xl">
-          <span className="gradient-text">Your Progress</span>
+          Your Progress
         </h1>
         <p className="max-w-2xl text-lg text-mn-text-muted">
           Track your enrollment status across all {MIDNIGHT_PBL.moduleCount}{" "}

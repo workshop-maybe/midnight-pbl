@@ -19,8 +19,8 @@
   /* Midnight palette */
   --color-midnight: #0b0e1a;
   --color-midnight-surface: #0a0e19;
-  --color-midnight-card: #0e1220;
-  --color-midnight-border: #ffffff1a;
+  --color-midnight-card: #141828;
+  --color-midnight-border: #ffffff26;
 
   --color-mn-blue: #0000fe;
   --color-mn-primary: #2a48ff;
@@ -58,12 +58,12 @@
   --mn-purple: #8756ff;
   --mn-bg-dark: #0b0e1a;
   --mn-bg-surface: #0a0e19;
-  --mn-bg-card: #0e1220;
+  --mn-bg-card: #141828;
   --mn-text-on-dark: #f7f8ff;
   --mn-text-muted: #e1e1e6;
   --mn-sky: #5bb6f2;
   --mn-glow: #5bb6f240;
-  --mn-border-dark: #ffffff1a;
+  --mn-border-dark: #ffffff26;
   --mn-radius: 20px;
 }
 

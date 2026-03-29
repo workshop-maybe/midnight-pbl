@@ -69,7 +69,7 @@ export default function ModulePage() {
     useLoaderData<typeof loader>();
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
       {/* Module header */}
       <ModuleHeader module={module as CourseModule} />
 
@@ -104,7 +104,7 @@ export default function ModulePage() {
               Complete the assignment to earn your credential for this module.
             </p>
           </div>
-          <Link to={MIDNIGHT_PBL.routes.assignment(moduleCode as string)}>
+          <Link prefetch="intent" to={MIDNIGHT_PBL.routes.assignment(moduleCode as string)}>
             <Button variant="primary">View Assignment</Button>
           </Link>
         </div>

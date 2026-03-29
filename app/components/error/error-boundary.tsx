@@ -34,7 +34,7 @@ export function ErrorPage({ error }: ErrorPageProps) {
     <div className="flex min-h-screen flex-col items-center justify-center bg-midnight px-4">
       <div className="max-w-md text-center">
         {/* Status code */}
-        <p className="mb-2 text-6xl font-bold font-heading gradient-text">
+        <p className="mb-2 text-6xl font-bold font-heading text-mn-text">
           {status}
         </p>
 

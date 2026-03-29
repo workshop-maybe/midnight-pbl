@@ -22,9 +22,10 @@ export function ModuleCard({ module, index }: ModuleCardProps) {
   return (
     <Link
       to={MIDNIGHT_PBL.routes.module(moduleCode)}
+      prefetch="intent"
       className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary-light rounded-xl"
     >
-      <Card className="h-full transition-all duration-200 hover:translate-y-[-2px]">
+      <Card noHover={false} className="h-full">
         <CardBody className="flex flex-col gap-3">
           {/* Module number badge */}
           <div className="flex items-center gap-3">

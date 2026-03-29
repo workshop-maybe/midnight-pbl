@@ -7,13 +7,14 @@ import {
 } from "@react-router/dev/routes";
 
 export default [
-  // Landing page — outside the app layout (has its own AppShell)
-  index("routes/landing.tsx"),
-
   // Content routes — wrapped in app layout (nav + footer)
   layout("routes/app-layout.tsx", [
+    // Course overview is the front door
+    index("routes/course-overview.tsx"),
+
     ...prefix("learn", [
-      index("routes/course-overview.tsx"),
+      // /learn redirects to / for backward compat
+      index("routes/learn-redirect.ts"),
       route(":moduleCode", "routes/module-page.tsx"),
       // Static "assignment" must come before parameterized ":lessonIndex"
       route(":moduleCode/assignment", "routes/assignment-page.tsx"),
@@ -21,6 +22,9 @@ export default [
     ]),
     route("dashboard", "./routes/dashboard.tsx"),
   ]),
+
+  // About page — the old landing page
+  route("about", "routes/landing.tsx"),
 
   // API proxy — resource route (no component)
   route("api/gateway/*", "routes/api/gateway-proxy.ts"),

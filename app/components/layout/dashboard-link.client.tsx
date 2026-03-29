@@ -22,6 +22,7 @@ export function DashboardLink() {
   return (
     <Link
       to={MIDNIGHT_PBL.routes.dashboard}
+      prefetch="intent"
       className="text-sm text-mn-text-muted transition-colors hover:text-mn-text"
     >
       Dashboard

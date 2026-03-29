@@ -25,7 +25,6 @@ import { Suspense, lazy } from "react";
 import { fetchAssignment, fetchModuleDetail } from "~/lib/gateway.server";
 import { serverEnv } from "~/env.server";
 import { LessonContent } from "~/components/course/lesson-content";
-import { Badge } from "~/components/ui/badge";
 import { Card, CardBody } from "~/components/ui/card";
 import { getPageTitle } from "~/config/branding";
 import { MIDNIGHT_PBL } from "~/config/midnight";
@@ -84,11 +83,12 @@ export default function AssignmentPage() {
   const sltHash = typedModule?.sltHash ?? null;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
       {/* Breadcrumb */}
       <nav className="mb-6 flex items-center gap-2 text-sm text-mn-text-muted">
         <Link
           to={MIDNIGHT_PBL.routes.learn}
+          prefetch="intent"
           className="transition-colors hover:text-mn-text"
         >
           Modules
@@ -96,6 +96,7 @@ export default function AssignmentPage() {
         <span>/</span>
         <Link
           to={MIDNIGHT_PBL.routes.module(typedModuleCode)}
+          prefetch="intent"
           className="transition-colors hover:text-mn-text"
         >
           {typedModule?.title ?? typedModuleCode}
@@ -106,9 +107,6 @@ export default function AssignmentPage() {
 
       {/* Assignment header */}
       <div className="mb-8">
-        <Badge variant="violet" className="mb-3">
-          Assignment
-        </Badge>
         <h1 className="mb-3 text-3xl font-bold font-heading text-mn-text">
           {typedAssignment?.title ??
             `${typedModule?.title ?? "Module"} Assignment`}

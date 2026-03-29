@@ -17,7 +17,7 @@ interface CardProps {
 export function Card({
   children,
   className = "",
-  noHover = false,
+  noHover = true,
   as: Element = "div",
 }: CardProps) {
   return (

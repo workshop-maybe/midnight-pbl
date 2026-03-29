@@ -37,9 +37,10 @@ export function SLTList({ slts, moduleCode }: SLTListProps) {
           <Link
             key={slt.sltId ?? index}
             to={MIDNIGHT_PBL.routes.lesson(moduleCode, lessonIndex)}
+            prefetch="intent"
             className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary-light rounded-xl"
           >
-            <Card className="transition-all duration-200 hover:translate-y-[-1px]">
+            <Card noHover={false}>
               <CardBody className="flex items-start gap-4">
                 {/* Index badge */}
                 <Badge variant="info" className="mt-0.5 shrink-0">

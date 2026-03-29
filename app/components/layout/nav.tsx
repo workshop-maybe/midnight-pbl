@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { lazy, Suspense } from "react";
 import { BRANDING } from "~/config/branding";
 import { MIDNIGHT_PBL } from "~/config/midnight";
@@ -39,12 +39,18 @@ function WalletPlaceholder() {
  * Shows course title, nav links, and the wallet connect button.
  */
 export function Nav() {
+  const location = useLocation();
+  const isLearnActive =
+    location.pathname === "/" ||
+    location.pathname.startsWith("/learn");
+
   return (
     <nav className="sticky top-0 z-50 border-b border-midnight-border bg-midnight/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Brand / course title */}
         <Link
-          to={MIDNIGHT_PBL.routes.landing}
+          to="/"
+          prefetch="intent"
           className="flex items-center gap-3 text-mn-text transition-colors hover:text-mn-primary-light"
         >
           <span className="text-lg font-semibold font-heading">
@@ -56,7 +62,10 @@ export function Nav() {
         <div className="flex items-center gap-6">
           <Link
             to={MIDNIGHT_PBL.routes.learn}
-            className="text-sm text-mn-text-muted transition-colors hover:text-mn-text"
+            prefetch="intent"
+            className={`text-sm transition-colors hover:text-mn-text ${
+              isLearnActive ? "text-mn-text" : "text-mn-text-muted"
+            }`}
           >
             Learn
           </Link>
