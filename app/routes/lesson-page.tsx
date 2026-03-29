@@ -4,6 +4,9 @@
  * Renders lesson content with markdown formatting.
  * Provides previous/next navigation between lessons.
  *
+ * The parent learn-layout.tsx provides module context (sidebar with
+ * SLT list and assignment link), so this page focuses on content.
+ *
  * Route: /learn/:moduleCode/:lessonIndex
  */
 
@@ -37,7 +40,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
     throw new Response("Invalid lesson index", { status: 400 });
   }
 
-  // Fetch lesson and SLTs in parallel (SLTs needed for nav + SLT text)
+  // Fetch lesson and SLTs in parallel (SLTs needed for prev/next nav)
   const [lesson, slts] = await Promise.all([
     fetchLesson(courseId, moduleCode, lessonIndex),
     fetchSLTs(courseId, moduleCode),
@@ -47,14 +50,9 @@ export async function loader({ params }: LoaderFunctionArgs) {
     throw new Response("Lesson not found", { status: 404 });
   }
 
-  // Find current SLT for displaying the learning target text
-  const currentSlt = slts.find((s) => s.moduleIndex === lessonIndex) ?? null;
-
   return data({
     lesson,
     slts,
-    currentSlt,
-    courseId,
     moduleCode,
     lessonIndex,
     totalLessons: slts.length,
@@ -74,7 +72,6 @@ export function shouldRevalidate() {
 export default function LessonPage() {
   const {
     lesson,
-    currentSlt,
     moduleCode,
     lessonIndex,
     totalLessons,
@@ -82,7 +79,6 @@ export default function LessonPage() {
   } = useLoaderData<typeof loader>();
 
   const typedLesson = lesson as Lesson;
-  const typedCurrentSlt = currentSlt as SLT | null;
   const typedSlts = slts as SLT[];
   const typedModuleCode = moduleCode as string;
   const typedLessonIndex = lessonIndex as number;
@@ -100,47 +96,15 @@ export default function LessonPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
-      {/* Breadcrumb */}
-      <nav className="mb-6 flex items-center gap-2 text-sm text-mn-text-muted">
-        <Link
-          to={MIDNIGHT_PBL.routes.learn}
-          prefetch="intent"
-          className="transition-colors hover:text-mn-text"
-        >
-          Modules
-        </Link>
-        <span>/</span>
-        <Link
-          to={MIDNIGHT_PBL.routes.module(typedModuleCode)}
-          prefetch="intent"
-          className="transition-colors hover:text-mn-text"
-        >
-          {typedModuleCode}
-        </Link>
-        <span>/</span>
-        <span className="text-mn-text">
-          Lesson {typedLessonIndex} of {totalLessons as number}
-        </span>
-      </nav>
-
       {/* Lesson header */}
       <div className="mb-8">
+        <p className="mb-2 text-sm text-mn-text-muted">
+          Lesson {typedLessonIndex} of {totalLessons as number}
+        </p>
         {typedLesson.title && (
-          <h1 className="mb-3 text-3xl font-bold font-heading text-mn-text">
+          <h1 className="text-3xl font-bold font-heading text-mn-text">
             {typedLesson.title}
           </h1>
-        )}
-
-        {/* SLT text — collapsible aside */}
-        {typedCurrentSlt?.sltText && (
-          <details className="text-sm text-mn-text-muted">
-            <summary className="cursor-pointer text-xs font-medium uppercase tracking-wider text-mn-primary-light select-none">
-              Learning Target
-            </summary>
-            <p className="mt-1 pl-4 text-sm text-mn-text">
-              {typedCurrentSlt.sltText}
-            </p>
-          </details>
         )}
       </div>
 
@@ -156,9 +120,7 @@ export default function LessonPage() {
             <Button variant="secondary">Previous Lesson</Button>
           </Link>
         ) : (
-          <Link prefetch="intent" to={MIDNIGHT_PBL.routes.module(typedModuleCode)}>
-            <Button variant="secondary">Back to Module</Button>
-          </Link>
+          <div />
         )}
 
         {nextIndex !== null ? (

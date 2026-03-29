@@ -15,10 +15,14 @@ export default [
     ...prefix("learn", [
       // /learn redirects to / for backward compat
       index("routes/learn-redirect.ts"),
-      route(":moduleCode", "routes/module-page.tsx"),
-      // Static "assignment" must come before parameterized ":lessonIndex"
-      route(":moduleCode/assignment", "routes/assignment-page.tsx"),
-      route(":moduleCode/:lessonIndex", "routes/lesson-page.tsx"),
+      // /learn/:moduleCode redirects to first lesson
+      route(":moduleCode", "routes/module-redirect.tsx"),
+      // Sidebar layout wraps lesson + assignment pages
+      layout("routes/learn-layout.tsx", [
+        // Static "assignment" must come before parameterized ":lessonIndex"
+        route(":moduleCode/assignment", "routes/assignment-page.tsx"),
+        route(":moduleCode/:lessonIndex", "routes/lesson-page.tsx"),
+      ]),
     ]),
     route("dashboard", "./routes/dashboard.tsx"),
   ]),

@@ -6,6 +6,9 @@
  * interactive parts (evidence form, status, enrollment flow) render
  * client-side only because they depend on the auth context and wallet.
  *
+ * The parent learn-layout.tsx provides module context (sidebar with
+ * SLT list and assignment link), so this page focuses on content.
+ *
  * Route: /learn/:moduleCode/assignment
  *
  * States based on auth + commitment status:
@@ -20,14 +23,13 @@
 
 import { data } from "react-router";
 import type { MetaFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, Link } from "react-router";
+import { useLoaderData } from "react-router";
 import { Suspense, lazy } from "react";
 import { fetchAssignment, fetchModuleDetail } from "~/lib/gateway.server";
 import { serverEnv } from "~/env.server";
 import { LessonContent } from "~/components/course/lesson-content";
 import { Card, CardBody } from "~/components/ui/card";
 import { getPageTitle } from "~/config/branding";
-import { MIDNIGHT_PBL } from "~/config/midnight";
 import type { Assignment, CourseModule } from "~/hooks/api/course/use-course";
 
 // Lazy-load the client-only interactive section to avoid SSR issues
@@ -84,27 +86,6 @@ export default function AssignmentPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
-      {/* Breadcrumb */}
-      <nav className="mb-6 flex items-center gap-2 text-sm text-mn-text-muted">
-        <Link
-          to={MIDNIGHT_PBL.routes.learn}
-          prefetch="intent"
-          className="transition-colors hover:text-mn-text"
-        >
-          Modules
-        </Link>
-        <span>/</span>
-        <Link
-          to={MIDNIGHT_PBL.routes.module(typedModuleCode)}
-          prefetch="intent"
-          className="transition-colors hover:text-mn-text"
-        >
-          {typedModule?.title ?? typedModuleCode}
-        </Link>
-        <span>/</span>
-        <span className="text-mn-text">Assignment</span>
-      </nav>
-
       {/* Assignment header */}
       <div className="mb-8">
         <h1 className="mb-3 text-3xl font-bold font-heading text-mn-text">
