@@ -1,4 +1,4 @@
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import type { JSONContent } from "~/hooks/api/course/use-course";
@@ -34,12 +34,35 @@ export function LessonContent({ contentJson, markdown }: LessonContentProps) {
 
   return (
     <article className="prose-midnight">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeHighlight]}
+        components={markdownComponents}
+      >
         {content}
       </ReactMarkdown>
     </article>
   );
 }
+
+/**
+ * Custom component overrides for react-markdown.
+ *
+ * The `code` override extracts the language from rehype-highlight's
+ * `language-xxx` class and sets a `data-language` attribute so CSS
+ * can render a language label badge via `::before { content: attr(...) }`.
+ */
+const markdownComponents: Components = {
+  code({ className, children, ...rest }) {
+    const match = className?.match(/language-(\w+)/);
+    const language = match?.[1];
+    return (
+      <code className={className} data-language={language} {...rest}>
+        {children}
+      </code>
+    );
+  },
+};
 
 // =============================================================================
 // TipTap JSON -> Markdown extraction

@@ -13,6 +13,7 @@
   /* Fonts */
   --font-heading: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-body: "Urbanist", ui-sans-serif, system-ui, sans-serif;
+  --font-prose: "Newsreader", Georgia, "Times New Roman", serif;
   --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", "Menlo",
     monospace;
 
@@ -151,11 +152,14 @@ samp {
 /* ── Prose / Markdown styling ────────────────────────────────────────── */
 
 .prose-midnight {
+  font-family: var(--font-prose);
+  font-size: 1.125rem;
   color: var(--mn-text-on-dark);
-  line-height: 1.75;
+  line-height: 1.85;
   max-width: 65ch;
 }
 
+/* Headings stay sans-serif for contrast with serif body */
 .prose-midnight h1,
 .prose-midnight h2,
 .prose-midnight h3,
@@ -165,6 +169,7 @@ samp {
   font-family: var(--font-heading);
   color: var(--mn-text-on-dark);
   font-weight: 600;
+  line-height: 1.3;
   margin-top: 1.5em;
   margin-bottom: 0.5em;
 }
@@ -193,6 +198,10 @@ samp {
   font-weight: 600;
 }
 
+.prose-midnight em {
+  font-style: italic;
+}
+
 .prose-midnight ul,
 .prose-midnight ol {
   padding-left: 1.5em;
@@ -212,6 +221,7 @@ samp {
 }
 
 .prose-midnight blockquote {
+  font-family: var(--font-prose);
   border-left: 3px solid var(--mn-sky);
   padding-left: 1em;
   margin-left: 0;
@@ -220,30 +230,159 @@ samp {
   font-style: italic;
 }
 
+/* ── Inline code (not inside pre blocks) ───────────────────────────── */
+
 .prose-midnight code {
   font-family: var(--font-mono);
-  font-size: 0.875em;
-  background-color: #ffffff0d;
-  border-radius: 4px;
-  padding: 0.15em 0.35em;
+  font-size: 0.85em;
+  background-color: #1e293b;
+  color: var(--mn-sky);
+  border-radius: 5px;
+  padding: 0.15em 0.4em;
   word-break: break-word;
 }
 
+/* ── Code blocks ───────────────────────────────────────────────────── */
+
 .prose-midnight pre {
+  position: relative;
   font-family: var(--font-mono);
-  font-size: 0.875em;
-  background-color: #0a0e19;
-  border: 1px solid var(--mn-border-dark);
-  border-radius: 8px;
-  padding: 1em;
-  margin-bottom: 1em;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  background-color: #0f1629;
+  border: 1px solid #ffffff10;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  padding-top: 1.25rem;
+  margin-bottom: 1.25em;
   overflow-x: auto;
+  overflow-y: hidden;
 }
 
+/* Gradient accent line on top of code blocks */
+.prose-midnight pre::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  background: linear-gradient(90deg, #2a48ff, #7a5cff);
+  border-radius: 0 0 2px 2px;
+}
+
+/* Language label in top-right corner */
+.prose-midnight pre > code[class*="language-"]::before {
+  content: attr(data-language);
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.2rem 0.65rem;
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  background-color: #1a2038;
+  border-bottom-left-radius: 8px;
+  border-top-right-radius: 11px;
+}
+
+/* Reset inline-code styles inside pre */
 .prose-midnight pre code {
   background: none;
+  color: #e2e8f0;
   padding: 0;
   border-radius: 0;
+  font-size: inherit;
+  word-break: normal;
+}
+
+/* ── Midnight syntax highlighting (hljs overrides) ─────────────────── */
+
+.prose-midnight pre .hljs-keyword,
+.prose-midnight pre .hljs-selector-tag,
+.prose-midnight pre .hljs-built_in {
+  color: #5bb6f2;
+}
+
+.prose-midnight pre .hljs-string,
+.prose-midnight pre .hljs-attr {
+  color: #a78bfa;
+}
+
+.prose-midnight pre .hljs-comment,
+.prose-midnight pre .hljs-quote {
+  color: #4b5563;
+  font-style: italic;
+}
+
+.prose-midnight pre .hljs-title,
+.prose-midnight pre .hljs-section,
+.prose-midnight pre .hljs-title.function_ {
+  color: #7a5cff;
+}
+
+.prose-midnight pre .hljs-number,
+.prose-midnight pre .hljs-literal {
+  color: #5bb6f2;
+}
+
+.prose-midnight pre .hljs-type,
+.prose-midnight pre .hljs-title.class_ {
+  color: #c4b5fd;
+}
+
+.prose-midnight pre .hljs-variable,
+.prose-midnight pre .hljs-template-variable {
+  color: #e2e8f0;
+}
+
+.prose-midnight pre .hljs-name,
+.prose-midnight pre .hljs-selector-id,
+.prose-midnight pre .hljs-selector-class {
+  color: #7a5cff;
+}
+
+.prose-midnight pre .hljs-symbol,
+.prose-midnight pre .hljs-bullet {
+  color: #a78bfa;
+}
+
+.prose-midnight pre .hljs-meta {
+  color: #94a3b8;
+}
+
+.prose-midnight pre .hljs-params {
+  color: #e2e8f0;
+}
+
+.prose-midnight pre .hljs-punctuation {
+  color: #94a3b8;
+}
+
+.prose-midnight pre .hljs-operator {
+  color: #94a3b8;
+}
+
+.prose-midnight pre .hljs-property {
+  color: #c4b5fd;
+}
+
+.prose-midnight pre .hljs-regexp {
+  color: #a78bfa;
+}
+
+.prose-midnight pre .hljs-tag {
+  color: #5bb6f2;
+}
+
+/* Ensure hljs base theme doesn't bleed through */
+.prose-midnight pre .hljs {
+  background: transparent;
+  color: #e2e8f0;
+  padding: 0;
 }
 
 .prose-midnight hr {
@@ -261,6 +400,8 @@ samp {
 
 /* Wrap tables in a scrollable container to prevent layout break on mobile */
 .prose-midnight table {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 1em;
