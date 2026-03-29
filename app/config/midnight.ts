@@ -36,4 +36,5 @@ export interface PublicEnv {
   ANDAMIO_GATEWAY_URL: string;
   CARDANO_NETWORK: string;
   COURSE_ID: string | undefined;
+  ACCESS_TOKEN_POLICY_ID: string | undefined;
 }

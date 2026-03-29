@@ -23,6 +23,7 @@ export function loader() {
     ANDAMIO_GATEWAY_URL: process.env.ANDAMIO_GATEWAY_URL ?? "",
     CARDANO_NETWORK: process.env.CARDANO_NETWORK ?? "preprod",
     COURSE_ID: process.env.COURSE_ID,
+    ACCESS_TOKEN_POLICY_ID: process.env.VITE_ACCESS_TOKEN_POLICY_ID,
   };
 
   return data({
