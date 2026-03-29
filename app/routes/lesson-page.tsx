@@ -4,22 +4,25 @@
  * Renders lesson content with markdown formatting.
  * Provides previous/next navigation between lessons.
  *
- * The parent learn-layout.tsx provides module context (sidebar with
- * SLT list and assignment link), so this page focuses on content.
+ * Data optimization: SLTs are NOT fetched here — the parent
+ * learn-layout.tsx already loads them for the sidebar. This page
+ * accesses parent SLT data via useRouteLoaderData to build
+ * prev/next navigation without a redundant API call.
  *
  * Route: /learn/:moduleCode/:lessonIndex
  */
 
 import { data } from "react-router";
 import type { MetaFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, Link } from "react-router";
-import { fetchLesson, fetchSLTs } from "~/lib/gateway.server";
+import { useLoaderData, useRouteLoaderData, Link } from "react-router";
+import { fetchLesson } from "~/lib/gateway.server";
 import { serverEnv } from "~/env.server";
 import { LessonContent } from "~/components/course/lesson-content";
 import { Button } from "~/components/ui/button";
 import { getPageTitle } from "~/config/branding";
 import { MIDNIGHT_PBL } from "~/config/midnight";
 import type { Lesson, SLT } from "~/hooks/api/course/use-course";
+import type { loader as learnLayoutLoader } from "~/routes/learn-layout";
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const courseId = serverEnv.COURSE_ID;
@@ -40,30 +43,19 @@ export async function loader({ params }: LoaderFunctionArgs) {
     throw new Response("Invalid lesson index", { status: 400 });
   }
 
-  // Fetch lesson and SLTs in parallel (SLTs needed for prev/next nav)
-  const [lessonResult, sltsResult] = await Promise.allSettled([
-    fetchLesson(courseId, moduleCode, lessonIndex),
-    fetchSLTs(courseId, moduleCode),
-  ]);
+  // Only fetch the lesson content — SLTs come from the parent
+  // learn-layout loader (accessed via useRouteLoaderData in the component).
+  // This eliminates a redundant fetchSLTs call on every lesson navigation.
+  const lesson = await fetchLesson(courseId, moduleCode, lessonIndex);
 
-  // Lesson is required — throw if it failed
-  if (lessonResult.status === "rejected") {
-    throw new Response("Failed to load lesson", { status: 502 });
-  }
-  const lesson = lessonResult.value;
   if (!lesson) {
     throw new Response("Lesson not found", { status: 404 });
   }
 
-  // SLTs are optional for the lesson page (sidebar already has them)
-  const slts = sltsResult.status === "fulfilled" ? sltsResult.value : [];
-
   return data({
     lesson,
-    slts,
     moduleCode,
     lessonIndex,
-    totalLessons: slts.length,
   });
 }
 
@@ -82,17 +74,22 @@ export default function LessonPage() {
     lesson,
     moduleCode,
     lessonIndex,
-    totalLessons,
-    slts,
   } = useLoaderData<typeof loader>();
 
+  // Access SLTs from the parent learn-layout loader instead of
+  // fetching them again. This is the key data deduplication — the
+  // sidebar already has the SLT list, so we reuse it for prev/next nav.
+  const parentData = useRouteLoaderData<typeof learnLayoutLoader>(
+    "routes/learn-layout"
+  );
+  const parentSlts = (parentData?.slts ?? []) as SLT[];
+
   const typedLesson = lesson as Lesson;
-  const typedSlts = slts as SLT[];
   const typedModuleCode = moduleCode as string;
   const typedLessonIndex = lessonIndex as number;
 
-  // Determine prev/next indices from actual SLT list
-  const sortedIndices = typedSlts
+  // Determine prev/next indices from parent SLT list
+  const sortedIndices = parentSlts
     .map((s) => s.moduleIndex ?? 0)
     .sort((a, b) => a - b);
   const currentPos = sortedIndices.indexOf(typedLessonIndex);
@@ -101,13 +98,14 @@ export default function LessonPage() {
     currentPos < sortedIndices.length - 1
       ? sortedIndices[currentPos + 1]
       : null;
+  const totalLessons = parentSlts.length;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
       {/* Lesson header */}
       <div className="mb-8">
         <p className="mb-2 text-sm text-mn-text-muted">
-          Lesson {typedLessonIndex} of {totalLessons as number}
+          Lesson {typedLessonIndex} of {totalLessons}
         </p>
         {typedLesson.title && (
           <h1 className="text-3xl font-bold font-heading text-mn-text">
@@ -122,25 +120,32 @@ export default function LessonPage() {
       </section>
 
       {/* Previous / Next navigation */}
-      <nav className="flex items-center justify-between border-t border-midnight-border pt-6">
+      <nav className="flex flex-col gap-3 border-t border-midnight-border pt-6 sm:flex-row sm:items-center sm:justify-between">
         {prevIndex !== null ? (
-          <Link prefetch="intent" to={MIDNIGHT_PBL.routes.lesson(typedModuleCode, prevIndex)}>
-            <Button variant="secondary">Previous Lesson</Button>
+          <Link prefetch="intent" to={MIDNIGHT_PBL.routes.lesson(typedModuleCode, prevIndex)} className="w-full sm:w-auto">
+            <Button variant="secondary" className="w-full sm:w-auto min-h-[44px]">
+              <span className="truncate">Previous Lesson</span>
+            </Button>
           </Link>
         ) : (
           <div />
         )}
 
         {nextIndex !== null ? (
-          <Link prefetch="render" to={MIDNIGHT_PBL.routes.lesson(typedModuleCode, nextIndex)}>
-            <Button variant="primary">Next Lesson</Button>
+          <Link prefetch="render" to={MIDNIGHT_PBL.routes.lesson(typedModuleCode, nextIndex)} className="w-full sm:w-auto">
+            <Button variant="primary" className="w-full sm:w-auto min-h-[44px]">
+              <span className="truncate">Next Lesson</span>
+            </Button>
           </Link>
         ) : (
           <Link
             prefetch="render"
             to={MIDNIGHT_PBL.routes.assignment(typedModuleCode)}
+            className="w-full sm:w-auto"
           >
-            <Button variant="primary">View Assignment</Button>
+            <Button variant="primary" className="w-full sm:w-auto min-h-[44px]">
+              <span className="truncate">View Assignment</span>
+            </Button>
           </Link>
         )}
       </nav>

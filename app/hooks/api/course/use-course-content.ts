@@ -37,6 +37,8 @@ import {
  * Fetch all SLTs for a module.
  *
  * Handles both V1 and V2 API response formats.
+ * staleTime: Infinity — SLTs are static course content that never changes
+ * during a user session. This prevents refetches on component remounts.
  */
 export function useSLTs(
   courseId: string | undefined,
@@ -44,6 +46,7 @@ export function useSLTs(
 ) {
   return useQuery<SLT[], Error>({
     queryKey: sltKeys.list(courseId ?? "", moduleCode ?? ""),
+    staleTime: Infinity,
     queryFn: async () => {
       const response = await fetch(
         `${GATEWAY_API_BASE}/course/user/slts/${courseId}/${moduleCode}`
@@ -93,6 +96,8 @@ export function useSLTs(
  * Fetch a single lesson.
  *
  * Handles both V1 and V2 API response formats.
+ * staleTime: Infinity — lesson content is static and won't change
+ * during a user session.
  */
 export function useLesson(
   courseId: string | undefined,
@@ -100,6 +105,7 @@ export function useLesson(
   sltIndex: number | undefined
 ) {
   return useQuery({
+    staleTime: Infinity,
     queryKey: lessonKeys.detail(
       courseId ?? "",
       moduleCode ?? "",
@@ -143,12 +149,14 @@ export function useLesson(
 
 /**
  * Fetch an assignment for a specific module.
+ * staleTime: Infinity — assignment content is static course data.
  */
 export function useAssignment(
   courseId: string | undefined,
   moduleCode: string | undefined
 ) {
   return useQuery({
+    staleTime: Infinity,
     queryKey: assignmentKeys.detail(courseId ?? "", moduleCode ?? ""),
     queryFn: async (): Promise<Assignment | null> => {
       const response = await fetch(
@@ -212,12 +220,14 @@ export function useAssignment(
 
 /**
  * Fetch an introduction for a specific module.
+ * staleTime: Infinity — introduction content is static course data.
  */
 export function useIntroduction(
   courseId: string | undefined,
   moduleCode: string | undefined
 ) {
   return useQuery({
+    staleTime: Infinity,
     queryKey: introductionKeys.detail(courseId ?? "", moduleCode ?? ""),
     queryFn: async (): Promise<Introduction | null> => {
       const response = await fetch(

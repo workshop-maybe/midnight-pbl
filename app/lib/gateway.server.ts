@@ -68,16 +68,61 @@ async function gatewayFetch(
 }
 
 // =============================================================================
+// Server-side module cache
+// =============================================================================
+
+/**
+ * In-memory cache for the modules list. The Andamio API has no single-module
+ * endpoint, so fetchModuleDetail must fetch the full list and filter. This
+ * cache prevents redundant full-list fetches within the same deployment
+ * window. TTL is 5 minutes — course structure is essentially static.
+ */
+let modulesCache: {
+  data: CourseModule[];
+  courseId: string;
+  expiresAt: number;
+} | null = null;
+
+const MODULES_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function getCachedModules(courseId: string): CourseModule[] | null {
+  if (
+    modulesCache &&
+    modulesCache.courseId === courseId &&
+    Date.now() < modulesCache.expiresAt
+  ) {
+    return modulesCache.data;
+  }
+  return null;
+}
+
+function setCachedModules(courseId: string, modules: CourseModule[]): void {
+  modulesCache = {
+    data: modules,
+    courseId,
+    expiresAt: Date.now() + MODULES_CACHE_TTL_MS,
+  };
+}
+
+// =============================================================================
 // Course endpoints
 // =============================================================================
 
 /**
  * Fetch all modules for a course.
  * Endpoint: GET /api/v2/course/user/modules/{course_id}
+ *
+ * Uses an in-memory cache (5 min TTL) to avoid redundant API calls
+ * when multiple loaders request the same course's modules within
+ * the same deployment window.
  */
 export async function fetchCourseModules(
   courseId: string
 ): Promise<CourseModule[]> {
+  // Check in-memory cache first
+  const cached = getCachedModules(courseId);
+  if (cached) return cached;
+
   const response = await gatewayFetch(
     `/course/user/modules/${safePath(courseId)}`
   );
@@ -110,13 +155,22 @@ export async function fetchCourseModules(
   }
 
   const modules = items.map(transformCourseModule);
-  return sortModulesByCode(modules);
+  const sorted = sortModulesByCode(modules);
+
+  // Populate cache so fetchModuleDetail doesn't re-fetch
+  setCachedModules(courseId, sorted);
+
+  return sorted;
 }
 
 /**
  * Fetch a single module's detail.
- * Endpoint: GET /api/v2/course/user/modules/{course_id}
- * Filters client-side by module code (no dedicated single-module endpoint).
+ *
+ * The Andamio API has no dedicated single-module endpoint, so this
+ * fetches the full modules list and filters. The in-memory cache
+ * (populated by fetchCourseModules) ensures this is cheap when the
+ * list was already fetched in the same request cycle (e.g., by
+ * the parent layout loader).
  */
 export async function fetchModuleDetail(
   courseId: string,

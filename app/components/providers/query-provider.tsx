@@ -20,10 +20,22 @@ function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        // Course content is mostly static — generous stale time
-        staleTime: 60 * 1000, // 1 minute
-        // Don't refetch on window focus for better DX
+        // Course content is static — generous stale time prevents
+        // unnecessary refetches when navigating between lessons.
+        // 5 minutes matches the server-side module cache TTL.
+        staleTime: 5 * 60 * 1000, // 5 minutes
+
+        // Keep unused query data in cache for 30 minutes so that
+        // back-navigation reuses cached data without a flash.
+        gcTime: 30 * 60 * 1000, // 30 minutes
+
+        // Don't refetch on window focus — course content doesn't
+        // change frequently and refetching on tab switch is jarring.
         refetchOnWindowFocus: false,
+
+        // Retry transient failures (network blips, 5xx) twice
+        // with React Query's default exponential backoff.
+        retry: 2,
       },
     },
   });

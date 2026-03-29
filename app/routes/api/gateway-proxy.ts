@@ -93,13 +93,27 @@ async function proxyRequest(
       );
     }
 
-    const data: unknown = await response.json();
+    const responseData: unknown = await response.json();
 
     if (isDev) {
       console.log(`[Gateway Proxy] Success response from ${splatPath}`);
     }
 
-    return Response.json(data);
+    // Add Cache-Control headers based on whether this is a public
+    // course content request or an authenticated student request.
+    // Public content (modules, SLTs, lessons, assignments) is static
+    // and safe to cache. Authenticated data (commitments, credentials)
+    // must not be cached.
+    const isAuthenticated = !!authHeader;
+    const cacheControl = isAuthenticated
+      ? "no-store"
+      : "public, max-age=300"; // 5 minutes for public course content
+
+    return Response.json(responseData, {
+      headers: {
+        "Cache-Control": cacheControl,
+      },
+    });
   } catch (error) {
     console.error("[Gateway Proxy] Error:", error);
     return Response.json(

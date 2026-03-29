@@ -376,6 +376,8 @@ export function sortModulesByCode(modules: CourseModule[]): CourseModule[] {
 
 /**
  * Fetch all modules for a course.
+ * staleTime: Infinity — the modules list is static course structure
+ * that won't change during a user session.
  *
  * @example
  * ```tsx
@@ -384,6 +386,7 @@ export function sortModulesByCode(modules: CourseModule[]): CourseModule[] {
  */
 export function useCourseModules(courseId: string | undefined) {
   return useQuery({
+    staleTime: Infinity,
     queryKey: courseKeys.modules(courseId ?? ""),
     queryFn: async (): Promise<CourseModule[]> => {
       const response = await fetch(

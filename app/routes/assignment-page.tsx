@@ -6,8 +6,11 @@
  * interactive parts (evidence form, status, enrollment flow) render
  * client-side only because they depend on the auth context and wallet.
  *
- * The parent learn-layout.tsx provides module context (sidebar with
- * SLT list and assignment link), so this page focuses on content.
+ * Data optimization: module detail is NOT fetched here — the parent
+ * learn-layout.tsx already loads it for the sidebar. This page accesses
+ * the parent's module data via useRouteLoaderData, eliminating a
+ * redundant fetchModuleDetail call (which itself fetches the full
+ * modules list behind the scenes).
  *
  * Route: /learn/:moduleCode/assignment
  *
@@ -23,14 +26,15 @@
 
 import { data } from "react-router";
 import type { MetaFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData } from "react-router";
+import { useLoaderData, useRouteLoaderData } from "react-router";
 import { Suspense, lazy } from "react";
-import { fetchAssignment, fetchModuleDetail } from "~/lib/gateway.server";
+import { fetchAssignment } from "~/lib/gateway.server";
 import { serverEnv } from "~/env.server";
 import { LessonContent } from "~/components/course/lesson-content";
 import { Card, CardBody } from "~/components/ui/card";
 import { getPageTitle } from "~/config/branding";
 import type { Assignment, CourseModule } from "~/hooks/api/course/use-course";
+import type { loader as learnLayoutLoader } from "~/routes/learn-layout";
 
 // Lazy-load the client-only interactive section to avoid SSR issues
 // with Mesh SDK imports (useWallet, etc.)
@@ -49,23 +53,25 @@ export async function loader({ params }: LoaderFunctionArgs) {
     throw new Response("Module code is required", { status: 400 });
   }
 
-  const [assignment, module] = await Promise.all([
-    fetchAssignment(courseId, moduleCode),
-    fetchModuleDetail(courseId, moduleCode),
-  ]);
+  // Only fetch the assignment content — module detail comes from
+  // the parent learn-layout loader (accessed via useRouteLoaderData).
+  // This eliminates a redundant fetchModuleDetail call that would
+  // fetch the full modules list just to find one module.
+  const assignment = await fetchAssignment(courseId, moduleCode);
 
-  return data({ assignment, module, courseId, moduleCode });
+  return data({ assignment, courseId, moduleCode });
 }
 
 export const meta: MetaFunction<typeof loader> = ({ data: loaderData }) => {
-  const moduleTitle =
-    (loaderData as { module: CourseModule | null } | undefined)?.module?.title ??
-    "Module";
+  // Meta function can't use hooks, so we fall back to "Module" for title
+  // when parent data isn't available in the meta context.
+  const moduleCode =
+    (loaderData as { moduleCode: string } | undefined)?.moduleCode ?? "";
   return [
-    { title: getPageTitle(`Assignment: ${moduleTitle}`) },
+    { title: getPageTitle(`Assignment: ${moduleCode || "Module"}`) },
     {
       name: "description",
-      content: `Assignment for ${moduleTitle}`,
+      content: `Assignment for module ${moduleCode}`,
     },
   ];
 };
@@ -75,14 +81,21 @@ export function shouldRevalidate() {
 }
 
 export default function AssignmentPage() {
-  const { assignment, module, courseId, moduleCode } =
+  const { assignment, courseId, moduleCode } =
     useLoaderData<typeof loader>();
 
+  // Access module detail from the parent learn-layout loader instead
+  // of re-fetching it. The parent already loaded the module for the
+  // sidebar — reuse that data to get sltHash and title.
+  const parentData = useRouteLoaderData<typeof learnLayoutLoader>(
+    "routes/learn-layout"
+  );
+  const parentModule = (parentData?.module ?? null) as CourseModule | null;
+
   const typedAssignment = assignment as Assignment | null;
-  const typedModule = module as CourseModule | null;
   const typedModuleCode = moduleCode as string;
   const typedCourseId = courseId as string;
-  const sltHash = typedModule?.sltHash ?? null;
+  const sltHash = parentModule?.sltHash ?? null;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
@@ -90,7 +103,7 @@ export default function AssignmentPage() {
       <div className="mb-8">
         <h1 className="mb-3 text-3xl font-bold font-heading text-mn-text">
           {typedAssignment?.title ??
-            `${typedModule?.title ?? "Module"} Assignment`}
+            `${parentModule?.title ?? "Module"} Assignment`}
         </h1>
         {typedAssignment?.description && (
           <p className="max-w-2xl text-lg text-mn-text-muted">
