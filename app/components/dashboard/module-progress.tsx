@@ -67,7 +67,7 @@ export function ModuleProgress({
             <p className="mb-1 text-xs font-medium uppercase tracking-wider text-mn-text-muted">
               Module {index}
             </p>
-            <h3 className="text-sm font-semibold leading-snug text-mn-text">
+            <h3 className="text-sm font-semibold leading-snug text-mn-text line-clamp-2">
               {module.title ?? `Module ${moduleCode}`}
             </h3>
           </div>
@@ -86,7 +86,7 @@ export function ModuleProgress({
         {/* Action link */}
         <Link
           to={MIDNIGHT_PBL.routes.assignment(moduleCode)}
-          className="inline-flex items-center gap-1 text-xs font-medium text-mn-primary-light transition-colors hover:text-mn-text"
+          className="inline-flex min-h-[44px] items-center gap-1 text-xs font-medium text-mn-primary-light transition-colors hover:text-mn-text"
         >
           {completed ? "View assignment" : "Go to assignment"}
           <ArrowRightIcon />

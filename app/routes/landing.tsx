@@ -15,12 +15,12 @@ export default function Landing() {
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
           <div className="mx-auto max-w-3xl text-center">
             {/* Title */}
-            <h1 className="mb-6 text-4xl font-bold font-heading tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="mb-6 text-3xl font-bold font-heading tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
               <span className="gradient-text">{MIDNIGHT_PBL.title}</span>
             </h1>
 
             {/* Description */}
-            <p className="mb-8 text-lg text-mn-text-muted sm:text-xl">
+            <p className="mb-8 text-base text-mn-text-muted sm:text-lg md:text-xl">
               {BRANDING.longDescription}
             </p>
 

@@ -90,7 +90,7 @@ export function RegistrationFlow() {
   ].includes(txState);
 
   return (
-    <div className="mx-auto max-w-md space-y-6 rounded-2xl border border-midnight-border bg-midnight-card/80 p-6 backdrop-blur-sm">
+    <div className="mx-auto max-w-md space-y-6 rounded-2xl border border-midnight-border bg-midnight-card/80 p-4 backdrop-blur-sm sm:p-6">
       <div className="space-y-2 text-center">
         <h2 className="font-heading text-xl font-semibold text-mn-text">
           Welcome to Midnight PBL
@@ -161,7 +161,7 @@ export function RegistrationFlow() {
           <button
             onClick={handleRetryAuth}
             disabled={isInProgress}
-            className="w-full text-center text-xs text-mn-text-muted transition-colors hover:text-mn-primary-light disabled:opacity-50"
+            className="w-full min-h-[44px] text-center text-xs text-mn-text-muted transition-colors hover:text-mn-primary-light disabled:opacity-50"
           >
             Already have an access token? Click to retry authentication
           </button>

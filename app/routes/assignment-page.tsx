@@ -100,13 +100,13 @@ export default function AssignmentPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
       {/* Assignment header */}
-      <div className="mb-8">
-        <h1 className="mb-3 text-3xl font-bold font-heading text-mn-text">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="mb-3 text-2xl font-bold font-heading text-mn-text sm:text-3xl">
           {typedAssignment?.title ??
             `${parentModule?.title ?? "Module"} Assignment`}
         </h1>
         {typedAssignment?.description && (
-          <p className="max-w-2xl text-lg text-mn-text-muted">
+          <p className="max-w-2xl text-base text-mn-text-muted sm:text-lg">
             {typedAssignment.description}
           </p>
         )}
@@ -118,7 +118,7 @@ export default function AssignmentPage() {
           <LessonContent contentJson={typedAssignment.contentJson} />
         </section>
       ) : (
-        <div className="mb-10 rounded-xl border border-midnight-border bg-midnight-surface/50 p-8 text-center">
+        <div className="mb-10 rounded-xl border border-midnight-border bg-midnight-surface/50 p-4 text-center sm:p-8">
           <p className="text-mn-text-muted">
             No assignment available for this module yet.
           </p>

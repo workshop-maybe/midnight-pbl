@@ -103,12 +103,12 @@ export default function LessonPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
       {/* Lesson header */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <p className="mb-2 text-sm text-mn-text-muted">
           Lesson {typedLessonIndex} of {totalLessons}
         </p>
         {typedLesson.title && (
-          <h1 className="text-3xl font-bold font-heading text-mn-text">
+          <h1 className="text-2xl font-bold font-heading text-mn-text sm:text-3xl">
             {typedLesson.title}
           </h1>
         )}

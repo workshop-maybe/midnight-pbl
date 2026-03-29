@@ -11,7 +11,7 @@
 import { data } from "react-router";
 import type { LoaderFunctionArgs } from "react-router";
 import { useLoaderData, useParams, useLocation, Link, Outlet } from "react-router";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { fetchModuleDetail, fetchSLTs } from "~/lib/gateway.server";
 import { serverEnv } from "~/env.server";
 import { MIDNIGHT_PBL } from "~/config/midnight";
@@ -64,12 +64,30 @@ export function shouldRevalidate() {
 
 export default function LearnLayout() {
   const { module, slts, moduleCode, sltsFailed } = useLoaderData<typeof loader>();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const typedModule = module as CourseModule;
   const typedSlts = slts as SLT[];
   const typedModuleCode = moduleCode as string;
   const typedSltsFailed = sltsFailed as boolean;
+
+  // Close sidebar on route change (navigating to a new lesson)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
+  // Close sidebar on Escape key
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === "Escape") setSidebarOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+      return () => document.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [sidebarOpen, handleKeyDown]);
 
   return (
     <div className="learn-layout">
@@ -90,14 +108,11 @@ export default function LearnLayout() {
         </span>
       </button>
 
-      {/* Overlay for mobile sidebar */}
+      {/* Overlay for mobile sidebar — tap to dismiss */}
       {sidebarOpen && (
         <div
           className="learn-sidebar-overlay"
           onClick={() => setSidebarOpen(false)}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") setSidebarOpen(false);
-          }}
           role="button"
           tabIndex={-1}
           aria-label="Close navigation"
@@ -108,6 +123,17 @@ export default function LearnLayout() {
       <aside
         className={`learn-sidebar ${sidebarOpen ? "learn-sidebar--open" : ""}`}
       >
+        {/* Mobile close button inside sidebar */}
+        <div className="flex items-center justify-end px-2 pt-2 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(false)}
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-mn-text-muted transition-colors hover:bg-midnight-surface hover:text-mn-text"
+            aria-label="Close navigation"
+          >
+            <CloseIcon />
+          </button>
+        </div>
         <SidebarContent
           module={typedModule}
           slts={typedSlts}

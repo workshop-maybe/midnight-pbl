@@ -80,6 +80,7 @@ body {
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 h1,
@@ -223,6 +224,7 @@ samp {
   background-color: #ffffff0d;
   border-radius: 4px;
   padding: 0.15em 0.35em;
+  word-break: break-word;
 }
 
 .prose-midnight pre {
@@ -255,10 +257,14 @@ samp {
   margin: 1em 0;
 }
 
+/* Wrap tables in a scrollable container to prevent layout break on mobile */
 .prose-midnight table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 1em;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .prose-midnight th,
@@ -266,6 +272,7 @@ samp {
   border: 1px solid var(--mn-border-dark);
   padding: 0.5em 0.75em;
   text-align: left;
+  white-space: nowrap;
 }
 
 .prose-midnight th {
@@ -302,7 +309,7 @@ samp {
   min-width: 0;
 }
 
-/* Mobile toggle button */
+/* Mobile toggle button — min 44x44 touch target */
 .learn-sidebar-toggle {
   display: flex;
   align-items: center;
@@ -310,7 +317,9 @@ samp {
   bottom: 1rem;
   right: 1rem;
   z-index: 40;
-  padding: 0.5rem 0.75rem;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.625rem 0.875rem;
   border-radius: 9999px;
   background-color: var(--mn-bg-card);
   border: 1px solid var(--mn-border-dark);
@@ -320,13 +329,20 @@ samp {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
+/* Respect safe-area for the FAB on notched phones */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .learn-sidebar-toggle {
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    right: calc(1rem + env(safe-area-inset-right));
+  }
+}
+
 .learn-sidebar-toggle:hover {
   box-shadow: 0 4px 16px var(--mn-glow);
 }
 
-/* Mobile overlay backdrop */
+/* Mobile overlay backdrop — rendered conditionally by React */
 .learn-sidebar-overlay {
-  display: none;
   position: fixed;
   inset: 0;
   z-index: 40;
@@ -341,21 +357,17 @@ samp {
   left: 0;
   bottom: 0;
   z-index: 50;
+  max-height: none;
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
 }
 
-/* When sidebar is open, show the overlay on mobile */
-.learn-sidebar--open ~ .learn-sidebar-overlay,
-.learn-sidebar-overlay {
-  /* Overlay is shown via React conditional rendering */
-}
-
-/* Sidebar "back" link */
+/* Sidebar "back" link — min 44px touch target */
 .sidebar-back-link {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.5rem 1rem 0.75rem;
+  padding: 0.75rem 1rem;
+  min-height: 44px;
   font-size: 0.8125rem;
   color: var(--mn-text-muted);
   text-decoration: none;
@@ -366,12 +378,13 @@ samp {
   color: var(--mn-text-on-dark);
 }
 
-/* SLT navigation item */
+/* SLT navigation item — min 44px touch target */
 .sidebar-slt-item {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
-  padding: 0.5rem 0.5rem;
+  padding: 0.625rem 0.5rem;
+  min-height: 44px;
   border-radius: 8px;
   font-size: 0.8125rem;
   line-height: 1.4;
@@ -417,12 +430,13 @@ samp {
   overflow: hidden;
 }
 
-/* Assignment link in sidebar */
+/* Assignment link in sidebar — min 44px touch target */
 .sidebar-assignment-link {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem;
+  padding: 0.625rem 0.5rem;
+  min-height: 44px;
   border-radius: 8px;
   font-size: 0.8125rem;
   font-weight: 500;

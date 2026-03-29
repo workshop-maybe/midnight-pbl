@@ -38,7 +38,7 @@ export function ModuleCard({ module, index }: ModuleCardProps) {
           </div>
 
           {/* Title */}
-          <h3 className="text-lg font-semibold font-heading text-mn-text">
+          <h3 className="text-lg font-semibold font-heading text-mn-text line-clamp-2">
             {module.title ?? "Untitled Module"}
           </h3>
 
@@ -50,7 +50,7 @@ export function ModuleCard({ module, index }: ModuleCardProps) {
           )}
 
           {/* Module code */}
-          <p className="mt-auto pt-2 text-xs font-mono text-mn-text-muted/60">
+          <p className="mt-auto pt-2 text-xs font-mono text-mn-text-muted/60 truncate">
             {moduleCode}
           </p>
         </CardBody>

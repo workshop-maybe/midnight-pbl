@@ -58,33 +58,35 @@ export function ErrorPage({ error }: ErrorPageProps) {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-midnight px-4">
-      <div className="max-w-md text-center">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-midnight px-4 supports-[padding:env(safe-area-inset-bottom)]:pb-[env(safe-area-inset-bottom)]">
+      <div className="w-full max-w-md text-center">
         {/* Status code */}
-        <p className="mb-2 text-6xl font-bold font-heading text-mn-text">
+        <p className="mb-2 text-5xl font-bold font-heading text-mn-text sm:text-6xl">
           {status}
         </p>
 
         {/* Title */}
-        <h1 className="mb-4 text-2xl font-semibold font-heading text-mn-text">
+        <h1 className="mb-4 text-xl font-semibold font-heading text-mn-text sm:text-2xl">
           {title}
         </h1>
 
         {/* Message */}
-        <p className="mb-8 text-mn-text-muted">{message}</p>
+        <p className="mb-8 text-sm text-mn-text-muted sm:text-base">{message}</p>
 
         {/* Actions */}
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center sm:gap-4">
           <Button
             variant="primary"
             onClick={handleRetry}
             disabled={revalidator.state === "loading"}
+            className="w-full sm:w-auto"
           >
             {revalidator.state === "loading" ? "Retrying..." : "Try again"}
           </Button>
           <Button
             variant="secondary"
             onClick={() => (window.location.href = "/")}
+            className="w-full sm:w-auto"
           >
             Go home
           </Button>

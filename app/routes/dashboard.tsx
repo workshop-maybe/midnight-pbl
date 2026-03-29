@@ -81,13 +81,13 @@ export default function Dashboard() {
   const typedCourseId = courseId as string;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
       {/* Page header */}
-      <div className="mb-10">
-        <h1 className="mb-3 text-3xl font-bold font-heading text-mn-text sm:text-4xl">
+      <div className="mb-8 sm:mb-10">
+        <h1 className="mb-3 text-2xl font-bold font-heading text-mn-text sm:text-3xl md:text-4xl">
           Your Progress
         </h1>
-        <p className="max-w-2xl text-lg text-mn-text-muted">
+        <p className="max-w-2xl text-base text-mn-text-muted sm:text-lg">
           Track your enrollment status across all {MIDNIGHT_PBL.moduleCount}{" "}
           modules and claim your credential when complete.
         </p>

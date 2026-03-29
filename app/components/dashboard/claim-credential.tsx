@@ -211,7 +211,7 @@ export function ClaimCredential({
         </p>
 
         {/* Progress bar */}
-        <div className="mx-auto mt-3 h-1.5 w-48 overflow-hidden rounded-full bg-midnight-surface">
+        <div className="mx-auto mt-3 h-1.5 w-full max-w-[12rem] overflow-hidden rounded-full bg-midnight-surface">
           <div
             className="h-full rounded-full bg-gradient-to-r from-mn-primary to-mn-violet transition-all duration-500"
             style={{

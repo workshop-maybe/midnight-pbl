@@ -47,20 +47,20 @@ export default function CourseOverview() {
   const { modules } = useLoaderData<typeof loader>();
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
       {/* Page header */}
-      <div className="mb-10">
-        <h1 className="mb-3 text-3xl font-bold font-heading text-mn-text sm:text-4xl">
+      <div className="mb-8 sm:mb-10">
+        <h1 className="mb-3 text-2xl font-bold font-heading text-mn-text sm:text-3xl md:text-4xl">
           {MIDNIGHT_PBL.title}
         </h1>
-        <p className="max-w-2xl text-lg text-mn-text-muted">
+        <p className="max-w-2xl text-base text-mn-text-muted sm:text-lg">
           {MIDNIGHT_PBL.description}
         </p>
       </div>
 
       {/* Module grid */}
       {modules.length === 0 ? (
-        <div className="rounded-xl border border-midnight-border bg-midnight-surface/50 p-12 text-center">
+        <div className="rounded-xl border border-midnight-border bg-midnight-surface/50 p-6 text-center sm:p-12">
           <p className="text-lg text-mn-text-muted">
             No modules available yet. Check back soon.
           </p>

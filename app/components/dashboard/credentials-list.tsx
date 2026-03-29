@@ -49,7 +49,7 @@ export function CredentialsList({
     <div className="space-y-3">
       {credentials.map((credential, index) => (
         <Card key={credential.txHash ?? index}>
-          <CardBody className="flex items-center gap-4">
+          <CardBody className="flex items-start gap-3 sm:items-center sm:gap-4">
             {/* Credential icon */}
             <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-mn-violet/30 bg-mn-violet/10">
               <CredentialIcon className="h-5 w-5 text-mn-violet" />
@@ -57,14 +57,14 @@ export function CredentialsList({
 
             {/* Info */}
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h4 className="text-sm font-semibold text-mn-text">
+              <div className="flex flex-wrap items-center gap-2">
+                <h4 className="text-sm font-semibold text-mn-text truncate">
                   {courseTitle}
                 </h4>
                 <Badge variant="violet">Credential</Badge>
               </div>
 
-              <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-mn-text-muted">
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-mn-text-muted">
                 {credential.claimDate && (
                   <span>
                     Claimed{" "}
@@ -80,7 +80,7 @@ export function CredentialsList({
                 )}
 
                 {credential.txHash && (
-                  <span className="font-mono">
+                  <span className="font-mono truncate max-w-[200px]">
                     TX: {credential.txHash.slice(0, 12)}...
                     {credential.txHash.slice(-6)}
                   </span>

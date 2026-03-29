@@ -99,7 +99,7 @@ export function TxStatus({
   if (txState === "idle") return null;
 
   return (
-    <div className="space-y-4 rounded-xl border border-midnight-border bg-midnight-card/60 p-4 backdrop-blur-sm">
+    <div className="space-y-4 rounded-xl border border-midnight-border bg-midnight-card/60 p-3 backdrop-blur-sm sm:p-4">
       {/* Step list */}
       <div className="space-y-2">
         {TX_STEPS.map((step, index) => {
@@ -163,7 +163,7 @@ export function TxStatus({
       {/* TX hash after submission */}
       {txHash && txState === "success" && (
         <div className="border-t border-midnight-border pt-3">
-          <p className="text-xs text-mn-text-muted">
+          <p className="text-xs text-mn-text-muted break-all">
             TX Hash:{" "}
             <code className="font-mono text-mn-text">
               {txHash.slice(0, 16)}...{txHash.slice(-8)}

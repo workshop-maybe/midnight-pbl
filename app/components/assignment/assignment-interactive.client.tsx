@@ -261,8 +261,8 @@ export default function AssignmentInteractive({
   return (
     <Card noHover>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold font-heading text-mn-text">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-base font-semibold font-heading text-mn-text sm:text-lg">
             Submit Your Assignment
           </h3>
           <Badge variant="default">Not Started</Badge>

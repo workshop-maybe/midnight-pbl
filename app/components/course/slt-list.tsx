@@ -41,7 +41,7 @@ export function SLTList({ slts, moduleCode }: SLTListProps) {
             className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary-light rounded-xl"
           >
             <Card noHover={false}>
-              <CardBody className="flex items-start gap-4">
+              <CardBody className="flex items-start gap-4 min-h-[44px]">
                 {/* Index badge */}
                 <Badge variant="info" className="mt-0.5 shrink-0">
                   {lessonIndex}

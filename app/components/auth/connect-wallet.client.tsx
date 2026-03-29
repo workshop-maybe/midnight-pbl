@@ -42,7 +42,7 @@ export function ConnectWallet() {
         </span>
         <button
           onClick={logout}
-          className="rounded-md px-2 py-1 text-xs text-mn-text-muted transition-colors hover:bg-midnight-surface hover:text-mn-text"
+          className="rounded-md px-2 py-1 text-xs text-mn-text-muted transition-colors hover:bg-midnight-surface hover:text-mn-text min-h-[44px] min-w-[44px]"
           title="Disconnect wallet"
         >
           Logout
@@ -88,7 +88,7 @@ export function ConnectWallet() {
         <span className="text-sm text-mn-violet">Register</span>
         <button
           onClick={logout}
-          className="rounded-md px-2 py-1 text-xs text-mn-text-muted transition-colors hover:bg-midnight-surface hover:text-mn-text"
+          className="rounded-md px-2 py-1 text-xs text-mn-text-muted transition-colors hover:bg-midnight-surface hover:text-mn-text min-h-[44px]"
           title="Disconnect wallet"
         >
           Disconnect
@@ -106,7 +106,7 @@ export function ConnectWallet() {
         </span>
         <button
           onClick={() => void authenticate()}
-          className="rounded-md border border-midnight-border bg-midnight-surface px-2 py-1 text-xs text-mn-text-muted transition-colors hover:text-mn-text"
+          className="rounded-md border border-midnight-border bg-midnight-surface px-3 py-2 text-xs text-mn-text-muted transition-colors hover:text-mn-text min-h-[44px]"
         >
           Retry
         </button>

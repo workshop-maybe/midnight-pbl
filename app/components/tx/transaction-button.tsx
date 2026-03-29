@@ -65,10 +65,10 @@ export function TransactionButton({
   if (state === "success") {
     return (
       <div
-        className={`inline-flex items-center justify-center gap-2 rounded-xl border border-success/30 bg-success/10 px-6 py-3 text-base font-medium text-success ${className}`}
+        className={`inline-flex w-full items-center justify-center gap-2 rounded-xl border border-success/30 bg-success/10 px-6 py-3 text-sm font-medium text-success sm:text-base ${className}`}
       >
         <SuccessIcon />
-        {STATE_LABELS.success}
+        <span className="truncate">{STATE_LABELS.success}</span>
       </div>
     );
   }

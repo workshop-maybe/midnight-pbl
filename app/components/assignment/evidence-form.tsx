@@ -177,7 +177,7 @@ export function EvidenceForm({
                   type="button"
                   onClick={() => removeUrl(index)}
                   disabled={isSubmitting || urls.length <= 1}
-                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-midnight-border text-mn-text-muted transition-colors hover:border-error/30 hover:text-error disabled:opacity-30"
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg border border-midnight-border text-mn-text-muted transition-colors hover:border-error/30 hover:text-error disabled:opacity-30"
                   title="Remove URL"
                   aria-label="Remove URL"
                 >
@@ -193,7 +193,7 @@ export function EvidenceForm({
             type="button"
             onClick={addUrl}
             disabled={isSubmitting}
-            className="inline-flex items-center gap-1 text-sm text-mn-primary-light transition-colors hover:text-mn-primary disabled:opacity-50"
+            className="inline-flex min-h-[44px] items-center gap-1 text-sm text-mn-primary-light transition-colors hover:text-mn-primary disabled:opacity-50"
           >
             <AddIcon />
             Add another URL
