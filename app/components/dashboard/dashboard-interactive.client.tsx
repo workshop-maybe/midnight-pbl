@@ -103,7 +103,9 @@ function DashboardContent({
             Module Progress
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {modules.map((module, index) => (
+            {[...modules]
+              .sort((a, b) => parseInt(a.moduleCode ?? "0", 10) - parseInt(b.moduleCode ?? "0", 10))
+              .map((module, index) => (
               <ModuleProgress
                 key={module.sltHash || module.moduleCode || index}
                 module={module}
@@ -160,7 +162,9 @@ function DashboardContent({
           Module Progress
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {modules.map((module, index) => (
+          {[...modules]
+            .sort((a, b) => parseInt(a.moduleCode ?? "0", 10) - parseInt(b.moduleCode ?? "0", 10))
+            .map((module, index) => (
             <ModuleProgress
               key={module.sltHash || module.moduleCode || index}
               module={module}

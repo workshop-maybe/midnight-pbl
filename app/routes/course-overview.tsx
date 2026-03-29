@@ -67,7 +67,13 @@ export default function CourseOverview() {
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {(modules as CourseModule[]).map((module, index) => (
+          {[...(modules as CourseModule[])]
+            .sort((a, b) => {
+              const codeA = parseInt(a.moduleCode ?? "0", 10);
+              const codeB = parseInt(b.moduleCode ?? "0", 10);
+              return codeA - codeB;
+            })
+            .map((module, index) => (
             <ModuleCard
               key={module.sltHash || module.moduleCode || index}
               module={module}
