@@ -43,7 +43,7 @@ export function SLTList({ slts, moduleCode }: SLTListProps) {
               <CardBody className="flex items-start gap-4">
                 {/* Index badge */}
                 <Badge variant="info" className="mt-0.5 shrink-0">
-                  {lessonIndex + 1}
+                  {lessonIndex}
                 </Badge>
 
                 {/* SLT text */}

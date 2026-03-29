@@ -118,14 +118,14 @@ export default function LessonPage() {
         </Link>
         <span>/</span>
         <span className="text-mn-text">
-          Lesson {typedLessonIndex + 1}
+          Lesson {typedLessonIndex}
         </span>
       </nav>
 
       {/* Lesson header */}
       <div className="mb-8">
         <Badge variant="info" className="mb-3">
-          Lesson {typedLessonIndex + 1} of {totalLessons as number}
+          Lesson {typedLessonIndex} of {totalLessons as number}
         </Badge>
 
         {typedLesson.title && (
