@@ -23,4 +23,9 @@ export default [
 
   // API proxy — resource route (no component)
   route("api/gateway/*", "routes/api/gateway-proxy.ts"),
+
+  // Transaction resource routes
+  route("api/tx/build", "routes/api/tx-build.ts"),
+  route("api/tx/register", "routes/api/tx-register.ts"),
+  route("api/tx/stream/:txHash", "routes/api/tx-stream.ts"),
 ] satisfies RouteConfig;
