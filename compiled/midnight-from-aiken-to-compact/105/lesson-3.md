@@ -1,0 +1,221 @@
+# Lesson 2.3: Writing Your First Compact Contract
+
+## What You'll Build
+
+A counter contract — the simplest Compact contract that does something meaningful. One ledger field, one circuit, no witnesses. This is the "Hello World" of Midnight.
+
+After walking through the counter, you'll extend it with an owner and access control to see how ledger fields, circuits, and witnesses work together.
+
+---
+
+## The Counter Contract
+
+Here's the complete source:
+
+```compact
+pragma language_version >= 0.20;
+
+import CompactStandardLibrary;
+
+// public state
+export ledger round: Counter;
+
+// transition function changing public state
+export circuit increment(): [] {
+  round.increment(1);
+}
+```
+
+Source: [midnightntwrk/example-counter](https://github.com/midnightntwrk/example-counter/blob/main/contract/src/counter.compact)
+
+### Line by line
+
+**`pragma language_version >= 0.20;`**
+
+Declares the minimum Compact language version this contract requires. The compiler (currently 0.30.0) will reject contracts that require a newer version than it supports.
+
+**`import CompactStandardLibrary;`**
+
+Imports cryptographic primitives, hash functions, and type utilities. Nearly every contract needs this.
+
+**`export ledger round: Counter;`**
+
+Declares a single ledger field named `round` of type `Counter`. The `Counter` type is a 64-bit unsigned integer with `increment()` and `decrement()` methods. The `export` keyword makes it readable from DApp code.
+
+The `Counter` type auto-initializes to 0. No constructor needed.
+
+**`export circuit increment(): []`**
+
+Declares a circuit named `increment` that takes no arguments and returns an empty tuple `[]`. The `export` keyword makes it callable from DApp code. When a user calls this circuit, a ZK proof is generated and a transaction is submitted.
+
+**`round.increment(1);`**
+
+Increments the counter by 1. This modifies the on-chain ledger state directly.
+
+### What the compiler produces
+
+When you run `compact compile src/counter.compact src/managed/counter`, the compiler generates:
+
+```
+src/managed/counter/
+├── compiler/contract-info.json    # Metadata: circuits, witnesses, versions
+├── contract/
+│   ├── index.d.ts                 # TypeScript type definitions
+│   ├── index.js                   # JavaScript runtime binding
+│   └── index.js.map
+├── keys/
+│   ├── increment.prover           # 14K — proving key for this circuit
+│   └── increment.verifier         # 1.3K — verification key
+└── zkir/
+    ├── increment.bzkir            # Binary ZK intermediate representation
+    └── increment.zkir             # Human-readable ZKIR
+```
+
+One circuit produces one prover/verifier key pair and one ZKIR file. The prover key is what the proof server uses to generate ZK proofs. The verifier key is what the network uses to verify them.
+
+The generated TypeScript types give you a fully-typed interface:
+
+```typescript
+export type Ledger = {
+  readonly round: bigint;    // Counter → bigint in TypeScript
+}
+
+export type Circuits<PS> = {
+  increment(context: CircuitContext<PS>): CircuitResults<PS, []>;
+}
+```
+
+---
+
+## Adding State and Access Control
+
+The counter works, but it has no owner. Anyone can increment it. Let's look at how the bulletin board contract adds state management and access control.
+
+```compact
+pragma language_version >= 0.20;
+
+import CompactStandardLibrary;
+
+export enum State {
+  VACANT,
+  OCCUPIED
+}
+
+export ledger state: State;
+export ledger message: Maybe<Opaque<"string">>;
+export ledger sequence: Counter;
+export ledger owner: Bytes<32>;
+```
+
+Four ledger fields instead of one:
+- `state` — an enum tracking whether the board is empty or has a post
+- `message` — a `Maybe` type (like Aiken's `Option`) holding an opaque string
+- `sequence` — a counter for unlinkability across rounds
+- `owner` — 32 bytes storing the current poster's public key
+
+### The constructor
+
+```compact
+constructor() {
+  state = State.VACANT;
+  message = none<Opaque<"string">>();
+  sequence.increment(1);
+}
+```
+
+Runs once at deployment. Sets initial state, empty message, and initializes the sequence counter. Unlike circuits, the constructor doesn't generate a ZK proof — it runs during contract deployment.
+
+### A witness declaration
+
+```compact
+witness localSecretKey(): Bytes<32>;
+```
+
+This declares that the contract expects a function called `localSecretKey` that returns 32 bytes. The implementation lives in TypeScript (covered in Lesson 3.3). The secret key never appears on-chain.
+
+### A circuit with disclose()
+
+```compact
+export circuit post(newMessage: Opaque<"string">): [] {
+  assert(state == State.VACANT, "Attempted to post to an occupied board");
+  owner = disclose(publicKey(localSecretKey(), sequence as Field as Bytes<32>));
+  message = disclose(some<Opaque<"string">>(newMessage));
+  state = State.OCCUPIED;
+}
+```
+
+Step through this:
+
+1. `assert` checks the board is vacant. If not, the circuit aborts — no proof generated, no transaction.
+2. `localSecretKey()` calls the witness to get the private key from the user's machine.
+3. `publicKey(...)` derives a public key from the secret key and the current sequence.
+4. `disclose(...)` makes the public key visible on the ledger as the `owner`.
+5. `disclose(some<...>(newMessage))` wraps the message in `Maybe.some` and discloses it.
+6. `state = State.OCCUPIED` updates the board state (no `disclose()` needed — enum writes to ledger are inherently visible).
+
+### Access control via assertion
+
+```compact
+export circuit takeDown(): Opaque<"string"> {
+  assert(state == State.OCCUPIED, "Attempted to take down post from an empty board");
+  assert(owner == publicKey(localSecretKey(), sequence as Field as Bytes<32>),
+         "Attempted to take down post, but not the current owner");
+  const formerMsg = message.value;
+  state = State.VACANT;
+  sequence.increment(1);
+  message = none<Opaque<"string">>();
+  return formerMsg;
+}
+```
+
+The second `assert` is the access control. The circuit derives the public key from the caller's secret key and compares it to the stored `owner`. If they don't match, the circuit aborts. The caller proves ownership without revealing their secret key.
+
+After a successful takedown, `sequence.increment(1)` ensures the next post derives a different public key from the same secret. This breaks the link between posting rounds.
+
+### A pure circuit
+
+```compact
+export circuit publicKey(sk: Bytes<32>, sequence: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([pad(32, "bboard:pk:"), sequence, sk]);
+}
+```
+
+This is a pure circuit — it doesn't read or write ledger state. The compiler marks it `pure: true, proof: false` in the contract metadata. It's a utility function for key derivation using `persistentHash` with a domain separator (`"bboard:pk:"`).
+
+---
+
+## Patterns to Remember
+
+### 1. Ledger fields are your state machine
+
+Declare the state you need. Types available: `Uint<n>`, `Bytes<n>`, `Field`, `Boolean`, `Counter`, `Set<T>`, `Map<K,V>`, `List<T>`, `MerkleTree<n,T>`, `HistoricMerkleTree<n,T>`, `Opaque<'string'>`, `Opaque<'Uint8Array'>`.
+
+### 2. Circuits are your API
+
+Each `export circuit` is an entry point. It defines what callers can do. Think of them as methods on a contract object.
+
+### 3. assert is your guard
+
+Every circuit should start with assertions that check preconditions. Failed assertions abort the circuit before any state changes.
+
+### 4. disclose() is your visibility decision
+
+Use it when the value should be part of the public record. Omit it when the ZK proof is sufficient.
+
+### 5. Witnesses are your private inputs
+
+Declare them in Compact, implement them in TypeScript. The contract can't trust witness data on its own — verify it (e.g., by checking a derived public key against a stored value).
+
+---
+
+## Assignment
+
+Write a Compact contract for a simple token vault with these requirements:
+
+1. **Ledger fields:** an owner (public key), a balance (unsigned 64-bit integer), and a locked/unlocked state.
+2. **Constructor:** initialize with an owner public key and starting balance. The owner should be disclosed.
+3. **deposit circuit:** accepts an amount, adds it to the balance, discloses the new balance.
+4. **withdraw circuit:** accepts an amount, verifies the caller is the owner (via witness + public key derivation), subtracts from the balance, and discloses the new balance. Assert the vault is unlocked and has sufficient funds.
+5. **lock/unlock circuits:** only the owner can toggle the lock state.
+
+You don't need to compile this — focus on getting the structure right. What gets disclosed? What stays private? Where do you use witnesses?

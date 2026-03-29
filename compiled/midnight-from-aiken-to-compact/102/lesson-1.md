@@ -1,0 +1,196 @@
+# Lesson 4.1: Installing the Compact Toolchain
+
+## What You're Setting Up
+
+This lesson gets three things running on your machine:
+
+1. **The Compact compiler** — compiles `.compact` files into zero-knowledge circuits
+2. **The proof server** — generates ZK proofs locally via Docker
+3. **The VS Code extension** — syntax highlighting and language support
+
+After this lesson, you'll be ready to compile and test contracts in Module 4.2.
+
+---
+
+## Prerequisites
+
+- **macOS or Linux.** Windows is not supported.
+- **Docker Desktop** installed and running.
+- **Node.js** installed (the example repos use npm for build scripts).
+- **VS Code** (optional but recommended for the language extension).
+
+---
+
+## Step 1: Install the Compact Compiler
+
+Run the installer:
+
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
+```
+
+Reload your shell configuration:
+
+```bash
+source ~/.zshrc    # macOS default
+# or
+source ~/.bashrc   # Linux
+```
+
+**Verify it worked:**
+
+```bash
+compact --version
+```
+
+You should see a version number (e.g., `compact 0.5.0`). If you get `command not found`, check that the installer added the binary to your PATH. Run `which compact` to see where it was installed.
+
+---
+
+## Step 2: Update to the Latest Compiler
+
+The installer downloads the latest release, but if you've installed before, update explicitly:
+
+```bash
+compact update
+```
+
+You should see output like `compact: aarch64-darwin -- 0.30.0 -- installed` or `Already up to date`. If there's no output at all, run `compact update 0.30.0` to install a specific version.
+
+**Verify the compiler version:**
+
+```bash
+compact compile --version
+```
+
+This prints the compiler version specifically (which may differ from the CLI wrapper version). Both should be recent.
+
+---
+
+## Step 3: Start the Proof Server
+
+The proof server runs as a Docker container. It handles ZK proof generation — the computationally expensive part of Midnight's transaction flow.
+
+```bash
+docker run -p 6300:6300 midnightntwrk/proof-server:7.0.0 -- midnight-proof-server -v
+```
+
+This starts the server in the foreground with verbose logging. It listens on port 6300.
+
+**Verify it's running:**
+
+Open a new terminal and run:
+
+```bash
+curl -s http://localhost:6300 -o /dev/null -w "%{http_code}"
+```
+
+A response code (even an error code like `404` or `405`) confirms the server is listening. No response means Docker isn't running or the port is blocked.
+
+**If port 6300 is in use:**
+
+Map to a different host port:
+
+```bash
+docker run -p 6301:6300 midnightntwrk/proof-server:7.0.0 -- midnight-proof-server -v
+```
+
+Then use `http://localhost:6301` in your DApp configuration.
+
+---
+
+## Step 4: Install the VS Code Extension
+
+Download the Compact language VSIX from the [GitHub releases](https://github.com/midnightntwrk/compact/releases).
+
+In VS Code:
+1. Open the Extensions panel
+2. Click the `...` menu at the top
+3. Select "Install from VSIX..."
+4. Choose the downloaded `.vsix` file
+
+**Verify it works:** Open or create a `.compact` file. You should see syntax highlighting for keywords like `pragma`, `ledger`, `circuit`, and `witness`.
+
+---
+
+## Troubleshooting
+
+**`compact: command not found` after installation**
+
+The installer adds the binary to `~/.cargo/bin` or a similar location. Check:
+
+```bash
+ls ~/.cargo/bin/compact 2>/dev/null && echo "Found in cargo bin" || echo "Not in cargo bin"
+```
+
+If found, add `~/.cargo/bin` to your PATH manually:
+
+```bash
+export PATH="$HOME/.cargo/bin:$PATH"
+```
+
+Add this line to your `~/.zshrc` or `~/.bashrc` to make it permanent.
+
+**Docker image pull fails**
+
+Make sure Docker Desktop is running. Then pull explicitly:
+
+```bash
+docker pull midnightntwrk/proof-server:7.0.0
+```
+
+If this fails with an authentication error, you may need to log in to Docker Hub:
+
+```bash
+docker login
+```
+
+**Proof server exits immediately**
+
+Check Docker logs:
+
+```bash
+docker logs $(docker ps -lq)
+```
+
+Common causes: insufficient memory (the proof server needs several GB), or another process already using port 6300.
+
+---
+
+## Current Network Status
+
+As of March 2026, Midnight's testnet landscape is in transition:
+
+- **Testnet-02** ended in February 2026
+- **Preview** is maintained by the core engineering team for rapid iteration
+- **Mōhalu** (Incentivized Mainnet) is the next public milestone
+
+For local development and compilation, you don't need testnet access. The Compact compiler and proof server run entirely on your machine. Testnet access becomes relevant in Lesson 4.3 when you deploy.
+
+Subscribe to the [Midnight Validator Digest](https://mpc.midnight.network/midnight-validator-digest) for network status updates.
+
+---
+
+## What You Now Have
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `compact` CLI | Your PATH | Compile `.compact` files |
+| Proof server | Docker on port 6300 | Generate ZK proofs |
+| VS Code extension | VS Code | Syntax highlighting |
+
+## What's Next
+
+You're ready to compile your first contract. Lesson 4.2 walks through the compilation process and output artifacts.
+
+---
+
+## Assignment
+
+Confirm your setup by running the following checks and recording the output:
+
+1. `compact --version` — what version is installed?
+2. `compact compile --version` — what compiler version?
+3. `curl -s http://localhost:6300 -o /dev/null -w "%{http_code}"` — is the proof server responding?
+4. Create a file called `test.compact` with just `pragma language_version 0.22;` and run `compact compile test.compact`. What happens?
