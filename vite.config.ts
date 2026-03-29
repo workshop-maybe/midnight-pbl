@@ -9,14 +9,25 @@ export default defineConfig({
     tailwindcss(),
     reactRouter(),
     tsconfigPaths(),
-    // Mesh SDK transitive dependencies (@meshsdk/core-cst via @utxos/sdk)
-    // import Node builtins (crypto, stream, buffer). This plugin provides
-    // browser-compatible polyfills for the client bundle.
+    // Mesh SDK transitive deps need browser polyfills for crypto/stream/buffer.
+    // protocolImports: false prevents aliasing bare "stream" → "stream-browserify"
+    // which breaks SSR (stream-browserify uses CJS `module.exports` in ESM context).
     nodePolyfills({
-      include: ["crypto", "stream", "buffer"],
-      globals: {
-        Buffer: true,
-      },
+      include: ["crypto", "buffer"],
+      globals: { Buffer: true },
+      protocolImports: false,
     }),
   ],
+  ssr: {
+    // Let Node handle these natively during SSR — don't bundle or polyfill them.
+    // Mesh SDK is in .client.tsx files so it won't run during SSR, but Vite still
+    // resolves transitive deps during dev. Externalizing prevents polyfill conflicts.
+    external: [
+      "crypto",
+      "stream",
+      "buffer",
+      "util",
+      "events",
+    ],
+  },
 });
