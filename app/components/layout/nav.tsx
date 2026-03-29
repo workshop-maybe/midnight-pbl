@@ -15,6 +15,16 @@ const ConnectWallet = lazy(() =>
 );
 
 /**
+ * Lazy-load the DashboardLink — it's .client.tsx and reads auth
+ * context to conditionally render the Dashboard nav item.
+ */
+const DashboardLink = lazy(() =>
+  import("~/components/layout/dashboard-link.client").then((mod) => ({
+    default: mod.DashboardLink,
+  }))
+);
+
+/**
  * Wallet button placeholder shown during SSR and lazy load.
  */
 function WalletPlaceholder() {
@@ -50,12 +60,12 @@ export function Nav() {
           >
             Learn
           </Link>
-          <Link
-            to={MIDNIGHT_PBL.routes.dashboard}
-            className="text-sm text-mn-text-muted transition-colors hover:text-mn-text"
-          >
-            Dashboard
-          </Link>
+          {/* Dashboard link — only shown when authenticated */}
+          {typeof window === "undefined" ? null : (
+            <Suspense fallback={null}>
+              <DashboardLink />
+            </Suspense>
+          )}
 
           {/* Wallet connect button — lazy-loaded .client.tsx component */}
           {typeof window === "undefined" ? (

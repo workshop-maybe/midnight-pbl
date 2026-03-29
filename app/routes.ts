@@ -19,6 +19,7 @@ export default [
       route(":moduleCode/assignment", "routes/assignment-page.tsx"),
       route(":moduleCode/:lessonIndex", "routes/lesson-page.tsx"),
     ]),
+    route("dashboard", "./routes/dashboard.tsx"),
   ]),
 
   // API proxy — resource route (no component)
