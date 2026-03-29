@@ -143,10 +143,10 @@ export default function LearnLayout() {
         />
       </aside>
 
-      {/* Main content */}
-      <main className="learn-content">
+      {/* Main content — uses <div> not <main> because AppShell already has <main> */}
+      <div className="learn-content">
         <Outlet />
-      </main>
+      </div>
     </div>
   );
 }

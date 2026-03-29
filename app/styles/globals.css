@@ -80,7 +80,9 @@ body {
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  /* Note: overflow-x: hidden was removed here — it causes scroll
+     duplication artifacts on Safari/iOS when combined with
+     position: fixed/sticky elements (sidebar toggle, sticky nav). */
 }
 
 h1,
@@ -285,7 +287,6 @@ samp {
 .learn-layout {
   display: flex;
   min-height: calc(100vh - 64px); /* subtract nav height */
-  position: relative;
 }
 
 /* Sidebar — desktop: fixed left column, mobile: hidden overlay */
