@@ -24,7 +24,7 @@ export function LessonContent({ contentJson, markdown }: LessonContentProps) {
 
   if (!content) {
     return (
-      <div className="rounded-xl border border-midnight-border bg-midnight-surface/50 p-8 text-center">
+      <div className="rounded-sm border border-midnight-border bg-midnight-surface/50 p-8 text-center">
         <p className="text-mn-text-muted">
           No content available for this lesson yet.
         </p>

@@ -1,18 +1,17 @@
 /**
  * Course Overview Page
  *
- * Displays a grid of all modules in the course.
+ * Displays a vertical list of all modules in the course.
  * Data is loaded server-side via the gateway.server.ts client.
  *
- * Route: /learn (index of the learn prefix)
+ * Route: / (index)
  */
 
 import { data } from "react-router";
 import type { MetaFunction } from "react-router";
-import { useLoaderData } from "react-router";
+import { useLoaderData, Link } from "react-router";
 import { fetchCourseModules } from "~/lib/gateway.server";
 import { serverEnv } from "~/env.server";
-import { ModuleCard } from "~/components/course/module-card";
 import { getPageTitle } from "~/config/branding";
 import { MIDNIGHT_PBL } from "~/config/midnight";
 import type { CourseModule } from "~/hooks/api/course/use-course";
@@ -46,11 +45,17 @@ export function shouldRevalidate() {
 export default function CourseOverview() {
   const { modules } = useLoaderData<typeof loader>();
 
+  const sorted = [...(modules as CourseModule[])].sort((a, b) => {
+    const codeA = parseInt(a.moduleCode ?? "0", 10);
+    const codeB = parseInt(b.moduleCode ?? "0", 10);
+    return codeA - codeB;
+  });
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
       {/* Page header */}
       <div className="mb-8 sm:mb-10">
-        <h1 className="mb-3 text-2xl font-bold font-heading text-mn-text sm:text-3xl md:text-4xl">
+        <h1 className="mb-3 text-2xl font-bold font-heading text-mn-text sm:text-3xl">
           {MIDNIGHT_PBL.title}
         </h1>
         <p className="max-w-2xl text-base text-mn-text-muted sm:text-lg">
@@ -58,28 +63,45 @@ export default function CourseOverview() {
         </p>
       </div>
 
-      {/* Module grid */}
-      {modules.length === 0 ? (
-        <div className="rounded-xl border border-midnight-border bg-midnight-surface p-6 text-center sm:p-12">
-          <p className="text-lg text-mn-text-muted">
-            No modules available yet. Check back soon.
-          </p>
-        </div>
+      {/* Module list */}
+      {sorted.length === 0 ? (
+        <p className="text-mn-text-muted py-8">
+          No modules available yet.
+        </p>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {[...(modules as CourseModule[])]
-            .sort((a, b) => {
-              const codeA = parseInt(a.moduleCode ?? "0", 10);
-              const codeB = parseInt(b.moduleCode ?? "0", 10);
-              return codeA - codeB;
-            })
-            .map((module, index) => (
-            <ModuleCard
-              key={module.sltHash || module.moduleCode || index}
-              module={module}
-              index={index}
-            />
-          ))}
+        <div className="divide-y divide-midnight-border border-t border-midnight-border">
+          {sorted.map((module, index) => {
+            const moduleCode = module.moduleCode ?? "";
+            const sltCount = module.slts?.length ?? 0;
+
+            return (
+              <Link
+                key={module.sltHash || moduleCode || index}
+                to={MIDNIGHT_PBL.routes.module(moduleCode)}
+                prefetch="intent"
+                className="group flex items-baseline gap-4 py-4 transition-colors hover:bg-midnight-surface/50 sm:py-5 -mx-4 px-4 sm:-mx-6 sm:px-6"
+              >
+                <span className="text-sm font-mono text-mn-text-muted w-6 shrink-0">
+                  {index + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <span className="text-base font-medium text-mn-text group-hover:text-mn-primary-hover">
+                    {module.title ?? "Untitled Module"}
+                  </span>
+                  {module.description && (
+                    <p className="mt-1 text-sm text-mn-text-muted line-clamp-1">
+                      {module.description}
+                    </p>
+                  )}
+                </div>
+                {sltCount > 0 && (
+                  <span className="text-xs text-mn-text-muted shrink-0">
+                    {sltCount} {sltCount === 1 ? "lesson" : "lessons"}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

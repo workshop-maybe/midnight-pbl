@@ -118,7 +118,7 @@ export default function AssignmentPage() {
           <LessonContent contentJson={typedAssignment.contentJson} />
         </section>
       ) : (
-        <div className="mb-10 rounded-xl border border-midnight-border bg-midnight-surface p-4 text-center sm:p-8">
+        <div className="mb-10 rounded-sm border border-midnight-border bg-midnight-surface p-4 text-center sm:p-8">
           <p className="text-mn-text-muted">
             No assignment available for this module yet.
           </p>

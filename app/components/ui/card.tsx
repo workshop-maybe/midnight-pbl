@@ -23,7 +23,7 @@ export function Card({
   return (
     <Element
       className={`
-        rounded-xl border border-midnight-border bg-midnight-card
+        rounded-sm border border-midnight-border bg-midnight-card
         ${noHover ? "" : "transition-colors duration-200 hover:border-[#ffffff20]"}
         ${className}
       `.trim()}

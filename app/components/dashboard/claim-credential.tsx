@@ -94,7 +94,7 @@ export function ClaimCredential({
       <Card className="border-mn-primary/30">
         <CardBody className="py-6 text-center">
           <div className="mb-3 flex justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-mn-primary/30 bg-mn-primary/10">
+            <div className="flex h-12 w-12 items-center justify-center rounded-sm border border-mn-primary/30 bg-mn-primary/10">
               <TrophyIcon className="h-6 w-6 text-mn-primary" />
             </div>
           </div>
@@ -115,7 +115,7 @@ export function ClaimCredential({
       <Card className="border-success/30">
         <CardBody className="space-y-4">
           <TxStatus txState={txState} txHash={result.txHash} />
-          <div className="rounded-lg border border-success/30 bg-success/10 p-4 text-center">
+          <div className="rounded-sm border border-success/30 bg-success/10 p-4 text-center">
             <p className="text-sm font-medium text-success">
               Credential claimed successfully!
             </p>
@@ -170,7 +170,7 @@ export function ClaimCredential({
       <Card className="border-mn-primary/30">
         <CardBody className="space-y-4 py-6 text-center">
           <div className="mb-2 flex justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-mn-primary/30 bg-mn-primary/10">
+            <div className="flex h-12 w-12 items-center justify-center rounded-sm border border-mn-primary/30 bg-mn-primary/10">
               <TrophyIcon className="h-6 w-6 text-mn-primary-light" />
             </div>
           </div>
@@ -198,7 +198,7 @@ export function ClaimCredential({
     <Card noHover>
       <CardBody className="py-6 text-center">
         <div className="mb-3 flex justify-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-midnight-border bg-midnight-surface">
+          <div className="flex h-12 w-12 items-center justify-center rounded-sm border border-midnight-border bg-midnight-surface">
             <TrophyIcon className="h-6 w-6 text-mn-text-muted/40" />
           </div>
         </div>

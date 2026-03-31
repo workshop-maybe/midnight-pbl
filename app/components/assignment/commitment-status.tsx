@@ -106,7 +106,7 @@ export function CommitmentStatus({
 
       {/* Reviewer feedback (ASSIGNMENT_DENIED) */}
       {status === "ASSIGNMENT_DENIED" && feedback && (
-        <div className="rounded-lg border border-error/20 bg-error/5 p-4">
+        <div className="rounded-sm border border-error/20 bg-error/5 p-4">
           <h4 className="mb-1 text-sm font-medium text-error">
             Reviewer Feedback
           </h4>

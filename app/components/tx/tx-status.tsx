@@ -99,7 +99,7 @@ export function TxStatus({
   if (txState === "idle") return null;
 
   return (
-    <div className="space-y-4 rounded-xl border border-midnight-border bg-midnight-card p-3 sm:p-4">
+    <div className="space-y-4 rounded-sm border border-midnight-border bg-midnight-card p-3 sm:p-4">
       {/* Step list */}
       <div className="space-y-2">
         {TX_STEPS.map((step, index) => {
@@ -155,7 +155,7 @@ export function TxStatus({
 
       {/* Error message */}
       {error && (
-        <div className="rounded-lg border border-error/30 bg-error/10 p-3">
+        <div className="rounded-sm border border-error/30 bg-error/10 p-3">
           <p className="text-sm text-error">{error}</p>
         </div>
       )}
@@ -243,7 +243,7 @@ function WatchStatusBadge({ status }: { status: TxWatchStatus }) {
 
   return (
     <div
-      className={`rounded-lg border px-3 py-2 text-xs font-medium ${className}`}
+      className={`rounded-sm border px-3 py-2 text-xs font-medium ${className}`}
     >
       {status === "pending" || status === "confirmed" ? (
         <span className="flex items-center gap-2">

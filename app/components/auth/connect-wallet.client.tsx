@@ -54,7 +54,7 @@ export function ConnectWallet() {
   // Authenticating — show spinner
   if (isAuthenticating) {
     return (
-      <div className="flex h-9 items-center gap-2 rounded-lg border border-midnight-border bg-midnight-surface px-3">
+      <div className="flex h-9 items-center gap-2 rounded-sm border border-midnight-border bg-midnight-surface px-3">
         <svg
           className="h-4 w-4 animate-spin text-mn-primary-light"
           xmlns="http://www.w3.org/2000/svg"
@@ -116,7 +116,7 @@ export function ConnectWallet() {
 
   // Default: show CardanoWallet connect button
   return (
-    <div className="[&_button]:!rounded-lg [&_button]:!border [&_button]:!border-midnight-border [&_button]:!bg-midnight-surface [&_button]:!px-4 [&_button]:!py-2 [&_button]:!text-sm [&_button]:!text-mn-text [&_button]:!font-medium [&_button]:!transition-colors [&_button]:hover:!bg-midnight-card">
+    <div className="[&_button]:!rounded-sm [&_button]:!border [&_button]:!border-midnight-border [&_button]:!bg-midnight-surface [&_button]:!px-4 [&_button]:!py-2 [&_button]:!text-sm [&_button]:!text-mn-text [&_button]:!font-medium [&_button]:!transition-colors [&_button]:hover:!bg-midnight-card">
       <CardanoWallet />
     </div>
   );

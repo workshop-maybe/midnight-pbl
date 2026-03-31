@@ -58,7 +58,7 @@ function ConnectWalletPrompt({
   return (
     <div className="flex flex-col items-center justify-center gap-6 px-4 py-12 sm:py-20">
       {/* Wallet icon */}
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-midnight-border bg-midnight-card">
+      <div className="flex h-16 w-16 items-center justify-center rounded-sm border border-midnight-border bg-midnight-card">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
@@ -85,7 +85,7 @@ function ConnectWalletPrompt({
 
       {/* Show auth error if present */}
       {auth.authError && (
-        <div className="w-full max-w-sm rounded-lg border border-error/30 bg-error/10 px-4 py-3">
+        <div className="w-full max-w-sm rounded-sm border border-error/30 bg-error/10 px-4 py-3">
           <p className="text-sm text-error">{auth.authError}</p>
           {auth.scanFailed && (
             <div className="mt-3 flex flex-wrap items-center gap-2">

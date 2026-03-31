@@ -90,7 +90,7 @@ export function RegistrationFlow() {
   ].includes(txState);
 
   return (
-    <div className="mx-auto max-w-md space-y-6 rounded-2xl border border-midnight-border bg-midnight-card p-4 sm:p-6">
+    <div className="mx-auto max-w-md space-y-6 rounded-sm border border-midnight-border bg-midnight-card p-4 sm:p-6">
       <div className="space-y-2 text-center">
         <h2 className="font-heading text-xl font-semibold text-mn-text">
           Welcome to Midnight PBL
@@ -103,7 +103,7 @@ export function RegistrationFlow() {
 
       {txState === "success" ? (
         <div className="space-y-4 text-center">
-          <div className="rounded-lg border border-success/30 bg-success/10 p-4">
+          <div className="rounded-sm border border-success/30 bg-success/10 p-4">
             <p className="text-sm text-success">
               Access token minted successfully! Authenticating...
             </p>
@@ -135,7 +135,7 @@ export function RegistrationFlow() {
               placeholder="e.g., MyAlias123"
               maxLength={32}
               disabled={isInProgress}
-              className="w-full rounded-lg border border-midnight-border bg-midnight-surface px-4 py-2.5 text-sm text-mn-text placeholder:text-mn-text-muted/50 focus:border-mn-primary-light focus:outline-none focus:ring-1 focus:ring-mn-primary-light disabled:opacity-50"
+              className="w-full rounded-sm border border-midnight-border bg-midnight-surface px-4 py-2.5 text-sm text-mn-text placeholder:text-mn-text-muted/50 focus:border-mn-primary-light focus:outline-none focus:ring-1 focus:ring-mn-primary-light disabled:opacity-50"
             />
             <p className="text-xs text-mn-text-muted">
               This will be your on-chain identity. 1-32 characters,
@@ -168,7 +168,7 @@ export function RegistrationFlow() {
 
           {/* Error message */}
           {txError && (
-            <div className="rounded-lg border border-error/30 bg-error/10 p-3">
+            <div className="rounded-sm border border-error/30 bg-error/10 p-3">
               <p className="text-sm text-error">{txError}</p>
             </div>
           )}

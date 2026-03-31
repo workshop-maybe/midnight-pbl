@@ -117,7 +117,7 @@ function DashboardContent({
         </section>
 
         {/* Inline error for commitments */}
-        <div className="rounded-xl border border-error/30 bg-error/10 p-6 text-center">
+        <div className="rounded-sm border border-error/30 bg-error/10 p-6 text-center">
           <p className="text-sm text-error">
             {isExpired
               ? "Your session has expired. Please reconnect your wallet."

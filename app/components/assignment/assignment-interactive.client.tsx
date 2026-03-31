@@ -85,7 +85,7 @@ export default function AssignmentInteractive({
     return (
       <Card noHover>
         <CardBody className="py-6">
-          <div className="rounded-lg border border-error/30 bg-error/10 p-4">
+          <div className="rounded-sm border border-error/30 bg-error/10 p-4">
             <p className="text-sm text-error">
               {isExpired
                 ? "Your session has expired. Please reconnect your wallet."
@@ -301,7 +301,7 @@ function UnauthenticatedCTA({
     <Card noHover>
       <CardBody className="py-8 text-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-midnight-border bg-midnight-card">
+          <div className="flex h-14 w-14 items-center justify-center rounded-sm border border-midnight-border bg-midnight-card">
             <WalletIcon />
           </div>
           <div className="space-y-1">
@@ -337,7 +337,7 @@ function CommitmentLoadingSkeleton() {
 
 function MissingSltHashWarning() {
   return (
-    <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
+    <div className="rounded-sm border border-warning/30 bg-warning/10 p-4">
       <p className="text-sm text-warning">
         This module is not yet configured for on-chain submissions. The
         module SLT hash is missing. Please check back later.

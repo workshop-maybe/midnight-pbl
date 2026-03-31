@@ -29,7 +29,7 @@ const DashboardLink = lazy(() =>
  */
 function WalletPlaceholder() {
   return (
-    <div className="h-9 w-[140px] rounded-lg border border-midnight-border bg-midnight-surface" />
+    <div className="h-9 w-[140px] rounded-sm border border-midnight-border bg-midnight-surface" />
   );
 }
 
@@ -109,7 +109,7 @@ export function Nav() {
         {/* Mobile hamburger button (visible on <640px) */}
         <button
           type="button"
-          className="flex h-11 w-11 items-center justify-center rounded-lg text-mn-text transition-colors hover:bg-midnight-surface sm:hidden"
+          className="flex h-11 w-11 items-center justify-center rounded-sm text-mn-text transition-colors hover:bg-midnight-surface sm:hidden"
           onClick={() => setMobileOpen((prev) => !prev)}
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
@@ -132,7 +132,7 @@ export function Nav() {
               <Link
                 to={MIDNIGHT_PBL.routes.learn}
                 prefetch="intent"
-                className={`min-h-[44px] flex items-center rounded-lg px-3 text-sm transition-colors hover:bg-midnight-surface ${
+                className={`min-h-[44px] flex items-center rounded-sm px-3 text-sm transition-colors hover:bg-midnight-surface ${
                   isLearnActive ? "text-mn-text" : "text-mn-text-muted"
                 }`}
                 onClick={() => setMobileOpen(false)}

@@ -17,7 +17,7 @@ interface SLTListProps {
 export function SLTList({ slts, moduleCode }: SLTListProps) {
   if (slts.length === 0) {
     return (
-      <div className="rounded-xl border border-midnight-border bg-midnight-surface p-8 text-center">
+      <div className="rounded-sm border border-midnight-border bg-midnight-surface p-8 text-center">
         <p className="text-mn-text-muted">
           No learning targets available for this module yet.
         </p>
@@ -38,7 +38,7 @@ export function SLTList({ slts, moduleCode }: SLTListProps) {
             key={slt.sltId ?? index}
             to={MIDNIGHT_PBL.routes.lesson(moduleCode, lessonIndex)}
             prefetch="intent"
-            className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary rounded-xl"
+            className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary rounded-sm"
           >
             <Card noHover={false}>
               <CardBody className="flex items-start gap-4 min-h-[44px]">

@@ -4,7 +4,7 @@ interface SkeletonProps {
   width?: string;
   /** Height — Tailwind class like "h-4" or "h-12" */
   height?: string;
-  /** Use rounded-xl for card-shaped skeletons */
+  /** Use rounded-sm for card-shaped skeletons */
   rounded?: boolean;
 }
 
@@ -23,7 +23,7 @@ export function Skeleton({
     <div
       className={`
         animate-pulse bg-midnight-surface
-        ${rounded ? "rounded-xl" : "rounded-md"}
+        ${rounded ? "rounded-sm" : "rounded-md"}
         ${width} ${height}
         ${className}
       `.trim()}
@@ -38,7 +38,7 @@ export function Skeleton({
 export function SkeletonCard({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`rounded-xl border border-midnight-border bg-midnight-card p-6 ${className}`}
+      className={`rounded-sm border border-midnight-border bg-midnight-card p-6 ${className}`}
     >
       <Skeleton height="h-5" width="w-2/3" className="mb-3" />
       <Skeleton height="h-3" width="w-full" className="mb-2" />

@@ -147,7 +147,7 @@ export function EvidenceForm({
           placeholder="Describe what you built, learned, or discovered..."
           rows={5}
           disabled={isSubmitting || readOnly}
-          className="w-full rounded-lg border border-midnight-border bg-midnight-surface px-4 py-3 text-sm text-mn-text placeholder:text-mn-text-muted/50 focus:border-mn-primary-light focus:outline-none focus:ring-1 focus:ring-mn-primary-light disabled:opacity-50"
+          className="w-full rounded-sm border border-midnight-border bg-midnight-surface px-4 py-3 text-sm text-mn-text placeholder:text-mn-text-muted/50 focus:border-mn-primary-light focus:outline-none focus:ring-1 focus:ring-mn-primary-light disabled:opacity-50"
         />
       </div>
 
@@ -170,14 +170,14 @@ export function EvidenceForm({
                 onChange={(e) => updateUrl(index, e.target.value)}
                 placeholder="https://github.com/..."
                 disabled={isSubmitting || readOnly}
-                className="flex-1 rounded-lg border border-midnight-border bg-midnight-surface px-4 py-2.5 text-sm text-mn-text placeholder:text-mn-text-muted/50 focus:border-mn-primary-light focus:outline-none focus:ring-1 focus:ring-mn-primary-light disabled:opacity-50"
+                className="flex-1 rounded-sm border border-midnight-border bg-midnight-surface px-4 py-2.5 text-sm text-mn-text placeholder:text-mn-text-muted/50 focus:border-mn-primary-light focus:outline-none focus:ring-1 focus:ring-mn-primary-light disabled:opacity-50"
               />
               {!readOnly && (
                 <button
                   type="button"
                   onClick={() => removeUrl(index)}
                   disabled={isSubmitting || urls.length <= 1}
-                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg border border-midnight-border text-mn-text-muted transition-colors hover:border-error/30 hover:text-error disabled:opacity-30"
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-sm border border-midnight-border text-mn-text-muted transition-colors hover:border-error/30 hover:text-error disabled:opacity-30"
                   title="Remove URL"
                   aria-label="Remove URL"
                 >
@@ -203,7 +203,7 @@ export function EvidenceForm({
 
       {/* Validation error */}
       {validationError && (
-        <div className="rounded-lg border border-error/30 bg-error/10 p-3">
+        <div className="rounded-sm border border-error/30 bg-error/10 p-3">
           <p className="text-sm text-error">{validationError}</p>
         </div>
       )}

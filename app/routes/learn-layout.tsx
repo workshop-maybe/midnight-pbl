@@ -128,7 +128,7 @@ export default function LearnLayout() {
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
-            className="flex h-11 w-11 items-center justify-center rounded-lg text-mn-text-muted transition-colors hover:bg-midnight-surface hover:text-mn-text"
+            className="flex h-11 w-11 items-center justify-center rounded-sm text-mn-text-muted transition-colors hover:bg-midnight-surface hover:text-mn-text"
             aria-label="Close navigation"
           >
             <CloseIcon />

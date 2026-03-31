@@ -187,7 +187,7 @@ export function EnrollmentFlow({
           txState={txState}
           txHash={result.txHash}
         />
-        <div className="rounded-lg border border-success/30 bg-success/10 p-4 text-center">
+        <div className="rounded-sm border border-success/30 bg-success/10 p-4 text-center">
           <p className="text-sm font-medium text-success">
             {isUpdate
               ? "Assignment updated successfully!"
@@ -238,7 +238,7 @@ export function EnrollmentFlow({
     <div className="space-y-4">
       {/* Save error */}
       {saveError && (
-        <div className="rounded-lg border border-error/30 bg-error/10 p-3">
+        <div className="rounded-sm border border-error/30 bg-error/10 p-3">
           <p className="text-sm text-error">{saveError}</p>
         </div>
       )}
