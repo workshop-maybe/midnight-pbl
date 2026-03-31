@@ -23,7 +23,7 @@ import { CredentialsList } from "~/components/dashboard/credentials-list";
 import { ClaimCredential } from "~/components/dashboard/claim-credential";
 import { Button } from "~/components/ui/button";
 import { SkeletonCard } from "~/components/ui/skeleton";
-import { MIDNIGHT_PBL } from "~/config/midnight";
+import { MIDNIGHT_PBL, sortModulesByPedagogicalOrder } from "~/config/midnight";
 import { AuthExpiredError } from "~/lib/api-utils";
 import type { CourseModule } from "~/hooks/api/course/use-course";
 
@@ -103,8 +103,7 @@ function DashboardContent({
             Module Progress
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[...modules]
-              .sort((a, b) => parseInt(a.moduleCode ?? "0", 10) - parseInt(b.moduleCode ?? "0", 10))
+            {sortModulesByPedagogicalOrder(modules)
               .map((module, index) => (
               <ModuleProgress
                 key={module.sltHash || module.moduleCode || index}

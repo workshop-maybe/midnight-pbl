@@ -16,6 +16,21 @@ export const MIDNIGHT_PBL = {
   /** Number of modules in the course */
   moduleCount: 6,
 
+  /**
+   * Pedagogical order — maps module code to display position.
+   * The API returns modules in on-chain hash order and module codes
+   * don't match the curriculum sequence. This map defines the intended
+   * teaching order derived from lesson title prefixes (1.x through 6.x).
+   */
+  moduleOrder: {
+    "104": 1, // Midnight Architecture
+    "105": 2, // Compact Fundamentals
+    "106": 3, // Privacy Model
+    "102": 4, // Developer Workflow
+    "103": 5, // Credential Systems
+    "101": 6, // Dual-Chain Architecture
+  } as Record<string, number>,
+
   /** Route paths used throughout the app */
   routes: {
     landing: "/about",
@@ -28,6 +43,22 @@ export const MIDNIGHT_PBL = {
     dashboard: "/dashboard",
   },
 } as const;
+
+/**
+ * Sort modules by pedagogical order.
+ * Falls back to code order for modules not in the map.
+ */
+export function sortModulesByPedagogicalOrder<
+  T extends { moduleCode?: string },
+>(modules: T[]): T[] {
+  const order = MIDNIGHT_PBL.moduleOrder;
+  const max = Object.keys(order).length + 1;
+  return [...modules].sort(
+    (a, b) =>
+      (order[a.moduleCode ?? ""] ?? max) -
+      (order[b.moduleCode ?? ""] ?? max),
+  );
+}
 
 /**
  * Public environment values exposed to the client via root loader.
