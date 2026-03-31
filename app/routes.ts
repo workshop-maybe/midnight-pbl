@@ -27,9 +27,6 @@ export default [
     route("dashboard", "./routes/dashboard.tsx"),
   ]),
 
-  // About page — the old landing page
-  route("about", "routes/landing.tsx"),
-
   // API proxy — resource route (no component)
   route("api/gateway/*", "routes/api/gateway-proxy.ts"),
 

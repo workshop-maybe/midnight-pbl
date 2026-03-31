@@ -18,7 +18,6 @@ export const MIDNIGHT_PBL = {
 
   /** Route paths used throughout the app */
   routes: {
-    landing: "/about",
     learn: "/learn",
     home: "/",
     module: (moduleCode: string) => `/learn/${moduleCode}`,
