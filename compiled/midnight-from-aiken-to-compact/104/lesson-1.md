@@ -1,109 +1,196 @@
-# Lesson 1.1: Two VMs, Two Philosophies
+# Lesson 4.1: Installing the Compact Toolchain
 
-## Starting Point
+## What You're Setting Up
 
-You know the Cardano execution model. A transaction carries a script, the Plutus VM evaluates it, and if the script succeeds the transaction is valid. Scripts are pure functions — they can't modify state, they can only approve or reject a spend. The eUTxO model means every input is consumed and every output is created fresh. No mutable state. No side effects.
+This lesson gets three things running on your machine:
 
-Midnight makes different choices. Understanding where they diverge — and why — tells you what kinds of applications each chain is built for.
+1. **The Compact compiler** — compiles `.compact` files into zero-knowledge circuits
+2. **The proof server** — generates ZK proofs locally via Docker
+3. **The VS Code extension** — syntax highlighting and language support
 
----
-
-## The Plutus VM (Cardano)
-
-Cardano's Plutus VM is a CEK machine that evaluates lambda calculus. It's Turing-complete. Scripts receive a datum, a redeemer, and a script context, then return True or False. Nothing else.
-
-Key properties:
-
-- **Pure validation.** Scripts don't modify state. They decide whether a transaction is allowed.
-- **eUTxO model.** Every piece of state is a UTxO. To change state, you consume a UTxO and create a new one.
-- **Deterministic.** You can predict whether a transaction will succeed before submitting it.
-- **ExUnits budget.** CPU and memory limits are declared upfront and enforced during execution.
-- **Local reasoning.** A script only sees the transaction that invoked it. It can't read other contracts.
-
-If you've written Aiken validators, you've worked within these constraints. You decompose your logic into validators that approve or reject datum transitions, and you structure your state as UTxOs that get consumed and recreated.
+After this lesson, you'll be ready to compile and test contracts in Module 4.2.
 
 ---
 
-## The Impact VM (Midnight)
+## Prerequisites
 
-Midnight's Impact VM is a stack-based machine. It's explicitly non-Turing-complete — programs execute linearly with no backward jumps. Every program terminates.
-
-Key properties:
-
-- **State mutation.** Contracts have persistent state that is read and written directly. No UTxO recreation.
-- **Hybrid model.** Tokens use a UTXO-like commitment/nullifier scheme (ZSwap). Contract state uses an account model.
-- **Stack-based execution.** Programs manipulate a stack of context, effects, and contract state.
-- **Gas-bounded.** A declared gas bound determines fees and caps execution cost.
-- **Effects system.** Transactions declare their effects upfront: nullifier claims, coin spends, contract calls. The VM verifies that the program produces exactly those effects.
-
-The non-Turing-complete design is a deliberate tradeoff. Midnight generates zero-knowledge proofs for every transaction. Bounded execution means every proof terminates and every verification cost is predictable.
+- **macOS or Linux.** Windows is not supported.
+- **Docker Desktop** installed and running.
+- **Node.js** installed (the example repos use npm for build scripts).
+- **VS Code** (optional but recommended for the language extension).
 
 ---
 
-## Side by Side
+## Step 1: Install the Compact Compiler
 
-| Aspect | Cardano (Plutus VM) | Midnight (Impact VM) |
-|--------|--------------------|--------------------|
-| **Computation model** | Lambda calculus (CEK machine) | Stack-based, linear execution |
-| **Turing complete** | Yes | No |
-| **State model** | eUTxO — consume and recreate | Hybrid — UTXO for tokens, account for contracts |
-| **What scripts do** | Validate: approve or reject a spend | Execute: read state, compute, write state |
-| **State mutation** | Never — scripts are pure | Direct — contracts read/write ledger fields |
-| **Cost model** | ExUnits (CPU + memory) declared upfront | Gas bound declared upfront |
-| **Termination** | Guaranteed by ExUnits budget | Guaranteed by design (no backward jumps) |
-| **Privacy** | All data public | ZK proofs — private data never leaves user's machine |
-| **Block time** | ~20 seconds | ~6 seconds |
+Run the installer:
 
----
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
+```
 
-## What This Means in Practice
+Reload your shell configuration:
 
-The biggest shift is from validation to execution.
+```bash
+source ~/.zshrc    # macOS default
+# or
+source ~/.bashrc   # Linux
+```
 
-On Cardano, your Aiken validator is a gatekeeper. It inspects a proposed state transition and says yes or no. The transaction builder (off-chain code) is responsible for constructing the new state. The validator just checks it.
+**Verify it worked:**
 
-On Midnight, your Compact circuit is the computation itself. It reads the current contract state, performs logic, and writes the new state. There's no separate off-chain builder constructing the next state — the circuit does it. The ZK proof guarantees the computation was correct without revealing the private inputs.
+```bash
+compact --version
+```
 
-This changes how you think about contract design:
-
-- **Aiken:** You think about what transitions are valid. "Can this UTxO be spent under these conditions?"
-- **Compact:** You think about what the contract does. "Given this input, update the ledger state."
-
-The Impact VM's five fundamental value types — Null, Field-aligned binary cells, Maps, Arrays (up to 16 elements), and Merkle Trees (depth 1-32) — reflect this execution-first design. These aren't types for a type checker. They're the values that live on the stack during program execution.
+You should see a version number (e.g., `compact 0.5.0`). If you get `command not found`, check that the installer added the binary to your PATH. Run `which compact` to see where it was installed.
 
 ---
 
-## Why Non-Turing-Complete?
+## Step 2: Update to the Latest Compiler
 
-This is the question that surprises most Cardano developers, since Plutus is Turing-complete.
+The installer downloads the latest release, but if you've installed before, update explicitly:
 
-Midnight generates a zero-knowledge proof for every transaction. The proof says: "this computation was performed correctly on these private inputs." For that proof to be sound, the computation must be bounded. Unbounded loops would mean unbounded proof generation time and unbounded verification cost.
+```bash
+compact update
+```
 
-By making Impact non-Turing-complete — no backward jumps, linear execution only — every program's cost is known before it runs. The proof system can guarantee termination. This is why the 35+ opcodes include `jmp` (forward jump) and `branch` (conditional forward jump) but nothing that creates a loop.
+You should see output like `compact: aarch64-darwin -- 0.30.0 -- installed` or `Already up to date`. If there's no output at all, run `compact update 0.30.0` to install a specific version.
 
-The tradeoff: you can't express arbitrary recursion. In practice, this means you decompose recursive logic into bounded iterations or handle it in the witness layer (TypeScript), where the proof system doesn't need to verify every step.
+**Verify the compiler version:**
+
+```bash
+compact compile --version
+```
+
+This prints the compiler version specifically (which may differ from the CLI wrapper version). Both should be recent.
 
 ---
 
-## Questions to consider:
+## Step 3: Start the Proof Server
 
-- If Impact VM contracts mutate state directly, what happens to the concurrency advantages of the eUTxO model? How might Midnight handle multiple users calling the same contract?
-- Cardano's determinism lets you know a transaction will succeed before submitting it. Does Midnight's model preserve that property, or does direct state mutation introduce new failure modes?
-- ZK proofs guarantee computation correctness without revealing inputs. What does this change about the trust model between a contract and its users compared to Cardano's public validation?
+The proof server runs as a Docker container. It handles ZK proof generation — the computationally expensive part of Midnight's transaction flow.
+
+```bash
+docker run -p 6300:6300 midnightntwrk/proof-server:7.0.0 -- midnight-proof-server -v
+```
+
+This starts the server in the foreground with verbose logging. It listens on port 6300.
+
+**Verify it's running:**
+
+Open a new terminal and run:
+
+```bash
+curl -s http://localhost:6300 -o /dev/null -w "%{http_code}"
+```
+
+A response code (even an error code like `404` or `405`) confirms the server is listening. No response means Docker isn't running or the port is blocked.
+
+**If port 6300 is in use:**
+
+Map to a different host port:
+
+```bash
+docker run -p 6301:6300 midnightntwrk/proof-server:7.0.0 -- midnight-proof-server -v
+```
+
+Then use `http://localhost:6301` in your DApp configuration.
 
 ---
+
+## Step 4: Install the VS Code Extension
+
+Download the Compact language VSIX from the [GitHub releases](https://github.com/midnightntwrk/compact/releases).
+
+In VS Code:
+1. Open the Extensions panel
+2. Click the `...` menu at the top
+3. Select "Install from VSIX..."
+4. Choose the downloaded `.vsix` file
+
+**Verify it works:** Open or create a `.compact` file. You should see syntax highlighting for keywords like `pragma`, `ledger`, `circuit`, and `witness`.
+
+---
+
+## Troubleshooting
+
+**`compact: command not found` after installation**
+
+The installer adds the binary to `~/.cargo/bin` or a similar location. Check:
+
+```bash
+ls ~/.cargo/bin/compact 2>/dev/null && echo "Found in cargo bin" || echo "Not in cargo bin"
+```
+
+If found, add `~/.cargo/bin` to your PATH manually:
+
+```bash
+export PATH="$HOME/.cargo/bin:$PATH"
+```
+
+Add this line to your `~/.zshrc` or `~/.bashrc` to make it permanent.
+
+**Docker image pull fails**
+
+Make sure Docker Desktop is running. Then pull explicitly:
+
+```bash
+docker pull midnightntwrk/proof-server:7.0.0
+```
+
+If this fails with an authentication error, you may need to log in to Docker Hub:
+
+```bash
+docker login
+```
+
+**Proof server exits immediately**
+
+Check Docker logs:
+
+```bash
+docker logs $(docker ps -lq)
+```
+
+Common causes: insufficient memory (the proof server needs several GB), or another process already using port 6300.
+
+---
+
+## Current Network Status
+
+As of March 2026, Midnight's testnet landscape is in transition:
+
+- **Testnet-02** ended in February 2026
+- **Preview** is maintained by the core engineering team for rapid iteration
+- **Mōhalu** (Incentivized Mainnet) is the next public milestone
+
+For local development and compilation, you don't need testnet access. The Compact compiler and proof server run entirely on your machine. Testnet access becomes relevant in Lesson 4.3 when you deploy.
+
+Subscribe to the [Midnight Validator Digest](https://mpc.midnight.network/midnight-validator-digest) for network status updates.
+
+---
+
+## What You Now Have
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `compact` CLI | Your PATH | Compile `.compact` files |
+| Proof server | Docker on port 6300 | Generate ZK proofs |
+| VS Code extension | VS Code | Syntax highlighting |
 
 ## What's Next
 
-Lesson 1.2 examines how Midnight's dual-ledger system draws the boundary between public and private data.
+You're ready to compile your first contract. Lesson 4.2 walks through the compilation process and output artifacts.
 
 ---
 
 ## Assignment
 
-A colleague building on Cardano asks: "If Midnight's VM isn't Turing-complete, doesn't that make it less capable than Plutus?"
+Confirm your setup by running the following checks and recording the output:
 
-Write a response that addresses:
-- Why Midnight chose non-Turing-completeness and what it enables
-- How the validation-vs-execution difference changes what contracts can do
-- One scenario where Midnight's model handles something that would be difficult on Cardano, and one where Cardano's eUTxO model has an advantage
+1. `compact --version` — what version is installed?
+2. `compact compile --version` — what compiler version?
+3. `curl -s http://localhost:6300 -o /dev/null -w "%{http_code}"` — is the proof server responding?
+4. Create a file called `test.compact` with just `pragma language_version 0.22;` and run `compact compile test.compact`. What happens?

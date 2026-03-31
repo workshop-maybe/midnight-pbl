@@ -2,16 +2,16 @@
 
 ## Task
 
-Build a complete selective disclosure credential system for a professional services firm. This capstone assignment for Module 5 synthesizes all three credential patterns: signature-based verification, MerkleTree anonymous membership, and selective disclosure.
+Design the privacy architecture for a sealed-bid auction on Midnight and implement the TypeScript witness layer that supports it. This exercise tests your understanding of the full privacy pipeline: disclose() for visibility control, the proof generation lifecycle, and witness functions as the bridge between private data and ZK circuits.
 
 ## Deliverables
 
-1. An individual proof circuit: a consultant proves they hold a specific certification (e.g., AWS Solutions Architect) without revealing their name or other certifications. Include the Compact circuit with credential struct, signature verification, ownership binding, and specify what enters via witness, what gets checked via assert, and what gets disclosed
-2. A team proof circuit sketch: the firm proves it has at least 5 consultants with a specific certification, with individual identities remaining private. Use the MerkleTree + nullifier pattern to prevent double-counting. Specify ledger fields, witness signatures, and the aggregation logic
-3. An expiry check circuit: a client verifies that a consultant's certification has not expired, where the exact issue and expiry dates stay private and the client only learns "valid" or "expired." Write the assertion logic and explain the disclosure level (boolean proof)
+1. A sealed-bid auction design specifying: the submitBid circuit (what gets disclosed, what stays private, how the bid is stored on the ledger via commitment), the revealBid circuit (at what point and through which mechanism the bid amount becomes public), and the data flow through the privacy gradient
+2. A trace of the bulletin board's takeDown circuit through all four pipeline stages (compile, prove, submit, verify): what artifacts are produced, what private inputs enter the proof, what public outputs emerge, what the transaction contains, and at which stage a wrong secret key causes failure
+3. A TypeScript witness file for a credential contract with MerkleTree commitments and nullifiers, implementing: a CredentialPrivateState type, a loadCredential witness that returns the credential at the current counter position, and a deriveNullifier witness that derives a deterministic nullifier and increments the counter in private state
 
 ## Notes
 
 **Estimated time:** 90-120 minutes
 
-**Key patterns to combine:** signature-based verification (Lesson 5.1), MerkleTree commitments + nullifiers for anonymous membership (Lesson 5.2), selective disclosure with three disclosure levels: boolean proof, derived value, partial attribute (Lesson 5.3)
+**Key concepts to address:** the privacy gradient (fully private, proven but hidden, hashed on ledger, fully public), persistentHash vs persistentCommit, the four-stage pipeline (compile, prove, submit, verify), WitnessContext interface, the [newPrivateState, returnValue] tuple pattern

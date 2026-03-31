@@ -1,10 +1,10 @@
 ---
-title: "Midnight Architecture for Cardano Developers"
+title: "Developer Workflow — Compile, Prove, Deploy"
 code: 104
 ---
 
 ## SLTs
 
-1. Compare Midnight's execution model to Cardano's eUTxO model
-2. Describe the dual-ledger system and when data lives on the public ledger versus the private ledger
-3. Explain how Midnight relates to Cardano as a partner chain
+1. Install the Compact toolchain and run the proof server locally via Docker
+2. Compile a Compact contract and identify its output artifacts
+3. Deploy a contract to the Midnight preprod testnet and interact with it via the TypeScript SDK

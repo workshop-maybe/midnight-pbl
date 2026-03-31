@@ -2,16 +2,18 @@
 
 ## Task
 
-Explain the Midnight partner chain model and its technical differences from Cardano to a fellow Aiken developer. Your explanation should demonstrate understanding of the execution model differences, the dual-ledger privacy system, and the structural relationship between the two chains.
+Install the Compact toolchain, compile both example contracts (counter and bulletin board), deploy the counter to preprod (or standalone), and document the artifacts and workflow. This is a hands-on module where your deliverables prove you have a working development environment and understand the compilation and deployment pipeline.
 
 ## Deliverables
 
-1. A written comparison of Midnight's Impact VM and Cardano's Plutus VM that addresses: why Midnight chose non-Turing-completeness, how validation-vs-execution changes what contracts can do, and one scenario where each model has an advantage
-2. A data layout for a simple reputation system on Midnight specifying which data belongs on the public ledger, in a MerkleTree, or as private witness data, with justification for each choice
-3. An explanation of the partner chain model that covers: why Midnight is not a sidechain, what is shared between the two chains (wallet, validator set, token economics) and what is not (VM, language, consensus), and how the two chains complement each other
+1. Setup verification: output of `compact --version`, `compact compile --version`, and proof server health check (`curl -s http://localhost:6300 -o /dev/null -w "%{http_code}"`)
+2. Compilation analysis: for both the counter and bulletin board contracts, report the number of provable vs pure circuits, proving key and verification key sizes, and how `Maybe<Opaque<"string">>` in Compact maps to TypeScript in the generated `index.d.ts`
+3. Deployment walkthrough: deploy the counter contract to preprod (or standalone), record the contract address, increment three times noting proof generation time for each, confirm the counter reads 3, then exit and rejoin using saved seed and contract address to verify state persistence
 
 ## Notes
 
-**Estimated time:** 60-90 minutes
+**Estimated time:** 90-120 minutes (includes toolchain installation and first-compilation parameter download)
 
-**Key concepts to address:** Impact VM vs Plutus VM, eUTxO vs hybrid state model, disclose() and the public/private boundary, Native Token Observation Pallet, partner chain vs sidechain vs L2
+**Prerequisites:** macOS or Linux, Docker Desktop running, Node.js v22.15+
+
+**Common issues:** first compilation downloads ~500MB universal parameters; Apple Silicon Macs may need Docker VMM enabled; DUST generation takes time after faucet funding

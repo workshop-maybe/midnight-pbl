@@ -14,7 +14,7 @@ import { fetchCourseModules } from "~/lib/gateway.server";
 import { serverEnv } from "~/env.server";
 import { ModuleCard } from "~/components/course/module-card";
 import { getPageTitle } from "~/config/branding";
-import { MIDNIGHT_PBL, sortModulesByPedagogicalOrder } from "~/config/midnight";
+import { MIDNIGHT_PBL } from "~/config/midnight";
 import type { CourseModule } from "~/hooks/api/course/use-course";
 
 export async function loader() {
@@ -67,7 +67,12 @@ export default function CourseOverview() {
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {sortModulesByPedagogicalOrder(modules as CourseModule[])
+          {[...(modules as CourseModule[])]
+            .sort((a, b) => {
+              const codeA = parseInt(a.moduleCode ?? "0", 10);
+              const codeB = parseInt(b.moduleCode ?? "0", 10);
+              return codeA - codeB;
+            })
             .map((module, index) => (
             <ModuleCard
               key={module.sltHash || module.moduleCode || index}

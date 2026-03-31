@@ -1,182 +1,110 @@
-# Lesson 6.3: When to Use Midnight, When to Use Cardano
+# Lesson 1.3: Midnight's Relationship to Cardano
 
-## The Decision
+## What Midnight Is Not
 
-You now know both platforms. You can write Aiken validators for Cardano's eUTxO model. You can write Compact circuits for Midnight's privacy model. The question for any new project is: which one?
+If you've been building on Cardano, you've probably heard Midnight described as a sidechain, a layer 2, or "Cardano's privacy chain." None of these are quite right.
 
-The answer is rarely "always Midnight" or "always Cardano." It depends on what your application needs to prove and who should see the proof.
+- **Not a sidechain.** A sidechain inherits its parent chain's consensus and typically uses the same execution model. Midnight does neither.
+- **Not a Layer 2.** Layer 2 solutions settle transactions back to a base layer for finality. Midnight has its own finality.
+- **Not a fork of Cardano.** Midnight isn't built on the Cardano node. It's built on the Polkadot SDK (Substrate).
 
----
-
-## The Decision Framework
-
-Three questions determine where a feature belongs:
-
-### 1. Does the verifier need to see the data, or just the result?
-
-**If the data itself is the value** → Cardano.
-
-A public credential registry. A token balance that other contracts read. An NFT whose metadata is the point. The data is public because public visibility is the feature.
-
-**If only the result matters** → Midnight.
-
-An age check. A team capability proof. A credential verification. The verifier needs "yes, this person qualifies" — not the person's date of birth, team roster, or credential details.
-
-### 2. Do other contracts need to compose with this state?
-
-**If yes** → Cardano.
-
-Cardano's eUTxO model enables composability. Other projects can set prerequisites based on your on-chain state without negotiating API integrations. Andamio's Access Tokens, XP tokens, and credential NFTs work because any contract can read them.
-
-**If no** → Either chain works.
-
-Midnight contracts are more isolated. There's no cross-contract state reading. If your feature doesn't need composability, the composability advantage of Cardano doesn't apply.
-
-### 3. Would revealing this data harm the user?
-
-**If no harm** → Cardano (simpler, more composable).
-
-Most credential issuance. Course completion records. Token transfers between public addresses. There's nothing sensitive about proving you completed a course.
-
-**If potential harm** → Midnight.
-
-Personal identity attributes. Salary data. Medical qualifications. Team composition. Any case where knowing "who holds what" could be used against the holder — for profiling, discrimination, or competitive intelligence.
+Midnight is a **partner chain** — an independent blockchain with a structural relationship to Cardano. It has its own consensus, its own ledger, its own VM, and its own smart contract language. But it draws on Cardano for validator selection and token economics.
 
 ---
 
-## Use Case Evaluation
+## What's Shared, What's Not
 
-### Use Case 1: Course Completion Credentials
+This is the part that matters most for Aiken developers.
 
-**Scenario:** A learning platform issues credentials when students complete courses.
+| Aspect | Shared? | Details |
+|--------|---------|---------|
+| **Wallet** | Yes | Lace wallet supports both networks. Same wallet, separate chains. |
+| **Validator set** | Partially | Midnight selects validators from Cardano SPOs. 180+ participated in Testnet-02. |
+| **Token economics** | Linked | cNIGHT tokens on Cardano map to DUST generation capacity on Midnight via the Native Token Observation Pallet. |
+| **VM** | No | Cardano runs the Plutus VM (CEK machine). Midnight runs the Impact VM (stack-based, non-Turing-complete). |
+| **Smart contract language** | No | Cardano uses Plutus/Aiken. Midnight uses Compact. |
+| **Execution model** | No | Cardano uses eUTxO. Midnight uses a hybrid: UTXO for tokens, account-based for contract state. |
+| **Consensus** | No | Cardano uses Ouroboros. Midnight uses Substrate-based consensus (AURA for block production, GRANDPA for finality). |
+| **Block time** | No | Cardano: 20 seconds. Midnight: 6 seconds. |
 
-| Question | Answer | Chain |
-|----------|--------|-------|
-| Does the verifier need the data or just the result? | The data — employers want to see which courses were completed | Cardano |
-| Do other contracts compose with this? | Yes — prerequisites, XP calculations, enrollment logic | Cardano |
-| Would revealing harm the user? | No — course completion is usually a positive signal | Cardano |
-
-**Verdict: Cardano.** This is Andamio's current model and it works well. Public credentials on Cardano are the right choice when the credential itself is the value.
-
-### Use Case 2: Age-Gated Access
-
-**Scenario:** A wine shop verifies customers are over 21.
-
-| Question | Answer | Chain |
-|----------|--------|-------|
-| Does the verifier need the data or just the result? | Just the result — "over 21" is enough | Midnight |
-| Do other contracts compose with this? | No — age check is per-transaction | Midnight |
-| Would revealing harm the user? | Yes — date of birth is PII | Midnight |
-
-**Verdict: Midnight.** This is the Brick Towers pattern. The credential stays private. The proof is sufficient.
-
-### Use Case 3: Team Capability Proof for Enterprise Sales
-
-**Scenario:** A consulting firm proves to a client that their team has 15 certified cloud architects.
-
-| Question | Answer | Chain |
-|----------|--------|-------|
-| Does the verifier need the data or just the result? | Just the result — count is enough | Midnight |
-| Do other contracts compose with this? | No — this is a point-in-time attestation | Midnight |
-| Would revealing harm the user? | Yes — individual identities and exact capabilities are competitive intelligence | Midnight |
-
-**Verdict: Midnight.** Individual certifications could be on Cardano (public registry), but the team aggregation must be on Midnight.
-
-### Use Case 4: Token Transfer
-
-**Scenario:** Sending ADA or a custom token to another address.
-
-| Question | Answer | Chain |
-|----------|--------|-------|
-| Does the verifier need the data or just the result? | The data — the transfer itself is the point | Cardano |
-| Do other contracts compose with this? | Yes — token balances are read by every DeFi contract | Cardano |
-| Would revealing harm the user? | Sometimes — balance visibility is a concern for some users | Depends |
-
-**Verdict: Usually Cardano.** Token transfers are the native use case. If balance privacy matters (large holdings, corporate treasury), Midnight's ZSwap provides shielded transfers. Most users don't need this.
-
-### Use Case 5: Anonymous Voting
-
-**Scenario:** A DAO conducts a governance vote where members should not be identifiable from their votes.
-
-| Question | Answer | Chain |
-|----------|--------|-------|
-| Does the verifier need the data or just the result? | Just the result — vote counts | Midnight |
-| Do other contracts compose with this? | No — votes are consumed once | Midnight |
-| Would revealing harm the user? | Yes — vote buying, coercion, social pressure | Midnight |
-
-**Verdict: Midnight.** MerkleTree membership + nullifiers (Lesson 5.2) is the exact pattern. Each member proves they're in the voter set without revealing which member they are. The nullifier prevents double-voting.
-
-### Use Case 6: Public Audit Trail
-
-**Scenario:** A supply chain platform records who handled goods at each stage.
-
-| Question | Answer | Chain |
-|----------|--------|-------|
-| Does the verifier need the data or just the result? | The data — the whole point is traceability | Cardano |
-| Do other contracts compose with this? | Yes — downstream handlers need to verify upstream records | Cardano |
-| Would revealing harm the user? | No — transparency is the value proposition | Cardano |
-
-**Verdict: Cardano.** Public accountability requires public data.
+The bottom line: if you've written Aiken validators, you know the Cardano side. But your Aiken code will not run on Midnight. The VM, the state model, and the compilation target are all different. Module 2 will cover what changes and what translates.
 
 ---
 
-## The Dual-Chain Pattern
+## The Partner Chain Model
 
-Some applications need both. The dual-chain architecture from Lesson 6.1 applies when:
+The term "partner chain" describes a specific kind of relationship. Midnight is independent — it runs its own consensus and finalizes its own transactions — but it has two structural connections to Cardano:
 
-- **The trust anchor should be public** (Cardano) — credential existence, issuer identity, revocation status
-- **The usage should be private** (Midnight) — who holds what, selective disclosure, team aggregation
+### 1. Validator Selection
 
-This isn't doubling your work. The two chains serve different functions:
+Midnight doesn't build its own validator set from scratch. Instead, it observes Cardano to determine which stake pool operators are eligible to produce blocks on Midnight. This means Cardano SPOs can opt in to also validate Midnight blocks, using the same infrastructure and stake that secures Cardano.
 
-```
-Cardano: "Credential X exists and is valid"     → public trust
-Midnight: "I hold credential X and meet claim Y" → private proof
-```
+The network launched with 12 trusted nodes operated by Shielded (the organization behind Midnight), plus community-registered SPO nodes. A parameter called 'D' — similar to Cardano's own decentralization parameter — controls the balance between permissioned validators and community nodes.
 
-The current constraints (Lesson 6.2) mean coordination is manual. But the separation of concerns is clean, and it works today.
+### 2. Token Economics
 
----
+Midnight's economic link to Cardano works through the **Native Token Observation Pallet**. This component watches Cardano for movements of cNIGHT tokens. When cNIGHT moves on Cardano, corresponding DUST creation or destruction events fire on Midnight's ledger.
 
-## When NOT to Use Midnight
+DUST is Midnight's gas token — you need it to pay for transactions and proof verification. The 1:1 observation link means Midnight's economic activity is anchored to a Cardano-native asset.
 
-Midnight adds complexity: a second language (Compact), proof generation latency, a different deployment model. Don't use it when:
-
-- **Everything is public anyway.** If your users want their credentials displayed, Cardano is simpler.
-- **Composability is critical.** If other contracts need to read your state, Cardano's eUTxO model is better suited.
-- **Performance matters more than privacy.** Proof generation takes time. Cardano transactions are faster for simple operations.
-- **The anonymity set is too small.** If there are only 3 people who could hold a credential, a MerkleTree proof doesn't provide meaningful anonymity.
-- **You don't have a threat model.** Privacy for its own sake adds cost without benefit. Know what you're protecting and from whom.
+This is a one-way observation: Midnight reads Cardano state. There is no general-purpose mechanism for Cardano contracts to read Midnight state. (Module 6 will cover what this means for dual-chain architectures.)
 
 ---
 
-## When You MUST Use Midnight
+## Who Builds Midnight
 
-Some applications can't work without privacy:
+Midnight is developed by **Shielded**, a separate entity from IOG (Input Output Global). The foundational research — the Kachina protocol (published at IEEE CSF 2021) and the ZSwap protocol — was produced by IOG researchers, and Charles Hoskinson first announced Midnight at the Cardano Summit in November 2022. But Shielded operates the network, the developer tools, and the documentation independently.
 
-- **Regulatory compliance with data minimization.** GDPR, HIPAA, and similar regulations require proving facts without collecting the underlying data.
-- **Identity verification without identity disclosure.** Age checks, certification verification, employment verification — anywhere PII is involved.
-- **Competitive intelligence protection.** Team composition, capability proofs, internal credentialing — data that competitors could exploit.
-- **Anti-coercion systems.** Voting, whistleblower protection, anonymous reporting — where revealing participation would create pressure.
+---
 
-For these, Cardano alone isn't sufficient. You need the ZK proof layer.
+## Where Midnight Is Now
+
+Midnight is pre-mainnet. The roadmap has four phases, named in Hawaiian:
+
+| Phase | Name | What Happens |
+|-------|------|-------------|
+| 1 | **Hilo** | Token Genesis — cNIGHT distribution begins |
+| 2 | **Kukolu** | Federated Mainnet — core team + selected validators |
+| 3 | **Mōhalu** | Incentivized Mainnet — SPO onboarding, community validation |
+| 4 | **Hua** | Full Decentralization — community-governed |
+
+As of March 2026, Testnet-02 has ended and the team is approaching the Kukolu phase. A preprod testnet is maintained for active development. Governance is currently centralized via a sudo key, with decentralization planned for later phases.
+
+For developers, this means: you can build and deploy on preprod today, but expect breaking changes between releases. The Compact compiler is at version 0.30.0, with the CLI at version 0.5.0.
+
+---
+
+## Why This Matters for Aiken Developers
+
+Understanding the partner chain model tells you three things:
+
+1. **Your Cardano skills are still valuable.** The public credential layer, the validator set, and the economic anchor all live on Cardano. Midnight adds a privacy layer on top — it doesn't replace what you've built.
+
+2. **You need a new language, not just a new framework.** Compact is not Aiken with privacy features bolted on. It's a different language for a different VM with a different execution model. The concepts translate (Module 2 will show you how), but the code does not.
+
+3. **The two chains are complementary, not competitive.** Cardano handles what should be public and verifiable. Midnight handles what should be private but provable. A credential system that uses both — public registry on Cardano, private attributes on Midnight — is stronger than either chain alone.
 
 ---
 
 ## Questions to consider:
 
-- A DAO wants governance voting where vote counts are public but individual votes are private. They also want delegation — members can delegate their voting power. Can delegation work with anonymous voting? What's the tradeoff?
-- An employer verifies a job applicant's credentials. The applicant uses Midnight to prove "I have 5+ years experience at companies in the Fortune 500." The employer doesn't see which companies. Is this useful? What does the employer actually need to make a hiring decision?
-- If Midnight adds latency (proof generation) and complexity (second language), what's the threshold where the privacy benefit justifies the cost? Is there a heuristic?
+- Midnight selects validators from Cardano SPOs. What happens if the majority of selected validators go offline? Does Midnight inherit Cardano's liveness properties or does it have its own?
+- The Native Token Observation Pallet is a one-way bridge — Midnight reads Cardano. What would it take to build the reverse direction? What trust assumptions would change?
+- Midnight is built on the Polkadot SDK (Substrate) but is not a Polkadot parachain. What does it gain from Substrate without joining the Polkadot ecosystem?
+
+---
+
+## What's Next
+
+Lesson 1.1 and 1.2 covered the technical differences — execution models and the dual-ledger system. Now that you understand the structural relationship, Module 2 introduces the language you'll use to build on Midnight: Compact.
 
 ---
 
 ## Assignment
 
-Evaluate three use cases from your own domain. For each one:
+Explain the Midnight partner chain model to a fellow Aiken developer who assumes Midnight is "just a Cardano sidechain." In your explanation, address:
 
-1. Apply the three-question framework (data vs. result, composability, harm)
-2. Decide: Cardano only, Midnight only, or dual-chain
-3. If dual-chain, specify what lives on each chain and how they coordinate
-4. Identify the specific privacy property that Midnight provides (or explain why Cardano is sufficient)
-5. Name one risk of choosing the wrong chain for this use case
+- Why it's not a sidechain
+- What is shared between the two chains and what is not
+- Why an Aiken validator won't run on Midnight
+- How the two chains can be used together

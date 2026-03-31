@@ -1,110 +1,250 @@
-# Lesson 1.3: Midnight's Relationship to Cardano
+# Lesson 4.3: Deploying to Preprod
 
-## What Midnight Is Not
+## What You'll Do
 
-If you've been building on Cardano, you've probably heard Midnight described as a sidechain, a layer 2, or "Cardano's privacy chain." None of these are quite right.
-
-- **Not a sidechain.** A sidechain inherits its parent chain's consensus and typically uses the same execution model. Midnight does neither.
-- **Not a Layer 2.** Layer 2 solutions settle transactions back to a base layer for finality. Midnight has its own finality.
-- **Not a fork of Cardano.** Midnight isn't built on the Cardano node. It's built on the Polkadot SDK (Substrate).
-
-Midnight is a **partner chain** — an independent blockchain with a structural relationship to Cardano. It has its own consensus, its own ledger, its own VM, and its own smart contract language. But it draws on Cardano for validator selection and token economics.
+Deploy the counter contract to Midnight's preprod testnet, fund a wallet with test tokens, and interact with the deployed contract through the CLI. This is your first on-chain transaction on Midnight.
 
 ---
 
-## What's Shared, What's Not
+## Prerequisites
 
-This is the part that matters most for Aiken developers.
+- Compact toolchain installed and contracts compiled (Lessons 4.1 and 4.2)
+- Docker Desktop running
+- The example-counter repo cloned and built:
 
-| Aspect | Shared? | Details |
-|--------|---------|---------|
-| **Wallet** | Yes | Lace wallet supports both networks. Same wallet, separate chains. |
-| **Validator set** | Partially | Midnight selects validators from Cardano SPOs. 180+ participated in Testnet-02. |
-| **Token economics** | Linked | cNIGHT tokens on Cardano map to DUST generation capacity on Midnight via the Native Token Observation Pallet. |
-| **VM** | No | Cardano runs the Plutus VM (CEK machine). Midnight runs the Impact VM (stack-based, non-Turing-complete). |
-| **Smart contract language** | No | Cardano uses Plutus/Aiken. Midnight uses Compact. |
-| **Execution model** | No | Cardano uses eUTxO. Midnight uses a hybrid: UTXO for tokens, account-based for contract state. |
-| **Consensus** | No | Cardano uses Ouroboros. Midnight uses Substrate-based consensus (AURA for block production, GRANDPA for finality). |
-| **Block time** | No | Cardano: 20 seconds. Midnight: 6 seconds. |
-
-The bottom line: if you've written Aiken validators, you know the Cardano side. But your Aiken code will not run on Midnight. The VM, the state model, and the compilation target are all different. Module 2 will cover what changes and what translates.
+```bash
+cd example-counter
+npm install
+cd contract && npm run compact && npm run build && cd ..
+cd counter-cli && npm install && cd ..
+```
 
 ---
 
-## The Partner Chain Model
+## Step 1: Start the Proof Server and CLI
 
-The term "partner chain" describes a specific kind of relationship. Midnight is independent — it runs its own consensus and finalizes its own transactions — but it has two structural connections to Cardano:
+The counter CLI can auto-start the proof server:
 
-### 1. Validator Selection
+```bash
+cd example-counter/counter-cli
+npm run preprod-ps
+```
 
-Midnight doesn't build its own validator set from scratch. Instead, it observes Cardano to determine which stake pool operators are eligible to produce blocks on Midnight. This means Cardano SPOs can opt in to also validate Midnight blocks, using the same infrastructure and stake that secures Cardano.
+This pulls the Docker image (`midnightntwrk/proof-server:7.0.0`), starts the proof server on port 6300, and launches the CLI.
 
-The network launched with 12 trusted nodes operated by Shielded (the organization behind Midnight), plus community-registered SPO nodes. A parameter called 'D' — similar to Cardano's own decentralization parameter — controls the balance between permissioned validators and community nodes.
+**Verify the proof server is running:**
 
-### 2. Token Economics
+The CLI output should include the proof server startup. If you see connection errors, start the proof server manually in a separate terminal:
 
-Midnight's economic link to Cardano works through the **Native Token Observation Pallet**. This component watches Cardano for movements of cNIGHT tokens. When cNIGHT moves on Cardano, corresponding DUST creation or destruction events fire on Midnight's ledger.
+```bash
+cd example-counter/counter-cli
+docker compose -f proof-server.yml up
+```
 
-DUST is Midnight's gas token — you need it to pay for transactions and proof verification. The 1:1 observation link means Midnight's economic activity is anchored to a Cardano-native asset.
+Wait for:
+```
+INFO actix_server::server: starting service: "actix-web-service-0.0.0.0:6300", workers: 24, listening on: 0.0.0.0:6300
+```
 
-This is a one-way observation: Midnight reads Cardano state. There is no general-purpose mechanism for Cardano contracts to read Midnight state. (Module 6 will cover what this means for dual-chain architectures.)
+Then in another terminal:
+```bash
+cd example-counter/counter-cli
+npm run preprod
+```
 
----
-
-## Who Builds Midnight
-
-Midnight is developed by **Shielded**, a separate entity from IOG (Input Output Global). The foundational research — the Kachina protocol (published at IEEE CSF 2021) and the ZSwap protocol — was produced by IOG researchers, and Charles Hoskinson first announced Midnight at the Cardano Summit in November 2022. But Shielded operates the network, the developer tools, and the documentation independently.
-
----
-
-## Where Midnight Is Now
-
-Midnight is pre-mainnet. The roadmap has four phases, named in Hawaiian:
-
-| Phase | Name | What Happens |
-|-------|------|-------------|
-| 1 | **Hilo** | Token Genesis — cNIGHT distribution begins |
-| 2 | **Kukolu** | Federated Mainnet — core team + selected validators |
-| 3 | **Mōhalu** | Incentivized Mainnet — SPO onboarding, community validation |
-| 4 | **Hua** | Full Decentralization — community-governed |
-
-As of March 2026, Testnet-02 has ended and the team is approaching the Kukolu phase. A preprod testnet is maintained for active development. Governance is currently centralized via a sudo key, with decentralization planned for later phases.
-
-For developers, this means: you can build and deploy on preprod today, but expect breaking changes between releases. The Compact compiler is at version 0.30.0, with the CLI at version 0.5.0.
+**Apple Silicon note:** If the proof server hangs, open Docker Desktop → Settings → General → "Virtual Machine Options" → select **Docker VMM**. Restart Docker.
 
 ---
 
-## Why This Matters for Aiken Developers
+## Step 2: Create a Wallet
 
-Understanding the partner chain model tells you three things:
+The CLI presents options:
 
-1. **Your Cardano skills are still valuable.** The public credential layer, the validator set, and the economic anchor all live on Cardano. Midnight adds a privacy layer on top — it doesn't replace what you've built.
+```
+[1] Create a new wallet
+[2] Restore wallet from seed
+```
 
-2. **You need a new language, not just a new framework.** Compact is not Aiken with privacy features bolted on. It's a different language for a different VM with a different execution model. The concepts translate (Module 2 will show you how), but the code does not.
+Choose **[1]**. The system generates a headless wallet (separate from Lace or other browser wallets) and displays:
 
-3. **The two chains are complementary, not competitive.** Cardano handles what should be public and verifiable. Midnight handles what should be private but provable. A credential system that uses both — public registry on Cardano, private attributes on Midnight — is stronger than either chain alone.
+```
+──────────────────────────────────────────────────────────────
+  Wallet Overview                            Network: preprod
+──────────────────────────────────────────────────────────────
+  Seed: <64-character hex string>
+
+  Unshielded Address (send tNight here):
+  mn_addr_preprod1...
+──────────────────────────────────────────────────────────────
+```
+
+Save the seed and unshielded address. You'll need the seed to restore this wallet in future sessions.
 
 ---
 
-## Questions to consider:
+## Step 3: Fund Your Wallet
 
-- Midnight selects validators from Cardano SPOs. What happens if the majority of selected validators go offline? Does Midnight inherit Cardano's liveness properties or does it have its own?
-- The Native Token Observation Pallet is a one-way bridge — Midnight reads Cardano. What would it take to build the reverse direction? What trust assumptions would change?
-- Midnight is built on the Polkadot SDK (Substrate) but is not a Polkadot parachain. What does it gain from Substrate without joining the Polkadot ecosystem?
+1. Copy the unshielded address (`mn_addr_preprod1...`)
+2. Visit the preprod faucet: **https://faucet.preprod.midnight.network**
+3. Paste your address and request tNight tokens
+
+The CLI detects incoming funds automatically. No manual refresh needed.
+
+**If the faucet is unavailable:** The preprod network is in active development. If the faucet is down, try again later or check the [Midnight Discord](https://discord.gg/midnight-network) for status updates.
+
+---
+
+## Step 4: Wait for DUST Generation
+
+After receiving tNight, the CLI registers your NIGHT UTXOs for dust generation. DUST is Midnight's gas token — non-transferable, tied to your NIGHT holdings. You need it for every transaction.
+
+The CLI shows progress:
+
+```
+✓ Registering 1 NIGHT UTXO(s) for dust generation
+✓ Waiting for dust to generate
+✓ Configuring providers
+```
+
+DUST generates over time. The CLI waits until you have enough to deploy. When ready:
+
+```
+──────────────────────────────────────────────────────────────
+  Contract Actions                    DUST: 405,083,000,000,000
+──────────────────────────────────────────────────────────────
+  [1] Deploy a new counter contract
+  [2] Join an existing counter contract
+  [3] Monitor DUST balance
+  [4] Exit
+```
+
+---
+
+## Step 5: Deploy the Counter Contract
+
+Choose **[1]** to deploy. The CLI:
+
+1. Builds the deployment transaction
+2. Sends the circuit to the proof server for proof generation
+3. Balances the transaction (attaches DUST for gas)
+4. Submits the transaction to the preprod network
+
+```
+✓ Deploying counter contract
+Contract deployed at: <contract address>
+```
+
+Save the contract address. You'll need it to reconnect in future sessions.
+
+**What just happened:** The deployment transaction included the contract's initial state (round = 0), the verification keys for the `increment` circuit, and a ZK proof that the constructor executed correctly. The network verified the proof, accepted the transaction, and the contract is now live on preprod.
+
+---
+
+## Step 6: Interact with the Contract
+
+After deployment, the counter menu appears:
+
+```
+[1] Increment counter
+[2] Display current counter value
+[3] Exit
+```
+
+**Increment the counter** (option [1]):
+
+The CLI calls the `increment` circuit. The proof server generates a ZK proof, the transaction is submitted, and the on-chain counter increments by 1. Each increment is a real transaction on Midnight preprod.
+
+**Display current value** (option [2]):
+
+Reads the current `round` value from the on-chain ledger state.
+
+---
+
+## Step 7: Rejoin in a Future Session
+
+Next time you run the CLI:
+
+1. Choose **[2]** to restore wallet from seed
+2. Enter your saved seed
+3. Wait for sync and DUST generation
+4. Choose **[2]** to join existing contract
+5. Enter your saved contract address
+
+The CLI reconnects to the deployed contract. You can continue incrementing.
+
+---
+
+## What's Happening Under the Hood
+
+Each `increment` call follows the pipeline from Lesson 3.2:
+
+```
+CLI calls increment()
+    → Runtime evaluates circuit (round.increment(1))
+    → Proof server generates ZK proof using increment.prover key
+    → Transaction: proof + new state (round = N+1) + gas
+    → Network verifies proof using increment.verifier key
+    → Ledger updated: round = N+1
+```
+
+The counter is simple enough that proof generation is nearly instant. More complex circuits (like the bulletin board's `post`) take longer because they include hash computation and `disclose()` operations.
+
+---
+
+## The Standalone Alternative
+
+If preprod is unavailable, run everything locally:
+
+```bash
+cd example-counter/counter-cli
+npm run standalone
+```
+
+This starts three Docker containers:
+- `midnightntwrk/midnight-node:0.20.0` — a local Midnight node
+- `midnightntwrk/indexer-standalone:3.0.0` — a local blockchain indexer
+- `midnightntwrk/proof-server:7.0.0` — the proof server
+
+No faucet needed — the local network provides funds automatically. Good for development when you don't need real testnet interaction.
+
+---
+
+## Troubleshooting
+
+**`connect ECONNREFUSED 127.0.0.1:6300`**
+
+The proof server isn't running. Start it with `docker compose -f proof-server.yml up` in a separate terminal.
+
+**DUST balance stays at 0**
+
+DUST generation takes time after registering NIGHT UTXOs. Wait a few minutes. If it persists, check that the faucet transaction confirmed — the CLI should show the NIGHT balance.
+
+**DUST balance drops to 0 after a failed deploy**
+
+Known issue. Restart the CLI to release locked DUST coins.
+
+**Wallet shows 0 balance after faucet**
+
+Wait for the sync to complete. The CLI needs to scan the chain for your transactions. If still 0, verify you sent to the correct unshielded address.
+
+**Proof server hangs (no output)**
+
+On Apple Silicon Macs, enable Docker VMM (Settings → General → "Virtual Machine Options" → Docker VMM). Restart Docker.
 
 ---
 
 ## What's Next
 
-Lesson 1.1 and 1.2 covered the technical differences — execution models and the dual-ledger system. Now that you understand the structural relationship, Module 2 introduces the language you'll use to build on Midnight: Compact.
+You've installed the toolchain, compiled contracts, and deployed to a live network. Module 5 applies everything you've learned to build credential systems — the use case where Midnight's privacy model matters most.
 
 ---
 
 ## Assignment
 
-Explain the Midnight partner chain model to a fellow Aiken developer who assumes Midnight is "just a Cardano sidechain." In your explanation, address:
+Deploy the counter contract to preprod (or standalone) and complete the following:
 
-- Why it's not a sidechain
-- What is shared between the two chains and what is not
-- Why an Aiken validator won't run on Midnight
-- How the two chains can be used together
+1. Record the compiler version, contract address, and initial round value
+2. Increment the counter three times. How long does each proof take?
+3. Display the counter value — confirm it reads 3
+4. Exit and rejoin using your saved seed and contract address. Does the counter value persist?
+5. Try deploying the bulletin board contract using the same process (it uses `example-bboard/bboard-cli`). What differences do you notice in proof generation time?

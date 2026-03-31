@@ -1,183 +1,154 @@
-# Lesson 3.2: From Circuit to Proof to Verification
+# Lesson 6.2: What Can (and Can't) Cross the Bridge
 
-## The Pipeline
+## One Bridge, One Direction
 
-Every Midnight transaction includes a zero-knowledge proof. The proof says: "this computation was performed correctly." The verifier doesn't see the private inputs — only that the circuit logic was satisfied.
+If you've designed Lesson 6.1's dual-chain architecture, you might be wondering how the two chains actually communicate. The short answer: they mostly don't.
 
-The pipeline has four stages: compile, prove, submit, verify. Understanding each stage tells you what happens when a user calls a circuit and why it takes the time it does.
+Midnight has exactly one production bridge to Cardano: the **Native Token Observation Pallet**. It handles DUST generation from Cardano-native cNIGHT tokens. That's it. There is no general-purpose message passing, no cross-chain contract calls, and no mechanism for Cardano to read Midnight state.
 
----
-
-## Stage 1: Compile
-
-Lesson 4.2 walks through this hands-on. The Compact compiler transforms a `.compact` file into four types of artifact:
-
-```
-src/managed/counter/
-├── compiler/contract-info.json     # Circuit metadata
-├── contract/index.d.ts + index.js  # TypeScript bindings
-├── keys/increment.prover           # Proving key
-├── keys/increment.verifier         # Verification key
-└── zkir/increment.zkir             # ZK intermediate representation
-```
-
-The critical outputs are the **proving key** and **verification key**. They're mathematically linked:
-- The **proving key** is used by the proof server to generate proofs. It encodes the circuit's logic as constraints.
-- The **verification key** is used by the Midnight network to check proofs. It's much smaller than the proving key.
-
-The counter's `increment` circuit produces a 14K proving key and a 1.3K verification key. The bulletin board's `post` circuit — which includes hashing, assertions, and `disclose()` calls — produces a 2.7MB proving key and a 2.1K verification key. More complex circuits mean more constraints, which mean larger keys and longer proof generation.
-
-The **ZKIR** (Zero-Knowledge Intermediate Representation) is the circuit expressed as constraints. The `.zkir` file is human-readable; the `.bzkir` file is the binary form the proof server consumes.
+Understanding these constraints tells you what architectures are possible today and what requires workarounds.
 
 ---
 
-## Stage 2: Prove
+## The Native Token Observation Pallet
 
-When a user calls a circuit from their DApp, the proof generation happens locally on their machine via the proof server.
+The only cross-chain mechanism currently in production. Here's how it works:
 
-The flow:
+### The Flow
 
-1. **DApp code calls a circuit** — e.g., `contract.circuits.increment(context)`
-2. **The runtime evaluates the circuit** — it executes the Compact logic, collecting the witness values, ledger reads, and state transitions
-3. **The runtime sends the constraint system to the proof server** — the proof server (Docker container on port 6300) receives the ZKIR and the private inputs
-4. **The proof server generates a ZK proof** — using the proving key, it produces a proof that the computation satisfies all constraints without revealing the private inputs
-5. **The proof is bundled into a transaction** — the proof, the public outputs (disclosed values), and the state changes form a transaction
+1. A user registers their Cardano reward address and DUST public key on the Cardano chain.
+2. They acquire cNIGHT tokens on Cardano (the Cardano-native representation of Midnight's token).
+3. The pallet (`pallet_cnight_observation`) on Midnight observes cNIGHT creation and destruction events on Cardano.
+4. It validates that exactly one valid registration exists for the address.
+5. Corresponding DUST creation or destruction events fire on Midnight's ledger.
+6. Events batch into a system transaction via the LedgerApi.
+7. DUST supply updates 1:1 with cNIGHT movements.
 
-The proof server is the computationally expensive part. Generating a proof for the counter's `increment` is fast (small circuit). Generating a proof for the bulletin board's `post` takes longer because the circuit includes hash computation and multiple `disclose()` operations.
+### What This Gives You
 
-**Why local?** The proof server runs on the user's machine because the private inputs (witness values) must never leave. If the proof server ran remotely, the user would have to send their secret key over the network.
+DUST is Midnight's gas token. You need it to pay for transactions and proof verification. The observation pallet means Midnight's economic activity is anchored to a Cardano-native asset.
 
----
+### What This Doesn't Give You
 
-## Stage 3: Submit
-
-The transaction — containing the proof, disclosed values, and state effects — is submitted to the Midnight network.
-
-A Midnight transaction includes:
-- **Declared gas bound** — determines the fee
-- **Declared effects** — what the transaction claims it will do (nullifier claims, coin operations, contract calls)
-- **The ZK proof** — cryptographic evidence the computation was correct
-- **Disclosed values** — the public outputs from `disclose()` calls
-- **New contract state** — the updated ledger values
-
-The transaction declares its effects upfront. The proof proves those effects are correct. The network verifies the proof against the verification key.
+- No ability to send arbitrary data from Cardano to Midnight
+- No ability to trigger Midnight contracts from Cardano transactions
+- No ability for Midnight to write back to Cardano
+- No way to transfer tokens other than cNIGHT/DUST
 
 ---
 
-## Stage 4: Verify
+## The Five Constraints
 
-The Impact VM verifies the transaction on-chain.
+### 1. No Cross-Chain Contract Calls
 
-The verification checks:
-1. **Proof validity** — does the ZK proof verify against the circuit's verification key?
-2. **Effects consistency** — do the declared effects match what the proof claims?
-3. **State transition** — is the new state consistent with the old state plus the proven computation?
-4. **Gas bounds** — does the transaction have sufficient gas?
-5. **Nullifiers** — if any nullifiers are claimed, are they fresh (not already spent)?
+A Compact circuit on Midnight cannot call an Aiken validator on Cardano. An Aiken validator cannot read Midnight's ledger state. The two VMs are completely isolated.
 
-Verification is fast — much faster than proof generation. The verification key is small, and checking a proof is a single cryptographic operation. This asymmetry (expensive to prove, cheap to verify) is the fundamental property of zero-knowledge proofs.
+If your architecture requires "Cardano verifies a Midnight proof," the verification must happen off-chain. An off-chain service reads the Midnight proof, extracts the relevant claim, and submits it to Cardano as transaction metadata or a redeemer value. The Aiken validator trusts the metadata format — it cannot independently verify the ZK proof.
 
-If verification succeeds, the ledger is updated with the new contract state. If it fails, the transaction is rejected and no state changes occur.
+### 2. No Atomic Cross-Chain Transactions
 
----
+You cannot build a transaction that atomically updates state on both chains. If you need consistency between Cardano and Midnight state, you need a coordination protocol: update one chain, wait for confirmation, then update the other. This introduces a window where the two chains are inconsistent.
 
-## What the Proof Actually Proves
+In practice, this means designing for eventual consistency rather than atomic operations. Your system needs to handle the case where the Cardano transaction succeeds but the Midnight transaction fails (or vice versa).
 
-For the counter contract:
+### 3. One-Way Observation Only
 
-```compact
-export circuit increment(): [] {
-  round.increment(1);
-}
-```
+Midnight observes Cardano. Cardano does not observe Midnight. This asymmetry shapes what's possible:
 
-The proof says: "I executed the `increment` circuit. The round counter was `N` before. It is now `N+1`. The computation was correct."
+| Direction | Possible? | Mechanism |
+|-----------|-----------|-----------|
+| Cardano → Midnight (token) | Yes | Native Token Observation Pallet |
+| Cardano → Midnight (data) | No | — |
+| Midnight → Cardano (token) | No | — |
+| Midnight → Cardano (data) | No | — |
+| Midnight → Cardano (proof result) | Manually | Off-chain relay, transaction metadata |
 
-For the bulletin board's `post` circuit:
+### 4. DUST Is Non-Persistent
 
-```compact
-export circuit post(newMessage: Opaque<"string">): [] {
-  assert(state == State.VACANT, "Board is occupied");
-  owner = disclose(publicKey(localSecretKey(), sequence as Field as Bytes<32>));
-  message = disclose(some<Opaque<"string">>(newMessage));
-  state = State.OCCUPIED;
-}
-```
+DUST is a computational resource, not a transferable token. It has a lifecycle tied to the Night tokens that generate it:
 
-The proof says: "I executed the `post` circuit. The board was VACANT. I derived a public key from a secret key I possess (but I'm not revealing the secret key). The public key is `0xabc...`. The message is 'Hello'. The board is now OCCUPIED. All of this is correct."
+1. **Generation phase:** DUST capacity grows over time from the associated Night UTXOs
+2. **Maximum capacity:** Holds until the backing Night is spent
+3. **Decay phase:** After Night is spent, DUST capacity decays
+4. **Zero:** Permanent
 
-The verifier sees the public key and the message (because they were disclosed). The verifier does not see the secret key. The proof guarantees the public key was honestly derived — the prover couldn't have faked it.
+The protocol reserves the right to redistribute DUST on hardforks and modify allocation rules. Don't design systems that depend on a specific DUST balance persisting indefinitely.
 
----
+### 5. Testnet Is in Transition
 
-## Proof Size and Performance
+As of March 2026, Midnight's testnet landscape is unstable:
 
-Circuit complexity directly affects proof generation time and key sizes:
+- Testnet-02 ended in February 2026
+- Preview is engineering-only (not open to external developers)
+- The next public milestone is Mōhalu (Incentivized Mainnet)
 
-| Contract | Circuit | Proving Key | Verification Key | ZKIR |
-|----------|---------|-------------|-----------------|------|
-| Counter | `increment` | 14K | 1.3K | 784B |
-| Bboard | `post` | 2.7MB | 2.1K | 4.5K |
-| Bboard | `takeDown` | 2.7MB | 2.1K | 6.0K |
-
-The verification key stays small regardless of circuit complexity. This is by design — on-chain verification cost should be predictable. The proving key scales with the number of constraints, which means more complex logic takes longer to prove but doesn't burden the network.
-
-The bboard's circuits are ~200x larger than the counter's because they include:
-- `persistentHash` computation (the public key derivation)
-- Multiple `disclose()` operations
-- Assertion checks
-- Opaque type handling
-
-Each of these adds constraints to the ZK circuit.
+This means deployment and integration testing for dual-chain systems is limited. Local development (compiler + proof server) works, but end-to-end cross-chain testing depends on network availability.
 
 ---
 
-## The First-Run Download
+## Working Within the Constraints
 
-When you first compile with ZK parameter generation, the compiler downloads a set of universal parameters (~500MB). These are public cryptographic parameters shared across all Midnight circuits (similar to a trusted setup, but universal — they work for any circuit up to a certain size). This is a one-time download.
+Given these limitations, the dual-chain architectures from Lesson 6.1 use a **manual coordination pattern**:
+
+### For Credential Systems
+
+1. Issue credential on Cardano (Aiken validator mints NFT)
+2. Off-chain service or user registers credential commitment on Midnight
+3. Privacy proofs happen on Midnight
+4. If needed, proof results are relayed back to Cardano as metadata
+
+The credential commitment step is the manual bridge. An automated service can handle it, but there's no on-chain guarantee that the Midnight commitment matches the Cardano credential.
+
+### For Token Operations
+
+1. Acquire cNIGHT on Cardano
+2. Register wallet mapping
+3. DUST generates automatically via the observation pallet
+4. Use DUST for Midnight transactions
+
+This is the only flow with on-chain guarantees. The pallet handles it trustlessly.
+
+### For Everything Else
+
+Off-chain relays. A trusted service (or a decentralized relay network, when one exists) reads state from one chain and submits it to the other. The trust model depends on who operates the relay.
 
 ---
 
-## The Full Picture
+## What's on the Roadmap
 
-```
-┌─────────────┐     ┌──────────────┐     ┌────────────┐     ┌───────────┐
-│  Compile     │     │  Prove       │     │  Submit    │     │  Verify   │
-│              │     │              │     │            │     │           │
-│  .compact    │     │  DApp calls  │     │  Tx with   │     │  Impact   │
-│     ↓        │     │  circuit     │     │  proof +   │     │  VM checks│
-│  ZKIR +      │────▶│     ↓        │────▶│  effects   │────▶│  proof    │
-│  proving key │     │  Proof       │     │  goes to   │     │  against  │
-│  + verify key│     │  server      │     │  network   │     │  verify   │
-│              │     │  generates   │     │            │     │  key      │
-│              │     │  ZK proof    │     │            │     │           │
-└─────────────┘     └──────────────┘     └────────────┘     └───────────┘
-  Developer's         User's machine       Midnight          Midnight
-  machine             (private inputs       network           validators
-  (one-time)          stay here)
-```
+Several initiatives aim to reduce these constraints:
+
+| Initiative | What It Does | Status |
+|-----------|-------------|--------|
+| **Credential commitment bridges** | Auto-sync Cardano credential mints to Midnight MerkleTree insertions | Planned |
+| **Cross-chain proof receipts** | Post Midnight proof results back to Cardano as metadata | Planned |
+| **Pintent protocol** (0xAtelerix) | Cross-chain intent system with planned Cardano support | Early development |
+| **Pre-compiled node binaries** | Replace Docker-only distribution for easier deployment | In progress |
+
+None of these are available today. Design for the current constraints and plan for the future capabilities.
 
 ---
 
 ## Questions to consider:
 
-- The proof server runs locally so private inputs never leave the user's machine. What happens if a mobile user doesn't have the resources to run a proof server? What architectural options exist?
-- Verification is fast, but proof generation for complex circuits can take seconds or longer. How does this affect the user experience compared to submitting an Aiken transaction on Cardano?
-- The bulletin board's `publicKey` circuit is marked `pure: true, proof: false` — it doesn't generate a ZK proof. Why not? When does a circuit need a proof and when doesn't it?
+- The manual coordination pattern introduces a window of inconsistency between chains. What happens if a credential is revoked on Cardano during that window, before the Midnight commitment is updated?
+- The observation pallet is one-way: Midnight reads Cardano. What would a bidirectional bridge require? What trust assumptions would it introduce?
+- If Midnight's DUST can be redistributed on hardforks, what does that mean for applications that need guaranteed gas availability?
 
 ---
 
 ## What's Next
 
-Lesson 3.3 shows the TypeScript side: how to implement the witness functions that feed private data into the proving pipeline.
+Lesson 6.3 brings it all together with a decision framework: when does a use case need Midnight, when is Cardano sufficient, and when do you need both?
 
 ---
 
 ## Assignment
 
-Trace the lifecycle of a single transaction through the four stages for the bulletin board's `takeDown` circuit:
+You're designing a dual-chain system where professional certifications are issued on Cardano and used for anonymous team capability proofs on Midnight (Scenario 2 from Lesson 6.1).
 
-1. **Compile:** What artifacts does the `takeDown` circuit produce? What constraints does it encode?
-2. **Prove:** What private inputs enter the proof? What public outputs come out? What does the proof server verify during generation?
-3. **Submit:** What does the transaction contain? What are the declared effects?
-4. **Verify:** What does the Impact VM check? If the caller provides the wrong secret key, at which stage does the failure occur?
+Map out the failure modes:
+1. What happens if the Cardano credential mint succeeds but the Midnight commitment registration fails?
+2. What happens if a certification is revoked on Cardano but the Midnight MerkleTree still contains the commitment?
+3. How would you design the off-chain relay to minimize the inconsistency window?
+4. What's the minimum trust assumption your relay requires?

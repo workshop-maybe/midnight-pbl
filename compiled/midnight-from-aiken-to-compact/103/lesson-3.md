@@ -1,245 +1,311 @@
-# Lesson 5.3: Selective Disclosure
+# Lesson 3.3: Writing Witness Functions in TypeScript
 
-## The Capstone Pattern
+## What a Witness Does
 
-You now have two credential verification patterns:
+A Compact circuit declares what private data it needs. A TypeScript witness function provides it. The circuit says "I need a secret key." The witness says "here it is." The secret key enters the ZK circuit, gets used in computation, and never appears on-chain.
 
-- **Lesson 5.1:** Signature-based — prove a specific credential is valid. The verifier knows which credential type but not the holder's identity.
-- **Lesson 5.2:** MerkleTree-based — prove you hold some credential from a set. The verifier doesn't know which one.
+The Compact declaration:
 
-Selective disclosure combines elements of both. The user proves a specific claim ("I am over 21," "I hold certification X," "My team has 15 certified members") while revealing nothing else. The credential attributes — name, exact age, national ID — stay private.
+```compact
+witness localSecretKey(): Bytes<32>;
+```
 
-This is the pattern that makes Midnight useful for enterprises. Not "hide everything" and not "reveal everything." Reveal exactly what's needed.
+The TypeScript implementation:
+
+```typescript
+export const witnesses = {
+  localSecretKey: ({
+    privateState,
+  }: WitnessContext<Ledger, BBoardPrivateState>): [
+    BBoardPrivateState,
+    Uint8Array,
+  ] => [privateState, privateState.secretKey],
+};
+```
+
+The circuit and the witness are separate files, separate languages, and separate execution environments. The compiler binds them together through generated types.
 
 ---
 
-## How Brick Towers Does It
+## The WitnessContext Interface
 
-The wine shop from Lesson 5.1 is a selective disclosure system. Let's trace exactly what's revealed and what isn't:
+Every witness function receives a `WitnessContext` as its first argument. The type is:
 
-```compact
-export circuit submit_order(id: Bytes<16>): [] {
-  const order = get_order(id);
-  const identity = get_identity();
+```typescript
+WitnessContext<L, PS>
+```
 
-  // These checks happen privately — inside the ZK circuit
-  assert identity.signature.pk == trusted_issuer_public_key   // private check
-  assert identity.subject.id == own_public_key().bytes         // private check
-  verify_signature(subject_hash(identity.subject), identity.signature); // private check
-  assert order.timestamp - identity.subject.birth_timestamp
-         > 21 * 365 * 24 * 60 * 60 * 1000                    // private check
+Where `L` is the Ledger type (generated from your `.compact` file) and `PS` is your private state type (defined by you).
 
-  // Only the payment crosses the privacy boundary
-  receive(disclose(order.payment));
-  send_immediate(disclose(order.payment), ...);
+The context has three fields:
+
+```typescript
+{
+  ledger: L,           // Current on-chain state (read-only)
+  privateState: PS,    // Your DApp's local state
+  contractAddress: string  // The deployed contract's address
 }
 ```
 
-**What the verifier (shop) learns:**
-- The proof passed — someone with a valid credential from the trusted issuer is over 21
-- The payment amount and coin type (disclosed)
+You can destructure to access only what you need. The bulletin board witness only needs `privateState`:
 
-**What the verifier doesn't learn:**
-- The person's name
-- Their exact date of birth
-- Their national identifier
-- Which specific credential was used
-- Any other identity attributes
-
-The `disclose()` calls control the boundary. Only `order.payment` is disclosed. Everything about `identity` stays behind the proof.
+```typescript
+localSecretKey: ({
+  privateState,
+}: WitnessContext<Ledger, BBoardPrivateState>): [BBoardPrivateState, Uint8Array] =>
+  [privateState, privateState.secretKey],
+```
 
 ---
 
-## Building Selective Disclosure Circuits
+## The Return Type
 
-The general pattern:
+Every witness function returns a tuple:
 
-```compact
-witness get_credential(): SignedCredentialSubject;
+```typescript
+[newPrivateState, returnValue]
+```
 
-export circuit prove_claim(claim_type: Uint<8>): [] {
-  const cred = get_credential();
+- **newPrivateState** — the updated private state. Return it unchanged if the witness doesn't modify local state.
+- **returnValue** — the value that gets sent into the Compact circuit.
 
-  // Always verify the credential is authentic
-  verify_signature(subject_hash(cred.subject), cred.signature);
+The bulletin board returns `[privateState, privateState.secretKey]` — unchanged private state plus the 32-byte secret key.
 
-  // Always verify the credential belongs to the caller
-  assert cred.subject.id == own_public_key().bytes
-         "Not your credential";
+This two-element return is consistent across all Midnight witnesses. The runtime uses it to manage private state across circuit calls.
 
-  // Selectively check one claim
-  if (claim_type == 1) {
-    // Age verification: prove over 21 without revealing DOB
-    assert current_timestamp() - cred.subject.birth_timestamp
-           > 21 * 365 * 24 * 60 * 60 * 1000
-           "Not over 21";
-  }
+---
 
-  if (claim_type == 2) {
-    // Nationality: prove a specific country without revealing which
-    assert cred.subject.national_identifier != pad(32, "")
-           "No national ID on file";
-    // Disclose only the country code, not the full ID
-    disclose(slice(cred.subject.national_identifier, 0, 2));
-  }
+## The Bulletin Board Witness: Complete Example
 
-  // The proof succeeds. No credential attributes are disclosed
-  // unless explicitly wrapped in disclose().
+Here's the full witness file for the bulletin board contract:
+
+```typescript
+import { Ledger } from "./managed/bboard/contract/index.js";
+import { WitnessContext } from "@midnight-ntwrk/compact-runtime";
+
+// Define the shape of your DApp's private state
+export type BBoardPrivateState = {
+  readonly secretKey: Uint8Array;
+};
+
+// Factory function to create private state
+export const createBBoardPrivateState = (secretKey: Uint8Array) => ({
+  secretKey,
+});
+
+// Witness implementations — one field per witness declaration in Compact
+export const witnesses = {
+  localSecretKey: ({
+    privateState,
+  }: WitnessContext<Ledger, BBoardPrivateState>): [
+    BBoardPrivateState,
+    Uint8Array,
+  ] => [privateState, privateState.secretKey],
+};
+```
+
+### Breaking it down
+
+**Import the generated Ledger type:**
+
+```typescript
+import { Ledger } from "./managed/bboard/contract/index.js";
+```
+
+This type is generated by the Compact compiler. For the bulletin board, it looks like:
+
+```typescript
+export type Ledger = {
+  readonly state: State;
+  readonly message: { is_some: boolean, value: string };
+  readonly sequence: bigint;
+  readonly owner: Uint8Array;
 }
 ```
 
-The caller passes `claim_type` to select which check runs. The credential is always verified for authenticity and ownership. Only the specific claim is checked — and even then, the raw attribute isn't disclosed unless you explicitly choose to reveal it.
+The witness can read ledger state through the context. This is useful when the witness needs to make decisions based on on-chain state — for example, choosing which credential to use based on what the contract currently requires.
+
+**Define the private state type:**
+
+```typescript
+export type BBoardPrivateState = {
+  readonly secretKey: Uint8Array;
+};
+```
+
+This is your design decision. The private state can hold anything your DApp needs: keys, credentials, cached data. It persists across circuit calls within a session.
+
+**Implement the witnesses object:**
+
+```typescript
+export const witnesses = {
+  localSecretKey: ({ privateState }: WitnessContext<Ledger, BBoardPrivateState>):
+    [BBoardPrivateState, Uint8Array] =>
+    [privateState, privateState.secretKey],
+};
+```
+
+The `witnesses` object has one field per `witness` declaration in the Compact contract. The field name must match exactly. The compiler-generated types enforce the return shape.
 
 ---
 
-## Three Disclosure Levels
+## The Counter's "Witness" (Empty)
 
-Selective disclosure isn't binary. You control how much to reveal for each attribute:
-
-### Level 1: Boolean Proof (Reveal Nothing)
-
-Prove a fact about an attribute without revealing the attribute itself.
+The counter contract has no witness declarations:
 
 ```compact
-// Prove: "I am over 21"
-// Reveal: nothing (the proof passing is the answer)
-assert timestamp - cred.subject.birth_timestamp > threshold
-```
-
-The verifier learns one bit: yes or no.
-
-### Level 2: Derived Value (Reveal a Transformation)
-
-Disclose a computed value that reveals less than the raw attribute.
-
-```compact
-// Prove: "My age bracket is 25-34"
-// Reveal: the bracket, not the exact age
-const age_years = (timestamp - cred.subject.birth_timestamp)
-                  / (365 * 24 * 60 * 60 * 1000);
-const bracket = if (age_years < 25) { 0 }
-                else if (age_years < 35) { 1 }
-                else if (age_years < 45) { 2 }
-                else { 3 };
-disclose(bracket);
-```
-
-The verifier learns the bracket but not the exact age.
-
-### Level 3: Partial Attribute (Reveal a Slice)
-
-Disclose part of an attribute.
-
-```compact
-// Prove: "My national ID starts with 'US'"
-// Reveal: country prefix only
-disclose(slice(cred.subject.national_identifier, 0, 2));
-```
-
-The verifier learns the country but not the full ID number.
-
-Choose the minimum disclosure level that satisfies the verifier's need. Most use cases only require Level 1.
-
----
-
-## Team Capability Proofs
-
-Individual selective disclosure extends to teams. An enterprise can prove "we have N members with certification X" without revealing who:
-
-```compact
-export ledger team_credentials: MerkleTree<16, Bytes<32>>;
-export ledger team_nullifiers: Set<Bytes<32>>;
-
-witness load_member_credentials(): Vector<20, SignedCredentialSubject>;
-
-export circuit prove_team_capability(
-  required_cert: Bytes<32>,
-  min_count: Uint<8>
-): [] {
-  const members = load_member_credentials();
-  var count: Uint<8> = 0;
-
-  // Count members with the required certification
-  // Each member's credential is verified but never disclosed
-  for (i in 0..20) {
-    const cred = members[i];
-    if (cred.subject.id != pad(32, "")) {  // non-empty slot
-      verify_signature(subject_hash(cred.subject), cred.signature);
-      if (cred.subject.certification_type == required_cert) {
-        count = count + 1;
-      }
-    }
-  }
-
-  assert count >= min_count "Insufficient team capability";
-
-  // Disclose only the count, not the individuals
-  disclose(count);
+// counter.compact — no witness keyword
+export ledger round: Counter;
+export circuit increment(): [] {
+  round.increment(1);
 }
 ```
 
-The verifier learns: "this team has at least N members with certification X." They don't learn who those members are, what other certifications the team holds, or which specific credentials were used.
+Its witness file reflects this:
 
----
+```typescript
+export type CounterPrivateState = {
+  privateCounter: number;
+};
 
-## Combining Patterns
-
-A production credential system often combines all three patterns:
-
-```
-Credential Issuance (Cardano):
-  └── Public registry: "credential X exists, issued by Y"
-
-Credential Commitment (Midnight):
-  └── MerkleTree: anonymous set membership
-
-Individual Verification:
-  └── Signature check: "this credential is authentic"
-
-Selective Disclosure:
-  └── Boolean proof: "holder meets criterion Z"
-
-Single-Use Proof:
-  └── Nullifier: "this credential was used once for this purpose"
+export const witnesses = {};
 ```
 
-The Cardano layer provides the trust anchor (Lesson 6.1). The Midnight layer provides the privacy. Selective disclosure is the interface between them — it's how you extract value from private credentials without compromising them.
+An empty witnesses object. The private state type still exists (the runtime needs it as a type parameter) even though no witness function accesses it.
 
 ---
 
-## The Trust Chain
+## Type Mappings
 
-Every selective disclosure proof rests on a trust chain:
+When the Compact compiler generates TypeScript types, Compact types map to TypeScript as follows:
 
-1. **Issuer trust.** The verifier trusts the issuer's public key (stored on-chain or in a registry).
-2. **Signature validity.** The ZK proof guarantees the credential's signature is valid.
-3. **Ownership binding.** The credential is bound to the caller's wallet via `own_public_key()`.
-4. **Claim truth.** The specific claim (age, certification, membership) is checked arithmetically inside the circuit.
-5. **Proof soundness.** The ZK proof guarantees all of the above without revealing the inputs.
+| Compact Type | TypeScript Type |
+|-------------|----------------|
+| `Bytes<32>` | `Uint8Array` |
+| `Uint<64>` | `bigint` |
+| `Field` | `bigint` |
+| `Boolean` | `boolean` |
+| `Counter` | `bigint` |
+| `Opaque<"string">` | `string` |
+| `Opaque<"Uint8Array">` | `Uint8Array` |
+| `Maybe<T>` | `{ is_some: boolean, value: T }` |
+| `enum State { A, B }` | `enum State { A = 0, B = 1 }` |
 
-If any link breaks — compromised issuer key, stolen credential, tampered attributes — the chain fails. The circuit's assertions catch it at proof generation time. A bad proof never reaches the network.
+These mappings are important when writing witnesses. If your Compact witness returns `Bytes<32>`, your TypeScript function must return a `Uint8Array` of exactly 32 bytes.
 
 ---
 
-## Questions to consider:
+## A More Complex Witness
 
-- Selective disclosure reveals the minimum needed. But "minimum" is a judgment call. Who decides? The user (choose what to reveal)? The verifier (demand what they need)? The contract designer (hardcode the disclosure)?
-- Team capability proofs aggregate individual credentials. What prevents a single member's credential from being counted twice in the same proof? How would you add a deduplication mechanism?
-- The age check `timestamp - birth_timestamp > 21 years` leaks information at boundaries. If someone barely passes, the verifier can estimate their age. How would you design a fuzzier check?
+Consider a contract that verifies a credential. The Compact side:
+
+```compact
+witness loadCredential(): Bytes<64>;
+witness getCredentialIndex(): Uint<32>;
+```
+
+The TypeScript witness might look like:
+
+```typescript
+type CredentialState = {
+  readonly credentials: Uint8Array[];   // Array of 64-byte credentials
+  readonly selectedIndex: number;
+};
+
+export const witnesses = {
+  loadCredential: ({
+    privateState,
+  }: WitnessContext<Ledger, CredentialState>): [CredentialState, Uint8Array] => {
+    const cred = privateState.credentials[privateState.selectedIndex];
+    return [privateState, cred];
+  },
+
+  getCredentialIndex: ({
+    privateState,
+  }: WitnessContext<Ledger, CredentialState>): [CredentialState, bigint] => {
+    return [privateState, BigInt(privateState.selectedIndex)];
+  },
+};
+```
+
+Two witnesses, both reading from the same private state. The circuit calls them independently. Each returns unchanged private state plus the requested value.
+
+---
+
+## Witnesses That Update Private State
+
+Sometimes a witness needs to modify private state — for example, incrementing a nonce to prevent replay:
+
+```typescript
+loadAndIncrementNonce: ({
+  privateState,
+}: WitnessContext<Ledger, MyState>): [MyState, bigint] => {
+  const nonce = privateState.nonce;
+  const newState = { ...privateState, nonce: nonce + 1n };
+  return [newState, nonce];
+},
+```
+
+The first element of the return tuple is the **new** private state. The runtime stores it and passes it to subsequent witness calls in the same circuit execution.
+
+---
+
+## Witnesses That Read Ledger State
+
+The `WitnessContext` includes the current ledger. A witness can use on-chain state to make decisions:
+
+```typescript
+selectCredential: ({
+  ledger,
+  privateState,
+}: WitnessContext<Ledger, CredentialState>): [CredentialState, Uint8Array] => {
+  // Read the required credential type from the ledger
+  const requiredType = ledger.requiredCredentialType;
+
+  // Find a matching credential in private state
+  const match = privateState.credentials.find(c => c.type === requiredType);
+
+  if (!match) throw new Error("No matching credential found");
+
+  return [privateState, match.data];
+},
+```
+
+The ledger data is read-only. The witness can inspect it but not modify it — only circuits modify ledger state.
+
+---
+
+## Trust Model
+
+Witnesses are untrusted from the circuit's perspective. The Compact contract cannot verify that the witness returned honest data. If a witness lies — returns a random key instead of the real one — the circuit will compute on that false input. The ZK proof will still verify that the computation was performed correctly on whatever input was provided.
+
+The circuit must establish trust through other means:
+
+```compact
+// The circuit verifies the witness by checking the derived public key
+assert(owner == publicKey(localSecretKey(), sequence as Field as Bytes<32>),
+       "Not the current owner");
+```
+
+If the witness returns the wrong secret key, the derived public key won't match `owner`, and the assertion fails. The contract doesn't trust the witness — it verifies the result.
 
 ---
 
 ## Assignment
 
-Build a complete selective disclosure system for a professional services firm. The system must support three operations:
+Write the TypeScript witness file for a contract with these Compact declarations:
 
-1. **Individual proof:** A consultant proves they hold a specific certification (e.g., AWS Solutions Architect) without revealing their name or other certifications. Write the circuit.
+```compact
+export ledger commitments: MerkleTree<16, Bytes<32>>;
+export ledger nullifiers: Set<Bytes<32>>;
 
-2. **Team proof:** The firm proves it has at least 5 consultants with a specific certification. Individual identities remain private. Sketch the circuit.
+witness loadCredential(): Bytes<64>;
+witness deriveNullifier(): Bytes<32>;
+```
 
-3. **Expiry check:** A client verifies that a consultant's certification hasn't expired. The exact issue and expiry dates stay private — the client only learns "valid" or "expired." Write the assertion logic.
+Your implementation should:
 
-For each operation, specify:
-- What enters via witness (private)
-- What gets checked via assert (verified but hidden)
-- What gets disclosed (public)
+1. Define a `CredentialPrivateState` type that holds an array of credentials and a counter
+2. Implement `loadCredential` — returns the credential at the current counter position
+3. Implement `deriveNullifier` — derives a deterministic nullifier from the credential (you can use a simple hash or concatenation), increments the counter in private state, and returns the nullifier
+4. Show the type signature that matches the generated `Witnesses<PS>` type

@@ -1,10 +1,10 @@
 ---
-title: "The Privacy Model — Proving Without Revealing"
+title: "Dual-Chain Architecture — Cardano + Midnight"
 code: 106
 ---
 
 ## SLTs
 
-1. Explain how Compact's disclose() primitive controls what becomes public versus what stays private
-2. Describe how a ZK proof is generated from a Compact circuit and verified on-chain by the Impact VM
-3. Implement a witness function in TypeScript that provides private data to a Compact circuit
+1. Design an architecture where public credential verification runs on Cardano and private attribute proofs run on Midnight
+2. Describe the current interoperability constraints between Cardano and Midnight
+3. Evaluate when a use case requires Midnight's privacy features versus when Cardano's public verification is sufficient

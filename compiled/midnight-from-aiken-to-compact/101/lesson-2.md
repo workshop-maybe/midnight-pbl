@@ -1,154 +1,146 @@
-# Lesson 6.2: What Can (and Can't) Cross the Bridge
+# Lesson 1.2: Public Ledger, Private Ledger
 
-## One Bridge, One Direction
+## The Core Rule
 
-If you've designed Lesson 6.1's dual-chain architecture, you might be wondering how the two chains actually communicate. The short answer: they mostly don't.
+Midnight has one rule that governs everything about data visibility:
 
-Midnight has exactly one production bridge to Cardano: the **Native Token Observation Pallet**. It handles DUST generation from Cardano-native cNIGHT tokens. That's it. There is no general-purpose message passing, no cross-chain contract calls, and no mechanism for Cardano to read Midnight state.
+**Anything passed as an argument to a ledger operation, and all reads and writes of the ledger itself, are publicly visible.**
 
-Understanding these constraints tells you what architectures are possible today and what requires workarounds.
-
----
-
-## The Native Token Observation Pallet
-
-The only cross-chain mechanism currently in production. Here's how it works:
-
-### The Flow
-
-1. A user registers their Cardano reward address and DUST public key on the Cardano chain.
-2. They acquire cNIGHT tokens on Cardano (the Cardano-native representation of Midnight's token).
-3. The pallet (`pallet_cnight_observation`) on Midnight observes cNIGHT creation and destruction events on Cardano.
-4. It validates that exactly one valid registration exists for the address.
-5. Corresponding DUST creation or destruction events fire on Midnight's ledger.
-6. Events batch into a system transaction via the LedgerApi.
-7. DUST supply updates 1:1 with cNIGHT movements.
-
-### What This Gives You
-
-DUST is Midnight's gas token. You need it to pay for transactions and proof verification. The observation pallet means Midnight's economic activity is anchored to a Cardano-native asset.
-
-### What This Doesn't Give You
-
-- No ability to send arbitrary data from Cardano to Midnight
-- No ability to trigger Midnight contracts from Cardano transactions
-- No ability for Midnight to write back to Cardano
-- No way to transfer tokens other than cNIGHT/DUST
+That's the public ledger. Everything else — intermediate computations, witness data, values that never touch the ledger — stays private. There's no configuration toggle. No privacy setting. The boundary is structural: if your data touches the ledger, it's public. If it doesn't, it's private and enforced by zero-knowledge proofs.
 
 ---
 
-## The Five Constraints
+## What "Public" Means
 
-### 1. No Cross-Chain Contract Calls
+When you declare a ledger field in Compact:
 
-A Compact circuit on Midnight cannot call an Aiken validator on Cardano. An Aiken validator cannot read Midnight's ledger state. The two VMs are completely isolated.
+```
+export ledger authority: Bytes<32>;
+export ledger value: Uint<64>;
+```
 
-If your architecture requires "Cardano verifies a Midnight proof," the verification must happen off-chain. An off-chain service reads the Midnight proof, extracts the relevant claim, and submits it to Cardano as transaction metadata or a redeemer value. The Aiken validator trusts the metadata format — it cannot independently verify the ZK proof.
+Both `authority` and `value` are stored on Midnight's ledger in the clear. Anyone observing the chain can read them, just as anyone on Cardano can read datum fields attached to UTxOs.
 
-### 2. No Atomic Cross-Chain Transactions
+When a circuit writes to a ledger field using `disclose()`:
 
-You cannot build a transaction that atomically updates state on both chains. If you need consistency between Cardano and Midnight state, you need a coordination protocol: update one chain, wait for confirmation, then update the other. This introduces a window where the two chains are inconsistent.
+```
+authority = disclose(publicKey(round, sk));
+value = disclose(v);
+```
 
-In practice, this means designing for eventual consistency rather than atomic operations. Your system needs to handle the case where the Cardano transaction succeeds but the Midnight transaction fails (or vice versa).
-
-### 3. One-Way Observation Only
-
-Midnight observes Cardano. Cardano does not observe Midnight. This asymmetry shapes what's possible:
-
-| Direction | Possible? | Mechanism |
-|-----------|-----------|-----------|
-| Cardano → Midnight (token) | Yes | Native Token Observation Pallet |
-| Cardano → Midnight (data) | No | — |
-| Midnight → Cardano (token) | No | — |
-| Midnight → Cardano (data) | No | — |
-| Midnight → Cardano (proof result) | Manually | Off-chain relay, transaction metadata |
-
-### 4. DUST Is Non-Persistent
-
-DUST is a computational resource, not a transferable token. It has a lifecycle tied to the Night tokens that generate it:
-
-1. **Generation phase:** DUST capacity grows over time from the associated Night UTXOs
-2. **Maximum capacity:** Holds until the backing Night is spent
-3. **Decay phase:** After Night is spent, DUST capacity decays
-4. **Zero:** Permanent
-
-The protocol reserves the right to redistribute DUST on hardforks and modify allocation rules. Don't design systems that depend on a specific DUST balance persisting indefinitely.
-
-### 5. Testnet Is in Transition
-
-As of March 2026, Midnight's testnet landscape is unstable:
-
-- Testnet-02 ended in February 2026
-- Preview is engineering-only (not open to external developers)
-- The next public milestone is Mōhalu (Incentivized Mainnet)
-
-This means deployment and integration testing for dual-chain systems is limited. Local development (compiler + proof server) works, but end-to-end cross-chain testing depends on network availability.
+The disclosed values become part of the transaction's public record. The `disclose()` call is an explicit decision: this value crosses from private computation into public state.
 
 ---
 
-## Working Within the Constraints
+## What "Private" Means
 
-Given these limitations, the dual-chain architectures from Lesson 6.1 use a **manual coordination pattern**:
+Everything inside a circuit that doesn't touch the ledger stays private. The circuit computes on it, the ZK proof guarantees the computation was correct, but the values themselves never appear on-chain.
 
-### For Credential Systems
+A witness function provides private inputs from the user's local environment:
 
-1. Issue credential on Cardano (Aiken validator mints NFT)
-2. Off-chain service or user registers credential commitment on Midnight
-3. Privacy proofs happen on Midnight
-4. If needed, proof results are relayed back to Cardano as metadata
+```
+witness secretKey(): Bytes<32>;
+```
 
-The credential commitment step is the manual bridge. An automated service can handle it, but there's no on-chain guarantee that the Midnight commitment matches the Cardano credential.
+The secret key enters the circuit, gets used in computation (e.g., deriving a public key), and the result of that computation may or may not be disclosed. The secret key itself never leaves the user's machine.
 
-### For Token Operations
-
-1. Acquire cNIGHT on Cardano
-2. Register wallet mapping
-3. DUST generates automatically via the observation pallet
-4. Use DUST for Midnight transactions
-
-This is the only flow with on-chain guarantees. The pallet handles it trustlessly.
-
-### For Everything Else
-
-Off-chain relays. A trusted service (or a decentralized relay network, when one exists) reads state from one chain and submits it to the other. The trust model depends on who operates the relay.
+This is the fundamental difference from Cardano. On Cardano, the Plutus validator sees the datum and redeemer — both are on-chain, both are public. On Midnight, witness data is private by default and only becomes public through explicit `disclose()` calls.
 
 ---
 
-## What's on the Roadmap
+## Privacy Techniques on the Ledger
 
-Several initiatives aim to reduce these constraints:
+Even within the public ledger, you can limit what's revealed. Midnight provides three patterns:
 
-| Initiative | What It Does | Status |
-|-----------|-------------|--------|
-| **Credential commitment bridges** | Auto-sync Cardano credential mints to Midnight MerkleTree insertions | Planned |
-| **Cross-chain proof receipts** | Post Midnight proof results back to Cardano as metadata | Planned |
-| **Pintent protocol** (0xAtelerix) | Cross-chain intent system with planned Cardano support | Early development |
-| **Pre-compiled node binaries** | Replace Docker-only distribution for easier deployment | In progress |
+### 1. Hashes and Commitments
 
-None of these are available today. Design for the current constraints and plan for the future capabilities.
+Instead of storing raw values on the ledger, store their hashes:
+
+```
+persistentHash<T>(value: T): Bytes<32>
+persistentCommit<T>(value: T, rand: Bytes<32>): Bytes<32>
+```
+
+The hash is public. The preimage is private. A later circuit can prove knowledge of the preimage without revealing it.
+
+`persistentHash` is deterministic — the same value always produces the same hash. `persistentCommit` adds randomness, so the same value produces different commitments each time. Use commitments when you need to prevent correlation between entries.
+
+### 2. Merkle Trees
+
+`MerkleTree<n, T>` and `HistoricMerkleTree<n, T>` are the exception to the "ledger is public" rule. They store commitments in a tree structure that enables membership proofs without revealing which leaf you're proving.
+
+You can prove "I have a value in this tree" without revealing the value or its position. This is the foundation for credential systems (Module 5) and token privacy (ZSwap).
+
+### 3. The Commitment/Nullifier Pattern
+
+This combines Merkle Trees with a Set to create single-use tokens:
+
+1. A commitment goes into a MerkleTree (proves existence)
+2. When spent, a nullifier goes into a Set (prevents double-spend)
+3. The nullifier is unlinkable to the commitment — observers can't tell which commitment was spent
+
+ZSwap uses this pattern for Midnight's native token system. You'll build on it in Module 5 for credential revocation.
+
+---
+
+## Where Data Lives: A Decision Map
+
+| Data | Where | Why |
+|------|-------|-----|
+| Credential existence | Public ledger | Others need to verify it exists |
+| Credential attributes | Private (witness) | Holder controls what's revealed |
+| Token balance | Public ledger (or shielded via ZSwap) | Depends on whether balance should be visible |
+| Contract state | Public ledger fields | Read/written by circuits, visible on-chain |
+| Intermediate computation | Private (circuit) | Never touches ledger, proven by ZK |
+| User's secret key | Private (witness) | Enters circuit locally, never on-chain |
+| Membership proof | MerkleTree on ledger | Proves inclusion without revealing which member |
+| Revocation status | Set on ledger (nullifiers) | Proves something was used, not which thing |
+
+---
+
+## Comparison to Cardano
+
+On Cardano, the privacy model is simple: everything is public. Datums, redeemers, transaction metadata, token balances — all visible on-chain. If you want privacy, you handle it off-chain and only put hashes on the ledger. But the Plutus VM has no mechanism to prove that off-chain computation was correct.
+
+Midnight's dual-ledger fills that gap:
+
+| Property | Cardano | Midnight |
+|----------|---------|----------|
+| Default visibility | Public | Public for ledger, private for computation |
+| Private computation | Off-chain (unverified) | In-circuit (ZK-proven) |
+| Selective disclosure | Manual, no enforcement | Built into the language (`disclose()`) |
+| Membership proofs | Not natively supported | MerkleTree with ZK proofs |
+| Single-use proofs | Not natively supported | Commitment/nullifier pattern |
+
+---
+
+## The Mental Model
+
+Think of a Compact circuit as a one-way membrane. Data enters privately through witnesses. Computation happens inside. Only what you explicitly `disclose()` exits to the public ledger. Everything else stays behind the membrane, verified by a ZK proof.
+
+On Cardano, there's no membrane. Everything the validator touches is already public. Midnight's contribution is making that membrane a first-class part of the programming model — not an afterthought.
 
 ---
 
 ## Questions to consider:
 
-- The manual coordination pattern introduces a window of inconsistency between chains. What happens if a credential is revoked on Cardano during that window, before the Midnight commitment is updated?
-- The observation pallet is one-way: Midnight reads Cardano. What would a bidirectional bridge require? What trust assumptions would it introduce?
-- If Midnight's DUST can be redistributed on hardforks, what does that mean for applications that need guaranteed gas availability?
+- If you're building a voting system, which parts should live on the public ledger and which should stay private? What does the verifier need to see?
+- The commitment/nullifier pattern enables single-use proofs. What applications beyond token transfers benefit from "prove once, prevent reuse"?
+- Midnight's `persistentHash` is deterministic — the same input always produces the same hash. When is that a feature and when is it a liability?
 
 ---
 
 ## What's Next
 
-Lesson 6.3 brings it all together with a decision framework: when does a use case need Midnight, when is Cardano sufficient, and when do you need both?
+Lesson 1.3 explains how Midnight relates to Cardano as a partner chain — what's shared, what's not, and why your Aiken code won't run on Midnight.
 
 ---
 
 ## Assignment
 
-You're designing a dual-chain system where professional certifications are issued on Cardano and used for anonymous team capability proofs on Midnight (Scenario 2 from Lesson 6.1).
+Design the data layout for a simple reputation system on Midnight. For each piece of data, decide whether it belongs on the public ledger, in a MerkleTree, or as private witness data. Justify each choice.
 
-Map out the failure modes:
-1. What happens if the Cardano credential mint succeeds but the Midnight commitment registration fails?
-2. What happens if a certification is revoked on Cardano but the Midnight MerkleTree still contains the commitment?
-3. How would you design the off-chain relay to minimize the inconsistency window?
-4. What's the minimum trust assumption your relay requires?
+Your system should handle:
+- Issuing a reputation score to a user
+- Allowing the user to prove their score exceeds a threshold without revealing the exact score
+- Preventing the user from using the same proof twice

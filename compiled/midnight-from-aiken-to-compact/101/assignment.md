@@ -2,16 +2,16 @@
 
 ## Task
 
-Design a dual-chain credential architecture for a real-world scenario of your choice, evaluate the interoperability constraints, and apply the decision framework to determine which features belong on each chain.
+Explain the Midnight partner chain model and its technical differences from Cardano to a fellow Aiken developer. Your explanation should demonstrate understanding of the execution model differences, the dual-ledger privacy system, and the structural relationship between the two chains.
 
 ## Deliverables
 
-1. A dual-chain architecture for one of these scenarios (or a comparable one from your domain): (a) a professional association where members prove certification status without revealing the membership list, (b) a university where graduates prove degrees and competencies without exposing transcripts, or (c) a development team proving collective capability without revealing individual identities. Specify what data lives on Cardano and why, what lives on Midnight and why, the user coordination flow between chains, and the verification flow from the verifier's perspective
-2. A failure mode analysis of your architecture: what happens if the Cardano credential mint succeeds but the Midnight commitment registration fails, what happens if a credential is revoked on Cardano but the Midnight MerkleTree still contains the commitment, how you would design the off-chain relay to minimize the inconsistency window, and the minimum trust assumption your relay requires
-3. An evaluation of three use cases from your own domain using the three-question framework (data vs result, composability, harm potential). For each, decide Cardano only, Midnight only, or dual-chain, and identify the specific privacy property Midnight provides or explain why Cardano is sufficient
+1. A written comparison of Midnight's Impact VM and Cardano's Plutus VM that addresses: why Midnight chose non-Turing-completeness, how validation-vs-execution changes what contracts can do, and one scenario where each model has an advantage
+2. A data layout for a simple reputation system on Midnight specifying which data belongs on the public ledger, in a MerkleTree, or as private witness data, with justification for each choice
+3. An explanation of the partner chain model that covers: why Midnight is not a sidechain, what is shared between the two chains (wallet, validator set, token economics) and what is not (VM, language, consensus), and how the two chains complement each other
 
 ## Notes
 
-**Estimated time:** 90-120 minutes
+**Estimated time:** 60-90 minutes
 
-**Key constraints to address:** no cross-chain contract calls, no atomic cross-chain transactions, one-way observation only (Midnight reads Cardano), DUST non-persistence, current testnet limitations
+**Key concepts to address:** Impact VM vs Plutus VM, eUTxO vs hybrid state model, disclose() and the public/private boundary, Native Token Observation Pallet, partner chain vs sidechain vs L2

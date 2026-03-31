@@ -2,16 +2,16 @@
 
 ## Task
 
-Take an Aiken validator you have written (or use a simple counter/escrow example) and translate it into a Compact contract design. This exercise tests your ability to map Aiken concepts to Compact equivalents and write basic Compact contract structure.
+Build a complete selective disclosure credential system for a professional services firm. This capstone assignment for Module 5 synthesizes all three credential patterns: signature-based verification, MerkleTree anonymous membership, and selective disclosure.
 
 ## Deliverables
 
-1. A component-by-component mapping of your Aiken validator to Compact: datum to ledger fields, redeemer to circuit parameters and witnesses, validation logic to circuit execution logic, and identification of any data that would benefit from being private
-2. A complete Compact contract for a token vault with: an owner (public key), a balance (Uint<64>), a locked/unlocked state, a constructor, deposit/withdraw circuits with proper disclose() usage, and lock/unlock circuits with owner verification via witness
-3. An annotation of a provided Compact contract skeleton identifying each component (pragma, ledger, witness, constructor, circuit), what data is public vs private, and why the constructor increments the round counter
+1. An individual proof circuit: a consultant proves they hold a specific certification (e.g., AWS Solutions Architect) without revealing their name or other certifications. Include the Compact circuit with credential struct, signature verification, ownership binding, and specify what enters via witness, what gets checked via assert, and what gets disclosed
+2. A team proof circuit sketch: the firm proves it has at least 5 consultants with a specific certification, with individual identities remaining private. Use the MerkleTree + nullifier pattern to prevent double-counting. Specify ledger fields, witness signatures, and the aggregation logic
+3. An expiry check circuit: a client verifies that a consultant's certification has not expired, where the exact issue and expiry dates stay private and the client only learns "valid" or "expired." Write the assertion logic and explain the disclosure level (boolean proof)
 
 ## Notes
 
-**Estimated time:** 60-90 minutes
+**Estimated time:** 90-120 minutes
 
-**Key concepts to address:** ledger fields vs datums, circuits vs validators, witnesses for private input, disclose() for visibility control, assert for guards, the shift from validation to execution
+**Key patterns to combine:** signature-based verification (Lesson 5.1), MerkleTree commitments + nullifiers for anonymous membership (Lesson 5.2), selective disclosure with three disclosure levels: boolean proof, derived value, partial attribute (Lesson 5.3)

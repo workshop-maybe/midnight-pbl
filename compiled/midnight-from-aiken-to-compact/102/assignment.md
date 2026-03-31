@@ -2,18 +2,16 @@
 
 ## Task
 
-Install the Compact toolchain, compile both example contracts (counter and bulletin board), deploy the counter to preprod (or standalone), and document the artifacts and workflow. This is a hands-on module where your deliverables prove you have a working development environment and understand the compilation and deployment pipeline.
+Take an Aiken validator you have written (or use a simple counter/escrow example) and translate it into a Compact contract design. This exercise tests your ability to map Aiken concepts to Compact equivalents and write basic Compact contract structure.
 
 ## Deliverables
 
-1. Setup verification: output of `compact --version`, `compact compile --version`, and proof server health check (`curl -s http://localhost:6300 -o /dev/null -w "%{http_code}"`)
-2. Compilation analysis: for both the counter and bulletin board contracts, report the number of provable vs pure circuits, proving key and verification key sizes, and how `Maybe<Opaque<"string">>` in Compact maps to TypeScript in the generated `index.d.ts`
-3. Deployment walkthrough: deploy the counter contract to preprod (or standalone), record the contract address, increment three times noting proof generation time for each, confirm the counter reads 3, then exit and rejoin using saved seed and contract address to verify state persistence
+1. A component-by-component mapping of your Aiken validator to Compact: datum to ledger fields, redeemer to circuit parameters and witnesses, validation logic to circuit execution logic, and identification of any data that would benefit from being private
+2. A complete Compact contract for a token vault with: an owner (public key), a balance (Uint<64>), a locked/unlocked state, a constructor, deposit/withdraw circuits with proper disclose() usage, and lock/unlock circuits with owner verification via witness
+3. An annotation of a provided Compact contract skeleton identifying each component (pragma, ledger, witness, constructor, circuit), what data is public vs private, and why the constructor increments the round counter
 
 ## Notes
 
-**Estimated time:** 90-120 minutes (includes toolchain installation and first-compilation parameter download)
+**Estimated time:** 60-90 minutes
 
-**Prerequisites:** macOS or Linux, Docker Desktop running, Node.js v22.15+
-
-**Common issues:** first compilation downloads ~500MB universal parameters; Apple Silicon Macs may need Docker VMM enabled; DUST generation takes time after faucet funding
+**Key concepts to address:** ledger fields vs datums, circuits vs validators, witnesses for private input, disclose() for visibility control, assert for guards, the shift from validation to execution

@@ -2,16 +2,16 @@
 
 ## Task
 
-Design the privacy architecture for a sealed-bid auction on Midnight and implement the TypeScript witness layer that supports it. This exercise tests your understanding of the full privacy pipeline: disclose() for visibility control, the proof generation lifecycle, and witness functions as the bridge between private data and ZK circuits.
+Design a dual-chain credential architecture for a real-world scenario of your choice, evaluate the interoperability constraints, and apply the decision framework to determine which features belong on each chain.
 
 ## Deliverables
 
-1. A sealed-bid auction design specifying: the submitBid circuit (what gets disclosed, what stays private, how the bid is stored on the ledger via commitment), the revealBid circuit (at what point and through which mechanism the bid amount becomes public), and the data flow through the privacy gradient
-2. A trace of the bulletin board's takeDown circuit through all four pipeline stages (compile, prove, submit, verify): what artifacts are produced, what private inputs enter the proof, what public outputs emerge, what the transaction contains, and at which stage a wrong secret key causes failure
-3. A TypeScript witness file for a credential contract with MerkleTree commitments and nullifiers, implementing: a CredentialPrivateState type, a loadCredential witness that returns the credential at the current counter position, and a deriveNullifier witness that derives a deterministic nullifier and increments the counter in private state
+1. A dual-chain architecture for one of these scenarios (or a comparable one from your domain): (a) a professional association where members prove certification status without revealing the membership list, (b) a university where graduates prove degrees and competencies without exposing transcripts, or (c) a development team proving collective capability without revealing individual identities. Specify what data lives on Cardano and why, what lives on Midnight and why, the user coordination flow between chains, and the verification flow from the verifier's perspective
+2. A failure mode analysis of your architecture: what happens if the Cardano credential mint succeeds but the Midnight commitment registration fails, what happens if a credential is revoked on Cardano but the Midnight MerkleTree still contains the commitment, how you would design the off-chain relay to minimize the inconsistency window, and the minimum trust assumption your relay requires
+3. An evaluation of three use cases from your own domain using the three-question framework (data vs result, composability, harm potential). For each, decide Cardano only, Midnight only, or dual-chain, and identify the specific privacy property Midnight provides or explain why Cardano is sufficient
 
 ## Notes
 
 **Estimated time:** 90-120 minutes
 
-**Key concepts to address:** the privacy gradient (fully private, proven but hidden, hashed on ledger, fully public), persistentHash vs persistentCommit, the four-stage pipeline (compile, prove, submit, verify), WitnessContext interface, the [newPrivateState, returnValue] tuple pattern
+**Key constraints to address:** no cross-chain contract calls, no atomic cross-chain transactions, one-way observation only (Midnight reads Cardano), DUST non-persistence, current testnet limitations

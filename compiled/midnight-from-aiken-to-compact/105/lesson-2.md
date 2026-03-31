@@ -1,274 +1,225 @@
-# Lesson 2.2: From Aiken to Compact
+# Lesson 5.2: Anonymous Membership with MerkleTree and Nullifiers
 
-## Two Languages, One Developer
+## Beyond Individual Verification
 
-If you've written Aiken validators, you already have the mental models that matter: typed state, explicit constraints, on-chain verification. Compact uses different syntax and a different execution model, but the concerns are the same.
+Lesson 5.1 showed how to verify a single credential: the user provides it via a witness, the circuit checks the signature, and the proof confirms the claim. The verifier knows "this person holds a valid credential from issuer X."
 
-This lesson maps what you know in Aiken to what you'll write in Compact. It won't teach you Compact syntax in detail — that's Lesson 2.3. The goal here is orientation: when you see a Compact concept, you should know which Aiken concept it replaces and what changed.
+But what if the question is different? "Does this person hold any credential from this set of 1,000 issued credentials?" If you verify the credential directly, the verifier can tell which specific credential was used. For some applications — anonymous voting, anonymous access control, anonymous team capability proofs — that's a leak.
 
----
-
-## The Core Mapping
-
-| Aiken | Compact | What Changed |
-|-------|---------|-------------|
-| Validator | Circuit | Validators approve/reject. Circuits execute and mutate state. |
-| Datum | Ledger fields | Datums are per-UTxO, consumed and recreated. Ledger fields persist across transactions. |
-| Redeemer | Circuit parameters | Both provide input to the script. Compact parameters can be private. |
-| `check` / `expect` | `assert` | Same role: enforce a condition or abort. |
-| Custom types | `enum`, structs | Compact enums work similarly. Struct syntax differs. |
-| `pub fn` | `export circuit` | Both control external visibility. |
-| (no equivalent) | `witness` | Private input from user's machine. Aiken has no equivalent — everything is on-chain. |
-| (no equivalent) | `disclose()` | Explicit visibility control. In Aiken, everything is public by default. |
-| Script context | `Kernel` built-in | Kernel provides balance checks, block time, contract address. Narrower than ScriptContext. |
-| Minting policy | `Kernel.mintShielded/mintUnshielded` | Token minting is a Kernel operation, not a separate script. |
+MerkleTree commitments solve this. You store hashed credentials in a tree. The user proves they know a leaf in the tree without revealing which leaf. Combined with nullifiers, you get single-use anonymous proofs.
 
 ---
 
-## State: Datum vs. Ledger
+## The MerkleTree Pattern
 
-In Aiken, state lives in datums attached to UTxOs. To update state, you consume the UTxO and create a new one with the updated datum. The validator checks that the transition is valid.
+### Step 1: Commitment
 
-```aiken
-// Aiken: state is a datum type
-type CounterDatum {
-  count: Int,
-}
-
-// Validator checks the transition
-validator {
-  fn increment(datum: CounterDatum, _redeemer: Void, _ctx: ScriptContext) -> Bool {
-    expect CounterDatum { count } = datum
-    count >= 0
-  }
-}
-```
-
-In Compact, state lives in ledger fields. The circuit reads and writes them directly. No consumption and recreation.
+When a credential is issued, a commitment (hash of the credential) is inserted into a MerkleTree on the ledger:
 
 ```compact
-// Compact: state is a ledger field
-export ledger round: Counter;
+export ledger credentials: MerkleTree<16, Bytes<32>>;
 
-// Circuit performs the transition
-export circuit increment(): [] {
-  round.increment(1);
+export circuit register_credential(commitment: Bytes<32>): [] {
+  credentials.insert(commitment);
 }
 ```
 
-The Aiken validator says "this transition is allowed." The Compact circuit says "do this transition." The validator is a judge. The circuit is an actor.
+The commitment is a `persistentHash` of the credential data. The credential itself is never on-chain — only its hash. The MerkleTree stores up to 2^16 (65,536) commitments.
 
-**What this means for you:** In Aiken, you spend most of your effort defining valid transitions and checking edge cases in the validator. In Compact, the circuit defines the transition itself, and the ZK proof guarantees it was executed correctly. You shift from defensive validation to direct computation.
+### Step 2: Membership Proof
+
+To prove they hold a credential, the user provides the credential via a witness. The circuit hashes it and checks the hash against the MerkleTree:
+
+```compact
+witness load_credential(): Bytes<64>;
+
+export circuit prove_membership(): [] {
+  const cred = load_credential();
+  const commitment = persistentHash(cred);
+
+  // The MerkleTree proves this commitment exists
+  // without revealing which leaf it is
+  assert credentials.member(commitment)
+         "Credential not found in registry";
+}
+```
+
+The `member()` check uses a Merkle proof internally. The prover supplies the leaf and its path; the verifier checks the path leads to the tree's root. The proof reveals nothing about which leaf was used — only that some valid leaf was provided.
+
+### Step 3: Nullifiers (Single-Use)
+
+Without nullifiers, the same credential can be used to generate unlimited proofs. For applications like voting or one-time access, you need to prevent reuse.
+
+A nullifier is a deterministic value derived from the credential. It's unique to the credential but unlinkable to the commitment:
+
+```compact
+export ledger nullifiers: Set<Bytes<32>>;
+
+export circuit prove_membership_once(): [] {
+  const cred = load_credential();
+  const commitment = persistentHash(cred);
+  const nullifier = derive_nullifier(cred);
+
+  // Verify the credential is in the tree
+  assert credentials.member(commitment)
+         "Credential not found";
+
+  // Verify this credential hasn't been used before
+  assert !nullifiers.member(nullifier)
+         "Credential already used";
+
+  // Record the nullifier to prevent reuse
+  nullifiers.insert(nullifier);
+}
+```
+
+The nullifier derivation must be deterministic (same credential always produces same nullifier) but unlinkable (you can't derive the commitment from the nullifier or vice versa). A common approach:
+
+```compact
+circuit derive_nullifier(cred: Bytes<64>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([
+    pad(32, "nullifier:"),
+    persistentHash(cred)
+  ]);
+}
+```
+
+Using a domain separator (`"nullifier:"`) ensures the nullifier hash is in a different domain from the commitment hash, even though both are derived from the same credential.
 
 ---
 
-## Entry Points: Validator vs. Circuit
+## Why This Works
 
-An Aiken validator has a fixed signature: datum, redeemer, script context. Every validator follows this pattern.
+An observer watching the ledger sees:
 
-```aiken
-validator {
-  fn spend(datum: MyDatum, redeemer: MyRedeemer, ctx: ScriptContext) -> Bool {
-    // ... return True or False
-  }
-}
-```
+1. **MerkleTree insertions** — a series of commitment hashes. They can't tell what credentials they represent.
+2. **Nullifier insertions** — a series of nullifier hashes. They can't link a nullifier to a commitment because the derivation uses a different domain.
+3. **Successful proof transactions** — the ZK proof passed, meaning the prover holds a valid credential. But which one? The observer can't tell.
 
-A Compact circuit has a flexible signature. Parameters are typed but you choose what they are. The return type can be a value, not just a boolean.
-
-```compact
-export circuit post(newMessage: Opaque<"string">): [] {
-  assert(state == State.VACANT, "Board is occupied");
-  owner = disclose(publicKey(localSecretKey(), sequence as Field as Bytes<32>));
-  message = disclose(some<Opaque<"string">>(newMessage));
-  state = State.OCCUPIED;
-}
-
-export circuit takeDown(): Opaque<"string"> {
-  assert(state == State.OCCUPIED, "Board is empty");
-  // ... returns the taken-down message
-}
-```
-
-Key differences:
-- **Multiple circuits per contract.** Aiken has one validator per script address. Compact contracts expose multiple circuits, each with a different purpose.
-- **Circuits return values.** `takeDown()` returns the message content. Aiken validators only return True/False.
-- **No script context.** Compact circuits access the ledger directly. They don't receive a transaction-level context the way Aiken validators do. Contract-level info (address, balance, block time) comes from the `Kernel` built-in.
+The only information leaked is:
+- The credential set is growing (number of commitments)
+- Credentials are being used (number of nullifiers)
+- The total count of unique credentials used
 
 ---
 
-## Types: Similar but Different
+## Comparison to Brick Towers' Approach
 
-Aiken and Compact both use algebraic data types, but the syntax and capabilities diverge.
+The Brick Towers identity system (Lesson 5.1) uses signature verification, not MerkleTree proofs:
 
-**Enums:**
+| Aspect | Signature-Based (Brick Towers) | MerkleTree-Based |
+|--------|-------------------------------|-----------------|
+| What's proven | "My credential was signed by issuer X" | "I hold one of the credentials in set S" |
+| Anonymity set | 1 (the specific credential) | N (all credentials in the tree) |
+| Issuer linkability | Verifier knows which issuer signed | Verifier sees only the tree root |
+| Credential reuse | Unlimited (no nullifiers) | Controllable via nullifiers |
+| Setup complexity | Simpler — just store issuer public key | More complex — maintain MerkleTree |
+| Use case fit | Individual verification (age check) | Anonymous membership (voting, access) |
 
-```aiken
-// Aiken
-type State {
-  Vacant
-  Occupied
-}
-```
-
-```compact
-// Compact
-export enum State {
-  VACANT,
-  OCCUPIED
-}
-```
-
-Compact enums are simpler — no associated data on variants (unlike Aiken's constructors with fields).
-
-**Option/Maybe:**
-
-```aiken
-// Aiken: Option<a> is built-in
-let msg: Option<ByteArray> = Some("hello")
-```
-
-```compact
-// Compact: Maybe<T> with some<T>() and none<T>() constructors
-export ledger message: Maybe<Opaque<"string">>;
-message = some<Opaque<"string">>(content);
-message = none<Opaque<"string">>();
-```
-
-**Integers and bytes:**
-
-```aiken
-// Aiken: unbounded Int, ByteArray
-let x: Int = 42
-let b: ByteArray = #"deadbeef"
-```
-
-```compact
-// Compact: sized types
-export ledger value: Uint<64>;    // 64-bit unsigned
-export ledger key: Bytes<32>;     // 32-byte array
-export ledger f: Field;           // scalar field element
-```
-
-Compact requires explicit sizes. There's no unbounded integer. This constraint comes from the ZK circuit — every value needs a known bit width for the proof system.
+Use signature-based verification when the verifier needs to know the claim but not the identity (Lesson 5.1's age check). Use MerkleTree when the verifier shouldn't know even which credential was used.
 
 ---
 
-## Privacy: The Concept Aiken Doesn't Have
+## The Witness Implementation
 
-This is where Compact diverges most from Aiken. Two concepts have no Aiken equivalent:
+```typescript
+type CredentialPrivateState = {
+  readonly credentials: Uint8Array[];  // Array of credential data
+  readonly merkleProofs: Map<string, MerkleProof>;  // Cached proofs
+};
 
-### Witnesses
-
-```compact
-witness localSecretKey(): Bytes<32>;
-
-export circuit post(newMessage: Opaque<"string">): [] {
-  owner = disclose(publicKey(localSecretKey(), sequence as Field as Bytes<32>));
-  // localSecretKey() is private — never on-chain
-  // publicKey() result is disclosed — visible on-chain
-}
+export const witnesses = {
+  load_credential: ({
+    privateState,
+  }: WitnessContext<Ledger, CredentialPrivateState>): [
+    CredentialPrivateState,
+    Uint8Array,
+  ] => {
+    // Return the credential the user wants to prove
+    const cred = privateState.credentials[0];
+    return [privateState, cred];
+  },
+};
 ```
 
-In Aiken, every input to the validator is on-chain. The datum is on-chain. The redeemer is on-chain. There is no concept of private input.
-
-In Compact, witnesses provide data from the user's local environment. The data enters the ZK circuit, gets used in computation, and only the results that are explicitly `disclose()`d become public.
-
-### disclose()
-
-```compact
-// This value goes on the public ledger
-authority = disclose(publicKey(round, sk));
-
-// This value also goes on the ledger, but the connection
-// between the input (sk) and the output is hidden
-value = disclose(v);
-```
-
-In Aiken, you never think about what to reveal — everything is revealed. In Compact, `disclose()` is the explicit act of making something public. Omitting it keeps the value behind the ZK proof.
+The witness provides the raw credential data. The circuit handles hashing, MerkleTree membership checking, and nullifier derivation. The witness doesn't need to compute any proofs — the ZK circuit does that.
 
 ---
 
-## Assertions: check vs. assert
+## HistoricMerkleTree for Append-Only Registries
 
-The pattern is nearly identical:
+If credentials are added over time, the MerkleTree root changes with each insertion. A proof generated against an old root becomes invalid.
 
-```aiken
-// Aiken
-expect True = count >= 0
-// or
-if count < 0 {
-  fail
-}
-```
+`HistoricMerkleTree<n, T>` solves this by tracking historical roots:
 
 ```compact
-// Compact
-assert(state == State.VACANT, "Board is occupied");
+export ledger credentials: HistoricMerkleTree<16, Bytes<32>>;
 ```
 
-Both abort the transaction if the condition fails. Compact's `assert` takes an error message string. The practical difference: in Aiken, a failed check means the validator returns False and the transaction is rejected. In Compact, a failed assert means the circuit aborts and no ZK proof is generated.
+A membership proof is valid against any historical root, not just the current one. This means a user can generate a proof, and even if new credentials are added before the proof is verified, it still passes.
+
+Use `HistoricMerkleTree` for credential registries where insertions happen concurrently with verifications. Use plain `MerkleTree` when the tree is populated once and then read-only.
 
 ---
 
-## What Doesn't Translate
+## Putting It Together: Anonymous Credential System
 
-Some Aiken patterns have no direct Compact equivalent:
-
-| Aiken Pattern | Compact Situation |
-|--------------|------------------|
-| **Multi-validator composition** (spending + minting in one tx) | One contract, multiple circuits. No separate minting policy — use `Kernel.mintShielded()`. |
-| **UTxO scanning** (finding specific UTxOs in ScriptContext) | No UTxO scanning. Ledger state is directly accessible. |
-| **Reference inputs** (reading datum without spending) | Not applicable. Ledger fields are always readable. |
-| **Transaction-level checks** (checking outputs, signatories) | No transaction context. Circuits operate on contract state. Cross-contract interaction is limited. |
-| **Plutus builtins** (bytearray slicing, integer arithmetic) | Compact has its own standard library. Different names, similar operations. |
-
----
-
-## The Bulletin Board: Side by Side
-
-Here's how you might think about the bulletin board contract in Aiken terms vs. how it's actually written in Compact:
-
-**What an Aiken developer would expect:**
-
-A datum holding the board state. A redeemer with `Post` and `TakeDown` actions. A validator that checks the poster's signature and the state transition. Everything public.
-
-**What Compact actually does:**
+Here's a complete contract skeleton:
 
 ```compact
-witness localSecretKey(): Bytes<32>;
+pragma language_version >= 0.20;
 
-export circuit post(newMessage: Opaque<"string">): [] {
-  assert(state == State.VACANT, "Board is occupied");
-  owner = disclose(publicKey(localSecretKey(), sequence as Field as Bytes<32>));
-  message = disclose(some<Opaque<"string">>(newMessage));
-  state = State.OCCUPIED;
+import CompactStandardLibrary;
+
+export ledger credentials: HistoricMerkleTree<16, Bytes<32>>;
+export ledger nullifiers: Set<Bytes<32>>;
+export ledger issuer: Bytes<32>;
+
+witness load_credential(): Bytes<64>;
+
+constructor(issuer_pk: Bytes<32>) {
+  issuer = issuer_pk;
+}
+
+// Called by the issuer to register a new credential
+export circuit register(commitment: Bytes<32>): [] {
+  credentials.insert(commitment);
+}
+
+// Called by a credential holder to prove membership (one-time)
+export circuit prove_once(): [] {
+  const cred = load_credential();
+  const commitment = persistentHash(cred);
+  const nullifier = persistentHash<Vector<2, Bytes<32>>>([
+    pad(32, "nullifier:"),
+    persistentHash(cred)
+  ]);
+
+  assert credentials.member(commitment)
+         "Not a registered credential";
+  assert !nullifiers.member(nullifier)
+         "Already used";
+
+  nullifiers.insert(nullifier);
 }
 ```
-
-The secret key is private. The public key is derived inside the circuit and disclosed. The message is disclosed (it's a public bulletin board). The sequence counter increments on takedown to break linkability between posting rounds. None of this is possible in Aiken — there's no mechanism for private input or selective disclosure.
 
 ---
 
 ## Questions to consider:
 
-- Aiken's eUTxO model enables concurrency — two transactions spending different UTxOs can run in parallel. Compact's account model means circuits read/write shared state. What does this imply for high-throughput applications?
-- In Aiken, you can compose validators at the transaction level — one script mints, another spends, and they both see the same ScriptContext. How would you achieve multi-step logic across circuits in a single Compact contract?
-- The bulletin board uses a sequence counter to break linkability. In Aiken, all data is public, so linkability is the default. What Aiken applications would benefit from Compact's unlinkability pattern?
-
----
-
-## What's Next
-
-Lesson 2.3 puts this into practice — you'll walk through writing a Compact contract from scratch, using the counter and bulletin board as examples.
+- MerkleTree depth determines capacity (2^n leaves). Depth 16 holds 65,536 credentials. What happens if you need more? What are the tradeoffs of deeper trees?
+- The nullifier prevents reuse, but it also means a user can only prove once. How would you modify the pattern for applications where the user needs to prove multiple times but each proof should be unique (e.g., voting in multiple elections)?
+- If an attacker knows the full set of possible credentials, they could compute all commitments and check each against the tree. How does the commitment scheme defend against this? When is `persistentCommit` (with randomness) needed over `persistentHash`?
 
 ---
 
 ## Assignment
 
-Take a simple Aiken validator you've written (or use the counter example) and map each component to its Compact equivalent:
+Design an anonymous voting system using MerkleTree commitments and nullifiers:
 
-1. Identify the datum → which ledger fields would replace it?
-2. Identify the redeemer → which circuit parameters and witnesses would replace it?
-3. Identify the validation logic → how does it change when the circuit performs the transition instead of checking it?
-4. Identify any data that would benefit from being private → where would you use witnesses and omit `disclose()`?
+1. How are voter credentials registered? What's the commitment?
+2. How does a voter cast a vote? What does the circuit check?
+3. How do you prevent double-voting while keeping votes anonymous?
+4. How do you count votes without linking them to voters?
+5. Write the Compact contract skeleton with ledger fields, witnesses, and circuit signatures

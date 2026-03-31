@@ -1,209 +1,188 @@
-# Lesson 2.1: Anatomy of a Compact Contract
+# Lesson 5.1: Verifying Credentials Without Revealing Them
 
-## Five Building Blocks
+## The Problem
 
-Every Compact contract is built from five components: a pragma, ledger declarations, a constructor, circuits, and witnesses. Before you write any Compact code (that's Module 2.3), you need a mental model of how these pieces fit together.
+An identity provider issues a credential — your name, date of birth, national ID. A shop needs to verify you're over 21. On Cardano, the credential goes on-chain: public, permanent, linked to your wallet. Everyone knows your birthday.
 
----
+On Midnight, the credential stays on your machine. A Compact circuit reads it privately, checks the claim, and produces a ZK proof. The shop sees "verified: over 21." It never sees your name, your birthday, or your national ID.
 
-## 1. Pragma and Imports
-
-A Compact file starts by declaring its language version and importing the standard library:
-
-```
-pragma language_version 0.22;
-import CompactStandardLibrary;
-```
-
-The pragma locks the contract to a specific compiler version. This matters because Compact is pre-1.0 and breaking changes happen between releases. The standard library provides cryptographic primitives — hashing, commitments, public key derivation — that you'll use in nearly every contract.
+This lesson walks through how Brick Towers built this pattern in their [midnight-identity](https://github.com/bricktowers/midnight-identity) project.
 
 ---
 
-## 2. Ledger Declarations
+## The Credential Structure
 
-The ledger section defines what the contract stores on-chain:
+A credential is a struct with identity attributes and a cryptographic signature from a trusted issuer:
 
-```
-export ledger authority: Bytes<32>;
-export ledger value: Uint<64>;
-export ledger state: State;
-export ledger round: Counter;
-```
+```compact
+struct CredentialSubject {
+    id: Bytes<32>;                    // Wallet public key
+    first_name: Bytes<32>;
+    last_name: Bytes<32>;
+    national_identifier: Bytes<32>;
+    birth_timestamp: Uint<64>;
+}
 
-Each `export ledger` field is persistent state. It survives between transactions and is publicly readable on the Midnight ledger.
+struct Signature {
+    pk: CurvePoint;    // Issuer's public key
+    R: CurvePoint;     // Nonce commitment
+    s: Field;          // Signature scalar
+}
 
-The `export` keyword makes the field accessible from outside the contract (by DApp code or other contracts). Without `export`, the field exists but is internal.
-
-**Types available for ledger fields:**
-
-| Type | What It Stores |
-|------|---------------|
-| `Uint<n>` | Unsigned integer of n bits |
-| `Bytes<n>` | Fixed-size byte array |
-| `Field` | Scalar field element (used in ZK arithmetic) |
-| `Boolean` | True or false |
-| `Counter` | Auto-incrementing value (prevents linkability across rounds) |
-| `Set<T>` | Unbounded set — good for nullifiers |
-| `Map<K, V>` | Unbounded key-value store |
-| `List<T>` | Unbounded list with front insertion |
-| `MerkleTree<n, T>` | Bounded tree (depth 2-32) — membership proofs without revealing which member |
-| `HistoricMerkleTree<n, T>` | MerkleTree with historical root tracking |
-| `Opaque<'string'>` | JavaScript string passed through without inspection |
-| `Opaque<'Uint8Array'>` | JavaScript byte array passed through without inspection |
-
-You don't write `Cell<Uint<64>>`. Compact wraps ledger fields in `Cell` implicitly. You declare the value type; the runtime handles the container.
-
----
-
-## 3. Constructor
-
-The constructor initializes ledger state when the contract is deployed:
-
-```
-constructor(sk: Bytes<32>, v: Uint<64>) {
-  authority = disclose(publicKey(round, sk));
-  value = disclose(v);
-  state = State.SET;
+struct SignedCredentialSubject {
+    subject: CredentialSubject;
+    signature: Signature;
 }
 ```
 
-This runs once. The `disclose()` calls mark `authority` and `value` as public — they'll be visible on the ledger. The `state` field is set directly without `disclose()` because enum values on the ledger are already public by the ledger visibility rule.
+This follows the [W3C Verifiable Credentials](https://w3c-ccg.github.io/vc-data-model/#credential-subject) model. The `CredentialSubject` holds the claims. The `Signature` binds them to a trusted issuer.
 
-Constructor parameters can be private. In this example, `sk` (a secret key) enters via the deployer but only the derived public key gets disclosed.
-
----
-
-## 4. Circuits
-
-Circuits are the contract's entry points. They're what transactions call:
-
-```
-export circuit get(): Uint<64> {
-  assert(state == State.SET, "Attempted to get uninitialized value");
-  return value;
-}
-
-export circuit set(v: Uint<64>): [] {
-  assert(state == State.UNSET, "Attempted to set initialized value");
-  const sk = secretKey();
-  const pk = publicKey(round, sk);
-  authority = disclose(pk);
-  value = disclose(v);
-  state = State.SET;
-}
-```
-
-Circuits can read and write ledger state, call witness functions for private data, perform assertions, and use `disclose()` to make values public. The Compact compiler converts each circuit into a zero-knowledge circuit — the ZK proof guarantees the computation was correct without revealing private inputs.
-
-The `export` keyword makes the circuit callable from DApp code. Internal circuits (without `export`) can be used as helpers within the contract.
-
-**What circuits can't do:** They can't make network calls, read from other contracts, or perform unbounded loops. Compact is non-Turing-complete by design — every circuit has a fixed computational bound, which is what makes the ZK proof feasible.
+All fields use fixed-size types (`Bytes<32>`, `Uint<64>`, `CurvePoint`, `Field`). This is a ZK constraint — the proof system needs known bit widths. Variable-length strings get padded to `Bytes<32>`.
 
 ---
 
-## 5. Witnesses
+## The Verification Circuit
 
-Witnesses are declarations for private data that will come from the user's machine at runtime:
+The shop contract verifies the credential inside a circuit:
 
+```compact
+export ledger trusted_issuer_public_key: CurvePoint;
+
+witness get_identity(): SignedCredentialSubject;
+
+export circuit submit_order(id: Bytes<16>): [] {
+  const order = get_order(id);
+  const identity = get_identity();
+
+  // 1. Verify the credential was issued by a trusted party
+  assert identity.signature.pk == trusted_issuer_public_key
+         "The identity is not issued by a trusted issuer";
+
+  // 2. Verify the credential belongs to the caller
+  assert identity.subject.id == own_public_key().bytes
+         "Provided identity is not matching the wallet owner";
+
+  // 3. Verify the signature is valid
+  verify_signature(subject_hash(identity.subject), identity.signature);
+
+  // 4. Check the age claim
+  assert order.timestamp - identity.subject.birth_timestamp
+         > 21 * 365 * 24 * 60 * 60 * 1000
+         "User is not over 21 years old";
+
+  // ... payment processing
+}
 ```
-witness secretKey(): Bytes<32>;
+
+Four verification steps, and none of them disclose the credential:
+
+1. **Issuer check.** The signature's public key must match the trusted issuer stored on the ledger. This prevents forged credentials.
+2. **Ownership check.** The credential's `id` must match the caller's wallet public key (`own_public_key()`). This prevents using someone else's credential.
+3. **Signature verification.** The `verify_signature` circuit mathematically checks that the signature is valid for the credential's content hash. If any attribute was tampered with, the hash won't match and verification fails.
+4. **Age check.** Simple arithmetic: current timestamp minus birth timestamp must exceed 21 years in milliseconds. The birth timestamp is private — only the boolean result (over 21 or not) matters.
+
+The credential enters via the `get_identity()` witness. It's processed entirely inside the ZK circuit. The proof says "this credential is valid, from a trusted issuer, belongs to the caller, and the holder is over 21." The credential attributes never appear on-chain.
+
+---
+
+## Signature Verification In-Circuit
+
+The `verify_signature` circuit implements Schnorr signature verification using elliptic curve arithmetic:
+
+```compact
+pure circuit verify_signature(msg: Bytes<32>, signature: Signature): [] {
+    const {pk, R, s} = signature;
+
+    // Compute challenge: c = H(R || pk || msg)
+    const c: Field = transient_hash<Bytes96>(
+      Bytes96 { b0: point_to_bytes(R), b1: point_to_bytes(pk), b2: msg }
+    );
+
+    // Verify: s * G == R + c * pk
+    const lhs: CurvePoint = ec_mul_generator(s);
+    const c_pk: CurvePoint = ec_mul(pk, c);
+    const rhs: CurvePoint = ec_add(R, c_pk);
+
+    assert lhs == rhs "Signature verification failed";
+}
 ```
 
-In the Compact file, a witness is just a type signature. The actual implementation lives in TypeScript, in the DApp code:
+This is a standard Schnorr verification equation. The Compact standard library provides the elliptic curve operations: `ec_mul_generator` (scalar × base point), `ec_mul` (scalar × point), `ec_add` (point addition).
+
+The circuit is marked `pure` — it doesn't read or write ledger state. It's a utility that other circuits call. Pure circuits don't generate their own ZK proofs; they're inlined into the calling circuit's proof.
+
+`transient_hash` is used instead of `persistent_hash` because the challenge value is ephemeral — it's used during verification and then discarded. It doesn't need the collision resistance guarantees of persistent hashing.
+
+---
+
+## The Witness Side
+
+The TypeScript witness provides the credential from the user's local state:
 
 ```typescript
-// In your TypeScript DApp
-const witnesses = {
-  secretKey: () => userSecretKey
+export type ShopPrivateState = {
+  readonly orders: Record<string, Order>;
+  readonly signedCredentialSubject?: SignedCredentialSubject;
+};
+
+export const witnesses = {
+  get_identity: ({
+    privateState,
+  }: WitnessContext<Ledger, ShopPrivateState>): [ShopPrivateState, SignedCredentialSubject] => {
+    if (privateState.signedCredentialSubject) {
+      return [privateState, privateState.signedCredentialSubject];
+    } else throw new Error('No identity found');
+  },
 };
 ```
 
-When a circuit calls `secretKey()`, the runtime fetches the value from the TypeScript environment. The value enters the ZK circuit for computation but never appears on-chain.
-
-**Critical design point:** Witnesses are untrusted. The contract cannot verify that the witness returned honest data. If a witness lies, the circuit may produce an incorrect result — but the ZK proof will still verify that the computation was performed correctly on whatever input was provided. The contract must use other mechanisms (like verifying a signature against a known public key) to establish trust.
+The credential was stored in `privateState` during a previous step (the user authenticated with the identity provider and received a signed credential). The witness returns it unchanged. If no credential exists, it throws — the circuit never runs without valid private state.
 
 ---
 
-## How They Fit Together
+## The Full Flow
 
-```
-┌──────────────────────────────────────────┐
-│  Compact Contract                        │
-│                                          │
-│  pragma + imports                        │
-│                                          │
-│  ┌─────────────────────┐                 │
-│  │  Ledger (on-chain)  │                 │
-│  │  - authority         │  ◄── public    │
-│  │  - value             │                │
-│  │  - state             │                │
-│  │  - round (Counter)   │                │
-│  └──────────▲──────────┘                 │
-│             │ read/write                  │
-│  ┌──────────┴──────────┐                 │
-│  │  Circuits           │                 │
-│  │  - constructor()    │  ◄── entry      │
-│  │  - get()            │      points     │
-│  │  - set(v)           │                 │
-│  └──────────▲──────────┘                 │
-│             │ calls                       │
-│  ┌──────────┴──────────┐                 │
-│  │  Witnesses          │                 │
-│  │  - secretKey()      │  ◄── private    │
-│  └─────────────────────┘     (TypeScript)│
-└──────────────────────────────────────────┘
-```
+1. **Off-chain:** User authenticates with an identity provider (IDP). The IDP verifies their documents and issues a `SignedCredentialSubject` — a credential struct signed with the IDP's private key.
 
-Data flows upward: witnesses provide private inputs, circuits compute on them and decide what to disclose, and disclosed values land on the public ledger.
+2. **Local storage:** The user stores the signed credential in their DApp's private state.
+
+3. **On-chain setup:** The shop contract stores `trusted_issuer_public_key` on the ledger. Anyone can read which issuers the shop trusts.
+
+4. **Transaction:** User calls `submit_order`. The witness provides the credential. The circuit verifies issuer, ownership, signature, and age. The proof is generated locally. Only the payment information is disclosed.
+
+5. **Verification:** The Midnight network verifies the ZK proof. The shop receives a confirmed order. It never sees the credential.
 
 ---
 
-## Comparison to Aiken
+## Design Decisions
 
-If you're coming from Aiken, the biggest conceptual shift: in Aiken, you write validators that check proposed state transitions. In Compact, you write circuits that perform the state transitions. The validator is a judge. The circuit is an actor. Lesson 2.2 maps every Aiken concept to its Compact equivalent in detail.
+**Why signature-based (not MerkleTree-based)?**
+
+This system verifies individual credentials via digital signatures. Each credential is checked independently. This is the simpler pattern — good for "prove this specific claim about yourself." Lesson 5.2 covers the MerkleTree pattern, which enables "prove you hold one of N credentials" without revealing which one.
+
+**Why `own_public_key()` for binding?**
+
+The credential's `id` field is the wallet's public key. The circuit checks `identity.subject.id == own_public_key().bytes`. This binds the credential to the wallet that's calling the circuit, preventing someone from using a stolen credential.
+
+**Why fixed-size fields?**
+
+ZK circuits need fixed sizes. `first_name: Bytes<32>` means names are padded to 32 bytes. This leaks the maximum length but not the actual content. A more privacy-preserving design would hash the name before including it in the credential.
 
 ---
 
 ## Questions to consider:
 
-- Witnesses are untrusted by design. What mechanisms does a Compact contract have to verify that witness data is authentic? How does this compare to how an Aiken validator trusts its redeemer?
-- The `Counter` type exists specifically to prevent linkability across rounds. What attack does it prevent, and why doesn't a simple `Uint<64>` provide the same protection?
-- Opaque types (`Opaque<'string'>`, `Opaque<'Uint8Array'>`) pass JavaScript data through without Compact being able to inspect it. What's the use case for a type the contract can't read?
-
----
-
-## What's Next
-
-Lesson 2.2 maps each Aiken concept to its Compact equivalent, showing you where your existing knowledge transfers and where things change.
+- The trusted issuer public key is stored on the ledger (public). What happens if the issuer's key is compromised? How would you design credential revocation?
+- The age check uses millisecond arithmetic. What edge cases exist? (Leap years? Time zones? Clock skew between the order timestamp and the birth timestamp?)
+- This system trusts a single issuer. How would you extend it to accept credentials from multiple issuers without deploying a new contract?
 
 ---
 
 ## Assignment
 
-Given this Compact contract skeleton, identify each component and explain its role:
+Design a Compact contract for professional certification verification:
 
-```
-pragma language_version 0.22;
-import CompactStandardLibrary;
-
-export ledger messages: Map<Bytes<32>, Opaque<'string'>>;
-export ledger round: Counter;
-
-witness authorKey(): Bytes<32>;
-
-constructor() {
-  round.increment(1);
-}
-
-export circuit post(content: Opaque<'string'>): [] {
-  const sk = authorKey();
-  const pk = publicKey(round, sk);
-  messages.insert(disclose(pk), content);
-  round.increment(1);
-}
-```
-
-For each component, answer:
-- What is its role in the contract?
-- What data is public and what is private?
-- Why does the constructor increment the round counter?
+1. Define a `CertificationCredential` struct with fields for: holder ID, certification type, issuing authority, issue date, and expiry date
+2. Write a `verify_certification` circuit that checks: the credential is from a trusted authority, it hasn't expired, and the holder matches the caller
+3. Decide what gets disclosed and what stays private. The verifier needs to know the certification type but not the holder's identity.
+4. Write the witness function signature in TypeScript

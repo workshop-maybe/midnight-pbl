@@ -1,298 +1,274 @@
-# Lesson 4.2: Compiling a Compact Contract
+# Lesson 2.2: From Aiken to Compact
 
-## What You'll Do
+## Two Languages, One Developer
 
-Compile two Compact contracts — the counter and the bulletin board — and examine what the compiler produces. By the end, you'll know what every file in the `managed/` directory does and how the artifacts connect to the proof generation and verification pipeline.
+If you've written Aiken validators, you already have the mental models that matter: typed state, explicit constraints, on-chain verification. Compact uses different syntax and a different execution model, but the concerns are the same.
 
----
-
-## Prerequisites
-
-- Compact compiler installed (Lesson 4.1)
-- Node.js v22.15+
-- The example repos cloned:
-
-```bash
-git clone https://github.com/midnightntwrk/example-counter
-git clone https://github.com/midnightntwrk/example-bboard
-```
+This lesson maps what you know in Aiken to what you'll write in Compact. It won't teach you Compact syntax in detail — that's Lesson 2.3. The goal here is orientation: when you see a Compact concept, you should know which Aiken concept it replaces and what changed.
 
 ---
 
-## Step 1: Compile the Counter Contract
+## The Core Mapping
 
-```bash
-cd example-counter/contract
-npm install
-npm run compact
-```
-
-Expected output:
-
-```
-Compiling 1 circuits:
-```
-
-**Verify the output exists:**
-
-```bash
-ls src/managed/counter/
-```
-
-You should see four directories: `compiler/`, `contract/`, `keys/`, `zkir/`.
-
-If this is your first compilation with ZK parameter generation, the compiler downloads universal parameters (~500MB). This is a one-time download stored in your `~/.compact/` directory.
+| Aiken | Compact | What Changed |
+|-------|---------|-------------|
+| Validator | Circuit | Validators approve/reject. Circuits execute and mutate state. |
+| Datum | Ledger fields | Datums are per-UTxO, consumed and recreated. Ledger fields persist across transactions. |
+| Redeemer | Circuit parameters | Both provide input to the script. Compact parameters can be private. |
+| `check` / `expect` | `assert` | Same role: enforce a condition or abort. |
+| Custom types | `enum`, structs | Compact enums work similarly. Struct syntax differs. |
+| `pub fn` | `export circuit` | Both control external visibility. |
+| (no equivalent) | `witness` | Private input from user's machine. Aiken has no equivalent — everything is on-chain. |
+| (no equivalent) | `disclose()` | Explicit visibility control. In Aiken, everything is public by default. |
+| Script context | `Kernel` built-in | Kernel provides balance checks, block time, contract address. Narrower than ScriptContext. |
+| Minting policy | `Kernel.mintShielded/mintUnshielded` | Token minting is a Kernel operation, not a separate script. |
 
 ---
 
-## Step 2: Examine the Counter Artifacts
+## State: Datum vs. Ledger
 
-### contract-info.json
+In Aiken, state lives in datums attached to UTxOs. To update state, you consume the UTxO and create a new one with the updated datum. The validator checks that the transition is valid.
 
-```bash
-cat src/managed/counter/compiler/contract-info.json
-```
+```aiken
+// Aiken: state is a datum type
+type CounterDatum {
+  count: Int,
+}
 
-```json
-{
-  "compiler-version": "0.30.0",
-  "language-version": "0.22.0",
-  "runtime-version": "0.15.0",
-  "circuits": [
-    {
-      "name": "increment",
-      "pure": false,
-      "proof": true,
-      "arguments": [],
-      "result-type": { "type-name": "Tuple", "types": [] }
-    }
-  ],
-  "witnesses": [],
-  "contracts": []
+// Validator checks the transition
+validator {
+  fn increment(datum: CounterDatum, _redeemer: Void, _ctx: ScriptContext) -> Bool {
+    expect CounterDatum { count } = datum
+    count >= 0
+  }
 }
 ```
 
-This is the contract's metadata. It tells you:
-- **One circuit** named `increment`, marked `pure: false` (it modifies state) and `proof: true` (calling it generates a ZK proof)
-- **No witnesses** — the counter has no private inputs
-- **Version info** — compiler 0.30.0, language 0.22.0, runtime 0.15.0
+In Compact, state lives in ledger fields. The circuit reads and writes them directly. No consumption and recreation.
 
-### Generated TypeScript (index.d.ts)
+```compact
+// Compact: state is a ledger field
+export ledger round: Counter;
 
-```bash
-cat src/managed/counter/contract/index.d.ts
-```
-
-The key types:
-
-```typescript
-export type Ledger = {
-  readonly round: bigint;
-}
-
-export type Circuits<PS> = {
-  increment(context: CircuitContext<PS>): CircuitResults<PS, []>;
-}
-
-export declare class Contract<PS> {
-  witnesses: Witnesses<PS>;
-  circuits: Circuits<PS>;
-  constructor(witnesses: Witnesses<PS>);
-  initialState(context: ConstructorContext<PS>): ConstructorResult<PS>;
+// Circuit performs the transition
+export circuit increment(): [] {
+  round.increment(1);
 }
 ```
 
-The Compact `Counter` type maps to TypeScript `bigint`. The `increment` circuit takes a `CircuitContext` and returns `CircuitResults` with an empty tuple (matching the Compact return type `[]`).
+The Aiken validator says "this transition is allowed." The Compact circuit says "do this transition." The validator is a judge. The circuit is an actor.
 
-### Proving and Verification Keys
-
-```bash
-ls -lh src/managed/counter/keys/
-```
-
-```
-14K  increment.prover
-1.3K increment.verifier
-```
-
-- **increment.prover** (14K) — the proving key. The proof server uses this to generate ZK proofs when a user calls `increment()`.
-- **increment.verifier** (1.3K) — the verification key. The Midnight network uses this to verify the proofs.
-
-The proving key is always much larger than the verification key. This is by design — proof generation is expensive, verification is cheap.
-
-### ZKIR Files
-
-```bash
-ls -lh src/managed/counter/zkir/
-```
-
-```
-64B   increment.bzkir
-784B  increment.zkir
-```
-
-- **increment.zkir** — human-readable ZK intermediate representation. The circuit expressed as constraints.
-- **increment.bzkir** — binary form consumed by the proof server.
+**What this means for you:** In Aiken, you spend most of your effort defining valid transitions and checking edge cases in the validator. In Compact, the circuit defines the transition itself, and the ZK proof guarantees it was executed correctly. You shift from defensive validation to direct computation.
 
 ---
 
-## Step 3: Compile the Bulletin Board Contract
+## Entry Points: Validator vs. Circuit
 
-```bash
-cd ../../example-bboard/contract
-npm install
-npm run compact
+An Aiken validator has a fixed signature: datum, redeemer, script context. Every validator follows this pattern.
+
+```aiken
+validator {
+  fn spend(datum: MyDatum, redeemer: MyRedeemer, ctx: ScriptContext) -> Bool {
+    // ... return True or False
+  }
+}
 ```
 
-Expected output:
+A Compact circuit has a flexible signature. Parameters are typed but you choose what they are. The return type can be a value, not just a boolean.
 
+```compact
+export circuit post(newMessage: Opaque<"string">): [] {
+  assert(state == State.VACANT, "Board is occupied");
+  owner = disclose(publicKey(localSecretKey(), sequence as Field as Bytes<32>));
+  message = disclose(some<Opaque<"string">>(newMessage));
+  state = State.OCCUPIED;
+}
+
+export circuit takeDown(): Opaque<"string"> {
+  assert(state == State.OCCUPIED, "Board is empty");
+  // ... returns the taken-down message
+}
 ```
-Compiling 2 circuits:
-```
 
-Two provable circuits: `post` and `takeDown`. The `publicKey` circuit is pure (no proof) so it doesn't count in the compilation message.
-
-**Verify:**
-
-```bash
-ls src/managed/bboard/
-```
-
-Same four directories.
+Key differences:
+- **Multiple circuits per contract.** Aiken has one validator per script address. Compact contracts expose multiple circuits, each with a different purpose.
+- **Circuits return values.** `takeDown()` returns the message content. Aiken validators only return True/False.
+- **No script context.** Compact circuits access the ledger directly. They don't receive a transaction-level context the way Aiken validators do. Contract-level info (address, balance, block time) comes from the `Kernel` built-in.
 
 ---
 
-## Step 4: Compare the Artifacts
+## Types: Similar but Different
 
-```bash
-ls -lh src/managed/bboard/keys/
+Aiken and Compact both use algebraic data types, but the syntax and capabilities diverge.
+
+**Enums:**
+
+```aiken
+// Aiken
+type State {
+  Vacant
+  Occupied
+}
 ```
 
-```
-2.7M  post.prover
-2.1K  post.verifier
-2.7M  takeDown.prover
-2.1K  takeDown.verifier
-```
-
-Compare to the counter:
-
-| Artifact | Counter `increment` | Bboard `post` | Bboard `takeDown` |
-|----------|-------------------|---------------|-------------------|
-| Prover key | 14K | 2.7MB | 2.7MB |
-| Verifier key | 1.3K | 2.1K | 2.1K |
-| ZKIR (text) | 784B | 4.5K | 6.0K |
-
-The bulletin board's circuits are ~200x larger proving keys. The difference comes from:
-- `persistentHash` computation (used in `publicKey` derivation)
-- `disclose()` operations (each adds constraints)
-- `assert` checks (condition evaluation + abort logic)
-- `Opaque<"string">` handling (variable-length data)
-
-Verification keys stay small regardless of complexity. On-chain verification cost is predictable.
-
-### Check contract-info.json
-
-```bash
-cat src/managed/bboard/compiler/contract-info.json
+```compact
+// Compact
+export enum State {
+  VACANT,
+  OCCUPIED
+}
 ```
 
-Three circuits listed:
-- `post` — `pure: false, proof: true` — modifies state, generates proof
-- `takeDown` — `pure: false, proof: true` — modifies state, generates proof
-- `publicKey` — `pure: true, proof: false` — utility function, no proof needed
+Compact enums are simpler — no associated data on variants (unlike Aiken's constructors with fields).
 
-One witness:
-- `localSecretKey` — returns `Bytes<32>`
+**Option/Maybe:**
+
+```aiken
+// Aiken: Option<a> is built-in
+let msg: Option<ByteArray> = Some("hello")
+```
+
+```compact
+// Compact: Maybe<T> with some<T>() and none<T>() constructors
+export ledger message: Maybe<Opaque<"string">>;
+message = some<Opaque<"string">>(content);
+message = none<Opaque<"string">>();
+```
+
+**Integers and bytes:**
+
+```aiken
+// Aiken: unbounded Int, ByteArray
+let x: Int = 42
+let b: ByteArray = #"deadbeef"
+```
+
+```compact
+// Compact: sized types
+export ledger value: Uint<64>;    // 64-bit unsigned
+export ledger key: Bytes<32>;     // 32-byte array
+export ledger f: Field;           // scalar field element
+```
+
+Compact requires explicit sizes. There's no unbounded integer. This constraint comes from the ZK circuit — every value needs a known bit width for the proof system.
 
 ---
 
-## Step 5: Build the TypeScript Package
+## Privacy: The Concept Aiken Doesn't Have
 
-After compilation, build the TypeScript bindings:
+This is where Compact diverges most from Aiken. Two concepts have no Aiken equivalent:
 
-```bash
-npm run build
+### Witnesses
+
+```compact
+witness localSecretKey(): Bytes<32>;
+
+export circuit post(newMessage: Opaque<"string">): [] {
+  owner = disclose(publicKey(localSecretKey(), sequence as Field as Bytes<32>));
+  // localSecretKey() is private — never on-chain
+  // publicKey() result is disclosed — visible on-chain
+}
 ```
 
-This runs the TypeScript compiler and copies the `managed/` directory into `dist/`. The result is a publishable npm package that other parts of your DApp (CLI, UI) can import.
+In Aiken, every input to the validator is on-chain. The datum is on-chain. The redeemer is on-chain. There is no concept of private input.
 
-**Verify the build:**
+In Compact, witnesses provide data from the user's local environment. The data enters the ZK circuit, gets used in computation, and only the results that are explicitly `disclose()`d become public.
 
-```bash
-ls dist/managed/bboard/contract/
+### disclose()
+
+```compact
+// This value goes on the public ledger
+authority = disclose(publicKey(round, sk));
+
+// This value also goes on the ledger, but the connection
+// between the input (sk) and the output is hidden
+value = disclose(v);
 ```
 
-You should see `index.d.ts`, `index.js`, and `index.js.map`.
+In Aiken, you never think about what to reveal — everything is revealed. In Compact, `disclose()` is the explicit act of making something public. Omitting it keeps the value behind the ZK proof.
 
 ---
 
-## Step 6: Run the Contract Tests
+## Assertions: check vs. assert
 
-```bash
-npm run test
+The pattern is nearly identical:
+
+```aiken
+// Aiken
+expect True = count >= 0
+// or
+if count < 0 {
+  fail
+}
 ```
 
-The example repos include unit tests that exercise the circuits using the compact runtime. If the tests pass, the compilation artifacts are valid and the circuits execute correctly.
+```compact
+// Compact
+assert(state == State.VACANT, "Board is occupied");
+```
 
-If tests fail with "Cannot find module," you need to build first: `npm run compact && npm run build`.
+Both abort the transaction if the condition fails. Compact's `assert` takes an error message string. The practical difference: in Aiken, a failed check means the validator returns False and the transaction is rejected. In Compact, a failed assert means the circuit aborts and no ZK proof is generated.
 
 ---
 
-## The Artifact Map
+## What Doesn't Translate
 
-```
-.compact source
-    │
-    ▼ compact compile
-    │
-    ├── compiler/contract-info.json  ← metadata (circuits, witnesses, versions)
-    │
-    ├── contract/index.d.ts          ← TypeScript types (Ledger, Circuits, Witnesses)
-    ├── contract/index.js            ← Runtime binding (circuit execution logic)
-    │
-    ├── keys/{circuit}.prover        ← Proving key → proof server uses this
-    ├── keys/{circuit}.verifier      ← Verification key → network uses this
-    │
-    └── zkir/{circuit}.zkir          ← ZK constraints (human-readable)
-        zkir/{circuit}.bzkir         ← ZK constraints (binary, for proof server)
-```
+Some Aiken patterns have no direct Compact equivalent:
 
-Every exported circuit with `proof: true` gets its own set of `.prover`, `.verifier`, `.zkir`, and `.bzkir` files. Pure circuits don't generate proof artifacts.
+| Aiken Pattern | Compact Situation |
+|--------------|------------------|
+| **Multi-validator composition** (spending + minting in one tx) | One contract, multiple circuits. No separate minting policy — use `Kernel.mintShielded()`. |
+| **UTxO scanning** (finding specific UTxOs in ScriptContext) | No UTxO scanning. Ledger state is directly accessible. |
+| **Reference inputs** (reading datum without spending) | Not applicable. Ledger fields are always readable. |
+| **Transaction-level checks** (checking outputs, signatories) | No transaction context. Circuits operate on contract state. Cross-contract interaction is limited. |
+| **Plutus builtins** (bytearray slicing, integer arithmetic) | Compact has its own standard library. Different names, similar operations. |
 
 ---
 
-## Troubleshooting
+## The Bulletin Board: Side by Side
 
-**"No default compiler set"**
+Here's how you might think about the bulletin board contract in Aiken terms vs. how it's actually written in Compact:
 
-Run `compact update` to install and set a default compiler version.
+**What an Aiken developer would expect:**
 
-**First compilation takes a long time**
+A datum holding the board state. A redeemer with `Post` and `TakeDown` actions. A validator that checks the poster's signature and the state transition. Everything public.
 
-The first run downloads universal ZK parameters (~500MB). Subsequent compilations reuse them.
+**What Compact actually does:**
 
-**"Cannot find module" when running tests**
+```compact
+witness localSecretKey(): Bytes<32>;
 
-Build first: `npm run compact && npm run build`. The tests import from `dist/`, which requires both compilation and TypeScript build.
+export circuit post(newMessage: Opaque<"string">): [] {
+  assert(state == State.VACANT, "Board is occupied");
+  owner = disclose(publicKey(localSecretKey(), sequence as Field as Bytes<32>));
+  message = disclose(some<Opaque<"string">>(newMessage));
+  state = State.OCCUPIED;
+}
+```
 
-**Compilation succeeds but no `keys/` directory**
+The secret key is private. The public key is derived inside the circuit and disclosed. The message is disclosed (it's a public bulletin board). The sequence counter increments on takedown to break linkability between posting rounds. None of this is possible in Aiken — there's no mechanism for private input or selective disclosure.
 
-Check that the circuit is marked `proof: true` in contract-info.json. Pure circuits don't generate keys.
+---
+
+## Questions to consider:
+
+- Aiken's eUTxO model enables concurrency — two transactions spending different UTxOs can run in parallel. Compact's account model means circuits read/write shared state. What does this imply for high-throughput applications?
+- In Aiken, you can compose validators at the transaction level — one script mints, another spends, and they both see the same ScriptContext. How would you achieve multi-step logic across circuits in a single Compact contract?
+- The bulletin board uses a sequence counter to break linkability. In Aiken, all data is public, so linkability is the default. What Aiken applications would benefit from Compact's unlinkability pattern?
 
 ---
 
 ## What's Next
 
-Lesson 4.3 takes the compiled contract and deploys it to preprod — your first on-chain transaction on Midnight.
+Lesson 2.3 puts this into practice — you'll walk through writing a Compact contract from scratch, using the counter and bulletin board as examples.
 
 ---
 
 ## Assignment
 
-Compile both example contracts on your machine and answer:
+Take a simple Aiken validator you've written (or use the counter example) and map each component to its Compact equivalent:
 
-1. How many provable circuits does each contract have? How many pure circuits?
-2. What's the size ratio between the counter's proving key and the bulletin board's proving key? What accounts for the difference?
-3. Look at the generated `index.d.ts` for the bulletin board. How does `Maybe<Opaque<"string">>` in Compact map to TypeScript?
-4. Open `increment.zkir` and `post.zkir`. What differences do you notice in the constraint structure?
+1. Identify the datum → which ledger fields would replace it?
+2. Identify the redeemer → which circuit parameters and witnesses would replace it?
+3. Identify the validation logic → how does it change when the circuit performs the transition instead of checking it?
+4. Identify any data that would benefit from being private → where would you use witnesses and omit `disclose()`?

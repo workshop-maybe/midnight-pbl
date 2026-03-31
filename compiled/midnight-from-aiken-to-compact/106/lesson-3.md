@@ -1,311 +1,182 @@
-# Lesson 3.3: Writing Witness Functions in TypeScript
+# Lesson 6.3: When to Use Midnight, When to Use Cardano
 
-## What a Witness Does
+## The Decision
 
-A Compact circuit declares what private data it needs. A TypeScript witness function provides it. The circuit says "I need a secret key." The witness says "here it is." The secret key enters the ZK circuit, gets used in computation, and never appears on-chain.
+You now know both platforms. You can write Aiken validators for Cardano's eUTxO model. You can write Compact circuits for Midnight's privacy model. The question for any new project is: which one?
 
-The Compact declaration:
-
-```compact
-witness localSecretKey(): Bytes<32>;
-```
-
-The TypeScript implementation:
-
-```typescript
-export const witnesses = {
-  localSecretKey: ({
-    privateState,
-  }: WitnessContext<Ledger, BBoardPrivateState>): [
-    BBoardPrivateState,
-    Uint8Array,
-  ] => [privateState, privateState.secretKey],
-};
-```
-
-The circuit and the witness are separate files, separate languages, and separate execution environments. The compiler binds them together through generated types.
+The answer is rarely "always Midnight" or "always Cardano." It depends on what your application needs to prove and who should see the proof.
 
 ---
 
-## The WitnessContext Interface
+## The Decision Framework
 
-Every witness function receives a `WitnessContext` as its first argument. The type is:
+Three questions determine where a feature belongs:
 
-```typescript
-WitnessContext<L, PS>
-```
+### 1. Does the verifier need to see the data, or just the result?
 
-Where `L` is the Ledger type (generated from your `.compact` file) and `PS` is your private state type (defined by you).
+**If the data itself is the value** → Cardano.
 
-The context has three fields:
+A public credential registry. A token balance that other contracts read. An NFT whose metadata is the point. The data is public because public visibility is the feature.
 
-```typescript
-{
-  ledger: L,           // Current on-chain state (read-only)
-  privateState: PS,    // Your DApp's local state
-  contractAddress: string  // The deployed contract's address
-}
-```
+**If only the result matters** → Midnight.
 
-You can destructure to access only what you need. The bulletin board witness only needs `privateState`:
+An age check. A team capability proof. A credential verification. The verifier needs "yes, this person qualifies" — not the person's date of birth, team roster, or credential details.
 
-```typescript
-localSecretKey: ({
-  privateState,
-}: WitnessContext<Ledger, BBoardPrivateState>): [BBoardPrivateState, Uint8Array] =>
-  [privateState, privateState.secretKey],
-```
+### 2. Do other contracts need to compose with this state?
 
----
+**If yes** → Cardano.
 
-## The Return Type
+Cardano's eUTxO model enables composability. Other projects can set prerequisites based on your on-chain state without negotiating API integrations. Andamio's Access Tokens, XP tokens, and credential NFTs work because any contract can read them.
 
-Every witness function returns a tuple:
+**If no** → Either chain works.
 
-```typescript
-[newPrivateState, returnValue]
-```
+Midnight contracts are more isolated. There's no cross-contract state reading. If your feature doesn't need composability, the composability advantage of Cardano doesn't apply.
 
-- **newPrivateState** — the updated private state. Return it unchanged if the witness doesn't modify local state.
-- **returnValue** — the value that gets sent into the Compact circuit.
+### 3. Would revealing this data harm the user?
 
-The bulletin board returns `[privateState, privateState.secretKey]` — unchanged private state plus the 32-byte secret key.
+**If no harm** → Cardano (simpler, more composable).
 
-This two-element return is consistent across all Midnight witnesses. The runtime uses it to manage private state across circuit calls.
+Most credential issuance. Course completion records. Token transfers between public addresses. There's nothing sensitive about proving you completed a course.
+
+**If potential harm** → Midnight.
+
+Personal identity attributes. Salary data. Medical qualifications. Team composition. Any case where knowing "who holds what" could be used against the holder — for profiling, discrimination, or competitive intelligence.
 
 ---
 
-## The Bulletin Board Witness: Complete Example
+## Use Case Evaluation
 
-Here's the full witness file for the bulletin board contract:
+### Use Case 1: Course Completion Credentials
 
-```typescript
-import { Ledger } from "./managed/bboard/contract/index.js";
-import { WitnessContext } from "@midnight-ntwrk/compact-runtime";
+**Scenario:** A learning platform issues credentials when students complete courses.
 
-// Define the shape of your DApp's private state
-export type BBoardPrivateState = {
-  readonly secretKey: Uint8Array;
-};
+| Question | Answer | Chain |
+|----------|--------|-------|
+| Does the verifier need the data or just the result? | The data — employers want to see which courses were completed | Cardano |
+| Do other contracts compose with this? | Yes — prerequisites, XP calculations, enrollment logic | Cardano |
+| Would revealing harm the user? | No — course completion is usually a positive signal | Cardano |
 
-// Factory function to create private state
-export const createBBoardPrivateState = (secretKey: Uint8Array) => ({
-  secretKey,
-});
+**Verdict: Cardano.** This is Andamio's current model and it works well. Public credentials on Cardano are the right choice when the credential itself is the value.
 
-// Witness implementations — one field per witness declaration in Compact
-export const witnesses = {
-  localSecretKey: ({
-    privateState,
-  }: WitnessContext<Ledger, BBoardPrivateState>): [
-    BBoardPrivateState,
-    Uint8Array,
-  ] => [privateState, privateState.secretKey],
-};
-```
+### Use Case 2: Age-Gated Access
 
-### Breaking it down
+**Scenario:** A wine shop verifies customers are over 21.
 
-**Import the generated Ledger type:**
+| Question | Answer | Chain |
+|----------|--------|-------|
+| Does the verifier need the data or just the result? | Just the result — "over 21" is enough | Midnight |
+| Do other contracts compose with this? | No — age check is per-transaction | Midnight |
+| Would revealing harm the user? | Yes — date of birth is PII | Midnight |
 
-```typescript
-import { Ledger } from "./managed/bboard/contract/index.js";
-```
+**Verdict: Midnight.** This is the Brick Towers pattern. The credential stays private. The proof is sufficient.
 
-This type is generated by the Compact compiler. For the bulletin board, it looks like:
+### Use Case 3: Team Capability Proof for Enterprise Sales
 
-```typescript
-export type Ledger = {
-  readonly state: State;
-  readonly message: { is_some: boolean, value: string };
-  readonly sequence: bigint;
-  readonly owner: Uint8Array;
-}
-```
+**Scenario:** A consulting firm proves to a client that their team has 15 certified cloud architects.
 
-The witness can read ledger state through the context. This is useful when the witness needs to make decisions based on on-chain state — for example, choosing which credential to use based on what the contract currently requires.
+| Question | Answer | Chain |
+|----------|--------|-------|
+| Does the verifier need the data or just the result? | Just the result — count is enough | Midnight |
+| Do other contracts compose with this? | No — this is a point-in-time attestation | Midnight |
+| Would revealing harm the user? | Yes — individual identities and exact capabilities are competitive intelligence | Midnight |
 
-**Define the private state type:**
+**Verdict: Midnight.** Individual certifications could be on Cardano (public registry), but the team aggregation must be on Midnight.
 
-```typescript
-export type BBoardPrivateState = {
-  readonly secretKey: Uint8Array;
-};
-```
+### Use Case 4: Token Transfer
 
-This is your design decision. The private state can hold anything your DApp needs: keys, credentials, cached data. It persists across circuit calls within a session.
+**Scenario:** Sending ADA or a custom token to another address.
 
-**Implement the witnesses object:**
+| Question | Answer | Chain |
+|----------|--------|-------|
+| Does the verifier need the data or just the result? | The data — the transfer itself is the point | Cardano |
+| Do other contracts compose with this? | Yes — token balances are read by every DeFi contract | Cardano |
+| Would revealing harm the user? | Sometimes — balance visibility is a concern for some users | Depends |
 
-```typescript
-export const witnesses = {
-  localSecretKey: ({ privateState }: WitnessContext<Ledger, BBoardPrivateState>):
-    [BBoardPrivateState, Uint8Array] =>
-    [privateState, privateState.secretKey],
-};
-```
+**Verdict: Usually Cardano.** Token transfers are the native use case. If balance privacy matters (large holdings, corporate treasury), Midnight's ZSwap provides shielded transfers. Most users don't need this.
 
-The `witnesses` object has one field per `witness` declaration in the Compact contract. The field name must match exactly. The compiler-generated types enforce the return shape.
+### Use Case 5: Anonymous Voting
 
----
+**Scenario:** A DAO conducts a governance vote where members should not be identifiable from their votes.
 
-## The Counter's "Witness" (Empty)
+| Question | Answer | Chain |
+|----------|--------|-------|
+| Does the verifier need the data or just the result? | Just the result — vote counts | Midnight |
+| Do other contracts compose with this? | No — votes are consumed once | Midnight |
+| Would revealing harm the user? | Yes — vote buying, coercion, social pressure | Midnight |
 
-The counter contract has no witness declarations:
+**Verdict: Midnight.** MerkleTree membership + nullifiers (Lesson 5.2) is the exact pattern. Each member proves they're in the voter set without revealing which member they are. The nullifier prevents double-voting.
 
-```compact
-// counter.compact — no witness keyword
-export ledger round: Counter;
-export circuit increment(): [] {
-  round.increment(1);
-}
-```
+### Use Case 6: Public Audit Trail
 
-Its witness file reflects this:
+**Scenario:** A supply chain platform records who handled goods at each stage.
 
-```typescript
-export type CounterPrivateState = {
-  privateCounter: number;
-};
+| Question | Answer | Chain |
+|----------|--------|-------|
+| Does the verifier need the data or just the result? | The data — the whole point is traceability | Cardano |
+| Do other contracts compose with this? | Yes — downstream handlers need to verify upstream records | Cardano |
+| Would revealing harm the user? | No — transparency is the value proposition | Cardano |
 
-export const witnesses = {};
-```
-
-An empty witnesses object. The private state type still exists (the runtime needs it as a type parameter) even though no witness function accesses it.
+**Verdict: Cardano.** Public accountability requires public data.
 
 ---
 
-## Type Mappings
+## The Dual-Chain Pattern
 
-When the Compact compiler generates TypeScript types, Compact types map to TypeScript as follows:
+Some applications need both. The dual-chain architecture from Lesson 6.1 applies when:
 
-| Compact Type | TypeScript Type |
-|-------------|----------------|
-| `Bytes<32>` | `Uint8Array` |
-| `Uint<64>` | `bigint` |
-| `Field` | `bigint` |
-| `Boolean` | `boolean` |
-| `Counter` | `bigint` |
-| `Opaque<"string">` | `string` |
-| `Opaque<"Uint8Array">` | `Uint8Array` |
-| `Maybe<T>` | `{ is_some: boolean, value: T }` |
-| `enum State { A, B }` | `enum State { A = 0, B = 1 }` |
+- **The trust anchor should be public** (Cardano) — credential existence, issuer identity, revocation status
+- **The usage should be private** (Midnight) — who holds what, selective disclosure, team aggregation
 
-These mappings are important when writing witnesses. If your Compact witness returns `Bytes<32>`, your TypeScript function must return a `Uint8Array` of exactly 32 bytes.
+This isn't doubling your work. The two chains serve different functions:
+
+```
+Cardano: "Credential X exists and is valid"     → public trust
+Midnight: "I hold credential X and meet claim Y" → private proof
+```
+
+The current constraints (Lesson 6.2) mean coordination is manual. But the separation of concerns is clean, and it works today.
 
 ---
 
-## A More Complex Witness
+## When NOT to Use Midnight
 
-Consider a contract that verifies a credential. The Compact side:
+Midnight adds complexity: a second language (Compact), proof generation latency, a different deployment model. Don't use it when:
 
-```compact
-witness loadCredential(): Bytes<64>;
-witness getCredentialIndex(): Uint<32>;
-```
-
-The TypeScript witness might look like:
-
-```typescript
-type CredentialState = {
-  readonly credentials: Uint8Array[];   // Array of 64-byte credentials
-  readonly selectedIndex: number;
-};
-
-export const witnesses = {
-  loadCredential: ({
-    privateState,
-  }: WitnessContext<Ledger, CredentialState>): [CredentialState, Uint8Array] => {
-    const cred = privateState.credentials[privateState.selectedIndex];
-    return [privateState, cred];
-  },
-
-  getCredentialIndex: ({
-    privateState,
-  }: WitnessContext<Ledger, CredentialState>): [CredentialState, bigint] => {
-    return [privateState, BigInt(privateState.selectedIndex)];
-  },
-};
-```
-
-Two witnesses, both reading from the same private state. The circuit calls them independently. Each returns unchanged private state plus the requested value.
+- **Everything is public anyway.** If your users want their credentials displayed, Cardano is simpler.
+- **Composability is critical.** If other contracts need to read your state, Cardano's eUTxO model is better suited.
+- **Performance matters more than privacy.** Proof generation takes time. Cardano transactions are faster for simple operations.
+- **The anonymity set is too small.** If there are only 3 people who could hold a credential, a MerkleTree proof doesn't provide meaningful anonymity.
+- **You don't have a threat model.** Privacy for its own sake adds cost without benefit. Know what you're protecting and from whom.
 
 ---
 
-## Witnesses That Update Private State
+## When You MUST Use Midnight
 
-Sometimes a witness needs to modify private state — for example, incrementing a nonce to prevent replay:
+Some applications can't work without privacy:
 
-```typescript
-loadAndIncrementNonce: ({
-  privateState,
-}: WitnessContext<Ledger, MyState>): [MyState, bigint] => {
-  const nonce = privateState.nonce;
-  const newState = { ...privateState, nonce: nonce + 1n };
-  return [newState, nonce];
-},
-```
+- **Regulatory compliance with data minimization.** GDPR, HIPAA, and similar regulations require proving facts without collecting the underlying data.
+- **Identity verification without identity disclosure.** Age checks, certification verification, employment verification — anywhere PII is involved.
+- **Competitive intelligence protection.** Team composition, capability proofs, internal credentialing — data that competitors could exploit.
+- **Anti-coercion systems.** Voting, whistleblower protection, anonymous reporting — where revealing participation would create pressure.
 
-The first element of the return tuple is the **new** private state. The runtime stores it and passes it to subsequent witness calls in the same circuit execution.
+For these, Cardano alone isn't sufficient. You need the ZK proof layer.
 
 ---
 
-## Witnesses That Read Ledger State
+## Questions to consider:
 
-The `WitnessContext` includes the current ledger. A witness can use on-chain state to make decisions:
-
-```typescript
-selectCredential: ({
-  ledger,
-  privateState,
-}: WitnessContext<Ledger, CredentialState>): [CredentialState, Uint8Array] => {
-  // Read the required credential type from the ledger
-  const requiredType = ledger.requiredCredentialType;
-
-  // Find a matching credential in private state
-  const match = privateState.credentials.find(c => c.type === requiredType);
-
-  if (!match) throw new Error("No matching credential found");
-
-  return [privateState, match.data];
-},
-```
-
-The ledger data is read-only. The witness can inspect it but not modify it — only circuits modify ledger state.
-
----
-
-## Trust Model
-
-Witnesses are untrusted from the circuit's perspective. The Compact contract cannot verify that the witness returned honest data. If a witness lies — returns a random key instead of the real one — the circuit will compute on that false input. The ZK proof will still verify that the computation was performed correctly on whatever input was provided.
-
-The circuit must establish trust through other means:
-
-```compact
-// The circuit verifies the witness by checking the derived public key
-assert(owner == publicKey(localSecretKey(), sequence as Field as Bytes<32>),
-       "Not the current owner");
-```
-
-If the witness returns the wrong secret key, the derived public key won't match `owner`, and the assertion fails. The contract doesn't trust the witness — it verifies the result.
+- A DAO wants governance voting where vote counts are public but individual votes are private. They also want delegation — members can delegate their voting power. Can delegation work with anonymous voting? What's the tradeoff?
+- An employer verifies a job applicant's credentials. The applicant uses Midnight to prove "I have 5+ years experience at companies in the Fortune 500." The employer doesn't see which companies. Is this useful? What does the employer actually need to make a hiring decision?
+- If Midnight adds latency (proof generation) and complexity (second language), what's the threshold where the privacy benefit justifies the cost? Is there a heuristic?
 
 ---
 
 ## Assignment
 
-Write the TypeScript witness file for a contract with these Compact declarations:
+Evaluate three use cases from your own domain. For each one:
 
-```compact
-export ledger commitments: MerkleTree<16, Bytes<32>>;
-export ledger nullifiers: Set<Bytes<32>>;
-
-witness loadCredential(): Bytes<64>;
-witness deriveNullifier(): Bytes<32>;
-```
-
-Your implementation should:
-
-1. Define a `CredentialPrivateState` type that holds an array of credentials and a counter
-2. Implement `loadCredential` — returns the credential at the current counter position
-3. Implement `deriveNullifier` — derives a deterministic nullifier from the credential (you can use a simple hash or concatenation), increments the counter in private state, and returns the nullifier
-4. Show the type signature that matches the generated `Witnesses<PS>` type
+1. Apply the three-question framework (data vs. result, composability, harm)
+2. Decide: Cardano only, Midnight only, or dual-chain
+3. If dual-chain, specify what lives on each chain and how they coordinate
+4. Identify the specific privacy property that Midnight provides (or explain why Cardano is sufficient)
+5. Name one risk of choosing the wrong chain for this use case

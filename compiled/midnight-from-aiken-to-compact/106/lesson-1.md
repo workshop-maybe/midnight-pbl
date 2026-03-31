@@ -1,161 +1,164 @@
-# Lesson 3.1: Controlling Visibility with disclose()
+# Lesson 6.1: Designing a Dual-Chain Credential Architecture
 
-## The Default Is Private
+## The Design Question
 
-In Compact, computation is private by default. When a circuit runs, the values it manipulates — local variables, witness inputs, intermediate results — never appear on-chain. The ZK proof guarantees the computation was correct, but the inputs and intermediate steps are invisible to observers.
+You've built credential systems on Cardano. Credentials are on-chain, verifiable, permanent. Anyone can read them. That's the point.
 
-This is the opposite of Cardano. On Cardano, the default is public. Every datum, every redeemer, every piece of transaction metadata is visible to anyone reading the chain. Privacy on Cardano requires external mechanisms.
+But now a client asks: "Can our employees prove they hold a credential without revealing which one? Can we prove our team has 15 certified cloud architects without naming them?"
 
-On Midnight, you start private and selectively reveal. The tool for revealing is `disclose()`.
+On Cardano alone, the answer is no. Everything on the public ledger is public. That's both the strength and the limitation.
 
----
-
-## What disclose() Does
-
-`disclose()` takes a value and marks it for inclusion in the public transaction record. Without it, the value stays behind the ZK proof.
-
-Compare these two circuit fragments:
-
-**Private — value stays hidden:**
-```
-export circuit setSecret(v: Uint<64>): [] {
-  value = v;
-}
-```
-
-Here, `v` enters the circuit as a parameter, gets written to the ledger, and the ZK proof guarantees the write happened correctly. But — and this is the subtlety — the ledger itself is public. So `value` on the ledger is readable after the transaction. The parameter `v` is what's private: observers can see the new ledger state but can't see which transaction input produced it.
-
-**Public — value explicitly disclosed:**
-```
-export circuit setPublic(v: Uint<64>): [] {
-  value = disclose(v);
-}
-```
-
-Now `v` is part of the transaction's public record. Observers can see both the input value and the resulting ledger state. The connection between "this input" and "this state change" is explicit.
+Midnight gives you the missing piece: prove facts about credentials without revealing the credentials themselves. The question is how to architect a system that uses both chains.
 
 ---
 
-## When to Use disclose()
+## The Principle: Public Registry, Private Proofs
 
-The decision comes down to: does the observer need to know the input, or just the result?
+The cleanest architecture separates two concerns:
 
-### Disclose when the input matters
+1. **Cardano** handles everything that should be **publicly verifiable**: credential existence, revocation status, issuer identity, program structure.
+2. **Midnight** handles everything that should be **privately provable**: who holds what, attribute details, aggregate team capabilities.
 
-A public key derived from a secret key:
-
-```
-constructor(sk: Bytes<32>, v: Uint<64>) {
-  authority = disclose(publicKey(round, sk));
-  value = disclose(v);
-  state = State.SET;
-}
-```
-
-The deployer's secret key (`sk`) stays private. The public key derived from it is disclosed because other users need to know who controls the contract. The initial `value` is disclosed because it's the starting state everyone should agree on.
-
-### Don't disclose when only the proof matters
-
-A circuit that verifies a credential without revealing it:
-
-```
-export circuit proveEligibility(): [] {
-  const cred = loadCredential();         // witness — private
-  const hash = persistentHash(cred);     // computed — private
-  assert(credentials.member(hash));       // verified against ledger
-  // No disclose() — the proof itself is sufficient
-}
-```
-
-The credential enters privately, gets hashed, and the hash is checked against a Merkle tree on the ledger. The transaction proves "I have a valid credential" without revealing which one. No `disclose()` needed because the verifier doesn't need to see the credential — they just need to see the proof succeed.
+This isn't a compromise — it's a stronger design than either chain alone. The public registry provides the trust anchor. The private proofs provide the utility that enterprises actually need.
 
 ---
 
-## disclose() and the Ledger Visibility Rule
+## What Lives on Cardano
 
-There's an important interaction between `disclose()` and ledger writes.
+If you've built with Andamio's Aiken validators, this layer already exists:
 
-Ledger fields are always readable on-chain. If you write to a ledger field, the new value is visible regardless of whether you used `disclose()`. So what does `disclose()` actually add?
+```
+Cardano Layer (Aiken):
+├── Access Token minting       — identity on the network
+├── Course validators          — SLT completion, enrollment, credential issuance
+├── Project validators         — task commitments, XP distribution
+├── Public credential registry — "credential X was issued by issuer Y on date Z"
+├── XP token circulation       — quantitative proof of contribution
+└── Sponsored transactions     — users never touch ADA
+```
 
-It makes the **input** visible, not just the **output**.
+Everything here is public. Anyone can verify that a credential was issued, check its revocation status, or read the SLTs it represents. This is the **read layer** — the shared source of truth that doesn't require trusting the issuer.
 
-Without `disclose()`:
-- Observer sees: ledger field changed to X
-- Observer doesn't see: what input caused the change
-
-With `disclose()`:
-- Observer sees: ledger field changed to X because input was Y
-
-This matters for auditability. If your contract manages a public treasury, you might want observers to verify not just the new balance but the specific deposit amount that produced it.
+The key property: **composability**. Other projects can set prerequisites based on these public credentials without negotiating API integrations. The protocol enforces it.
 
 ---
 
-## Hashes and Commitments: Privacy on a Public Ledger
+## What Lives on Midnight
 
-Sometimes you need to store something on the ledger — so it's persistent and verifiable — but you don't want to reveal the raw value. Compact's standard library provides two approaches:
+Midnight adds what Cardano can't provide — proofs about credentials without revealing them:
 
-**Deterministic hashing:**
 ```
-const h = persistentHash(secretValue);
-ledgerField = h;
+Midnight Layer (Compact):
+├── Private credential storage   — MerkleTree of credential commitments
+├── Selective disclosure circuits:
+│   ├── "I hold N credentials"   — without revealing which ones
+│   ├── "I completed SLT X"     — without revealing my identity
+│   └── "My team has capability Y" — without revealing who
+├── Private plan sharing         — prove a document was reviewed
+│                                  without exposing the document
+└── Nullifier-based proofs       — prove something once,
+                                   prevent replay
 ```
 
-The hash is public on the ledger. The preimage is private. Anyone with the same input can verify the hash, which means `persistentHash` is linkable — the same input always produces the same hash.
-
-**Randomized commitment:**
-```
-const c = persistentCommit(secretValue, randomness);
-ledgerField = c;
-```
-
-The commitment is public. Both the value and the randomness are needed to open it. Different randomness means different commitments for the same value. This breaks linkability — observers can't tell if two commitments hide the same value.
-
-Use `persistentHash` when linkability is acceptable (e.g., a public key). Use `persistentCommit` when it's not (e.g., a credential in a set where membership should be anonymous).
+The pattern is consistent across all of these: a Compact circuit takes private data via a witness function, verifies it against some criteria, and produces a ZK proof that the criteria were met. The private data never leaves the user's machine. Only the proof goes on-chain.
 
 ---
 
-## The Privacy Gradient
+## How They Connect (Today)
 
-Putting it all together, Compact gives you a gradient of visibility:
+Here's the honest part: there is no production bridge between Cardano and Midnight. No atomic cross-chain transactions. No way for a Cardano validator to read Midnight state or vice versa.
 
-| Level | Mechanism | What's Visible | Use When |
-|-------|-----------|----------------|----------|
-| **Fully private** | No `disclose()`, no ledger write | Nothing on-chain | Intermediate computations, witness data |
-| **Proven but hidden** | No `disclose()`, assertion against ledger | Proof succeeds or fails | Credential checks, eligibility |
-| **Hashed on ledger** | `persistentHash()` or `persistentCommit()` | Hash/commitment only | Need persistence without revealing the value |
-| **Fully public** | `disclose()` | Input value on public record | Deployer identity, initial state, audit trail |
+The Native Token Observation Pallet lets Midnight observe cNIGHT movements on Cardano. That's a one-way economic link, not a general-purpose bridge.
 
-You're not choosing between "private" and "public." You're choosing the right point on this gradient for each piece of data in your contract.
+So how does a dual-chain credential system work today?
+
+### Manual Coordination Pattern
+
+1. **Credential issuance happens on Cardano.** The Aiken validators mint the credential NFT, record the SLT hashes, update the public registry. This is the authoritative record.
+
+2. **Credential commitment is registered on Midnight.** The user (or an automated service) takes the credential data and registers a commitment in a MerkleTree on Midnight. This commitment is a hash — it proves the credential exists without revealing its contents.
+
+3. **Selective disclosure happens on Midnight.** When someone needs to prove an attribute (age, qualification, team capability), a Compact circuit reads the private credential via a witness, checks the claim, and generates a ZK proof.
+
+4. **Verification can happen on either chain.** The public fact ("credential exists, not revoked") is verified on Cardano. The private fact ("holder meets criteria X") is verified on Midnight.
+
+The user holds credential representations on both chains. The Cardano credential is the authoritative record. The Midnight commitment enables privacy-preserving proofs about that record.
 
 ---
 
-## Comparison to Cardano
+## Three Enterprise Scenarios
 
-On Cardano, there's no gradient. Everything the Plutus validator touches — datum, redeemer, script context — is on-chain. If you want privacy, you hash values off-chain and submit only the hash. But Cardano has no mechanism to prove the off-chain computation was correct.
+### Scenario 1: Individual Credential Verification
 
-Midnight's `disclose()` fills the gap between "fully public" and "trust me, I computed this correctly." The ZK proof replaces the trust. `disclose()` lets you choose exactly how much of the computation to reveal.
+**Need:** A job applicant proves they completed a cloud security certification without revealing their full credential history.
+
+**Cardano:** The certification body issued the credential. The public registry confirms it exists and hasn't been revoked.
+
+**Midnight:** The applicant's Compact circuit reads their full credential set (private), finds the relevant one, and produces a ZK proof that they hold a valid cloud security certification from a trusted issuer. The employer verifies the proof. They never see the applicant's other credentials, their wallet address, or their identity.
+
+### Scenario 2: Team Capability Aggregation
+
+**Need:** An enterprise proves to a client that their team includes 15 certified professionals, without revealing who they are.
+
+**Cardano:** Individual credentials are on the public registry, but querying "show me everyone with certification X" would reveal individual identities.
+
+**Midnight:** A Compact circuit aggregates credential commitments from team members' wallets (each provides their data privately via witnesses), counts how many meet the criteria, and produces a ZK proof: "this organization has >= 15 members holding certification X." No individual is identified.
+
+### Scenario 3: Private Plan Review
+
+**Need:** A contributor reviewed and improved a proprietary project plan. The review should earn a credential, but the plan contents are confidential.
+
+**Cardano:** The credential records "contributor Y provided a verified review for project Z." The fact of contribution is public.
+
+**Midnight:** The plan itself, the review content, and the improvement diff live in the contributor's local environment. A Compact circuit proves the review was substantive (e.g., the diff meets a minimum threshold or includes specific sections) without revealing what was reviewed. The credential earned is public. The work that earned it is private.
 
 ---
 
-## Questions to consider:
+## Architecture Decision Framework
 
-- If ledger state is always public anyway, why not just `disclose()` everything? What information does withholding `disclose()` actually protect?
-- A contract uses `persistentHash` to store credential hashes. An attacker who knows the set of possible credentials can hash each one and check against the ledger. How would you defend against this? When does `persistentCommit` solve it and when doesn't it?
-- In the constructor example, the secret key is private but the public key is disclosed. Could a future quantum computer reverse this? How does this compare to the same risk on Cardano?
+When deciding where a piece of your system lives, ask:
+
+| Question | If Yes → Cardano | If Yes → Midnight |
+|----------|-------------------|-------------------|
+| Does anyone need to verify this without trusting the issuer? | Public registry | — |
+| Do other projects need to set prerequisites on this? | Composable credentials | — |
+| Does the holder need to prove this without revealing details? | — | Selective disclosure circuit |
+| Would revealing this data expose the holder's identity? | — | Private proof |
+| Is this data needed for compliance without full disclosure? | — | ZK attestation |
+| Should this record survive both platforms? | Both — dual representation | Both — dual representation |
+
+The default: **start on Cardano, add Midnight when privacy is required.** Not everything needs a ZK proof. Most credentials work fine as public records. Midnight adds value specifically when "who holds what" is sensitive information.
+
+---
+
+## What's Coming
+
+The current manual coordination pattern works but adds friction. The roadmap for tighter integration includes:
+
+- **Credential commitment bridges** — automated sync from Cardano credential mints to Midnight MerkleTree insertions
+- **Cross-chain proof receipts** — Midnight proof results posted back to Cardano as transaction metadata
+- **Pintent protocol** (0xAtelerix) — cross-chain intent system; Cardano support is planned but not yet available
+
+When these materialize, the dual-chain architecture becomes seamless. Until then, the manual pattern is functional and the separation of concerns is the same either way.
 
 ---
 
 ## What's Next
 
-Lesson 3.2 follows the data from the other direction: once a circuit runs and a proof is generated, how does it get verified on-chain?
+Lesson 6.2 gets specific about what can and can't cross the bridge between Cardano and Midnight today.
 
 ---
 
 ## Assignment
 
-You're building a sealed-bid auction on Midnight. Each bidder submits a bid that should remain hidden until the reveal phase. Design the data flow:
+Design a dual-chain credential architecture for one of these scenarios:
 
-1. What does the `submitBid` circuit look like? What gets disclosed and what stays private?
-2. How do you store the bid on the ledger so the bidder can prove it later?
-3. What does the `revealBid` circuit look like?
-4. At what point does the bid amount become public, and through which mechanism?
+1. **A professional association** that wants members to prove their certification status to employers without the association revealing its full membership list.
+2. **A university** that wants graduates to prove their degree and specific competencies to hiring platforms without exposing their transcript.
+3. **A development team** that wants to prove collective capability to a client without revealing individual contributor identities.
+
+For your chosen scenario, specify:
+- What data lives on Cardano and why
+- What data lives on Midnight and why
+- How the user coordinates between the two chains
+- What the verification flow looks like from the verifier's perspective

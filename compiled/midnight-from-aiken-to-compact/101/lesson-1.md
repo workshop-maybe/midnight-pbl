@@ -1,164 +1,109 @@
-# Lesson 6.1: Designing a Dual-Chain Credential Architecture
+# Lesson 1.1: Two VMs, Two Philosophies
 
-## The Design Question
+## Starting Point
 
-You've built credential systems on Cardano. Credentials are on-chain, verifiable, permanent. Anyone can read them. That's the point.
+You know the Cardano execution model. A transaction carries a script, the Plutus VM evaluates it, and if the script succeeds the transaction is valid. Scripts are pure functions — they can't modify state, they can only approve or reject a spend. The eUTxO model means every input is consumed and every output is created fresh. No mutable state. No side effects.
 
-But now a client asks: "Can our employees prove they hold a credential without revealing which one? Can we prove our team has 15 certified cloud architects without naming them?"
-
-On Cardano alone, the answer is no. Everything on the public ledger is public. That's both the strength and the limitation.
-
-Midnight gives you the missing piece: prove facts about credentials without revealing the credentials themselves. The question is how to architect a system that uses both chains.
+Midnight makes different choices. Understanding where they diverge — and why — tells you what kinds of applications each chain is built for.
 
 ---
 
-## The Principle: Public Registry, Private Proofs
+## The Plutus VM (Cardano)
 
-The cleanest architecture separates two concerns:
+Cardano's Plutus VM is a CEK machine that evaluates lambda calculus. It's Turing-complete. Scripts receive a datum, a redeemer, and a script context, then return True or False. Nothing else.
 
-1. **Cardano** handles everything that should be **publicly verifiable**: credential existence, revocation status, issuer identity, program structure.
-2. **Midnight** handles everything that should be **privately provable**: who holds what, attribute details, aggregate team capabilities.
+Key properties:
 
-This isn't a compromise — it's a stronger design than either chain alone. The public registry provides the trust anchor. The private proofs provide the utility that enterprises actually need.
+- **Pure validation.** Scripts don't modify state. They decide whether a transaction is allowed.
+- **eUTxO model.** Every piece of state is a UTxO. To change state, you consume a UTxO and create a new one.
+- **Deterministic.** You can predict whether a transaction will succeed before submitting it.
+- **ExUnits budget.** CPU and memory limits are declared upfront and enforced during execution.
+- **Local reasoning.** A script only sees the transaction that invoked it. It can't read other contracts.
 
----
-
-## What Lives on Cardano
-
-If you've built with Andamio's Aiken validators, this layer already exists:
-
-```
-Cardano Layer (Aiken):
-├── Access Token minting       — identity on the network
-├── Course validators          — SLT completion, enrollment, credential issuance
-├── Project validators         — task commitments, XP distribution
-├── Public credential registry — "credential X was issued by issuer Y on date Z"
-├── XP token circulation       — quantitative proof of contribution
-└── Sponsored transactions     — users never touch ADA
-```
-
-Everything here is public. Anyone can verify that a credential was issued, check its revocation status, or read the SLTs it represents. This is the **read layer** — the shared source of truth that doesn't require trusting the issuer.
-
-The key property: **composability**. Other projects can set prerequisites based on these public credentials without negotiating API integrations. The protocol enforces it.
+If you've written Aiken validators, you've worked within these constraints. You decompose your logic into validators that approve or reject datum transitions, and you structure your state as UTxOs that get consumed and recreated.
 
 ---
 
-## What Lives on Midnight
+## The Impact VM (Midnight)
 
-Midnight adds what Cardano can't provide — proofs about credentials without revealing them:
+Midnight's Impact VM is a stack-based machine. It's explicitly non-Turing-complete — programs execute linearly with no backward jumps. Every program terminates.
 
-```
-Midnight Layer (Compact):
-├── Private credential storage   — MerkleTree of credential commitments
-├── Selective disclosure circuits:
-│   ├── "I hold N credentials"   — without revealing which ones
-│   ├── "I completed SLT X"     — without revealing my identity
-│   └── "My team has capability Y" — without revealing who
-├── Private plan sharing         — prove a document was reviewed
-│                                  without exposing the document
-└── Nullifier-based proofs       — prove something once,
-                                   prevent replay
-```
+Key properties:
 
-The pattern is consistent across all of these: a Compact circuit takes private data via a witness function, verifies it against some criteria, and produces a ZK proof that the criteria were met. The private data never leaves the user's machine. Only the proof goes on-chain.
+- **State mutation.** Contracts have persistent state that is read and written directly. No UTxO recreation.
+- **Hybrid model.** Tokens use a UTXO-like commitment/nullifier scheme (ZSwap). Contract state uses an account model.
+- **Stack-based execution.** Programs manipulate a stack of context, effects, and contract state.
+- **Gas-bounded.** A declared gas bound determines fees and caps execution cost.
+- **Effects system.** Transactions declare their effects upfront: nullifier claims, coin spends, contract calls. The VM verifies that the program produces exactly those effects.
+
+The non-Turing-complete design is a deliberate tradeoff. Midnight generates zero-knowledge proofs for every transaction. Bounded execution means every proof terminates and every verification cost is predictable.
 
 ---
 
-## How They Connect (Today)
+## Side by Side
 
-Here's the honest part: there is no production bridge between Cardano and Midnight. No atomic cross-chain transactions. No way for a Cardano validator to read Midnight state or vice versa.
-
-The Native Token Observation Pallet lets Midnight observe cNIGHT movements on Cardano. That's a one-way economic link, not a general-purpose bridge.
-
-So how does a dual-chain credential system work today?
-
-### Manual Coordination Pattern
-
-1. **Credential issuance happens on Cardano.** The Aiken validators mint the credential NFT, record the SLT hashes, update the public registry. This is the authoritative record.
-
-2. **Credential commitment is registered on Midnight.** The user (or an automated service) takes the credential data and registers a commitment in a MerkleTree on Midnight. This commitment is a hash — it proves the credential exists without revealing its contents.
-
-3. **Selective disclosure happens on Midnight.** When someone needs to prove an attribute (age, qualification, team capability), a Compact circuit reads the private credential via a witness, checks the claim, and generates a ZK proof.
-
-4. **Verification can happen on either chain.** The public fact ("credential exists, not revoked") is verified on Cardano. The private fact ("holder meets criteria X") is verified on Midnight.
-
-The user holds credential representations on both chains. The Cardano credential is the authoritative record. The Midnight commitment enables privacy-preserving proofs about that record.
+| Aspect | Cardano (Plutus VM) | Midnight (Impact VM) |
+|--------|--------------------|--------------------|
+| **Computation model** | Lambda calculus (CEK machine) | Stack-based, linear execution |
+| **Turing complete** | Yes | No |
+| **State model** | eUTxO — consume and recreate | Hybrid — UTXO for tokens, account for contracts |
+| **What scripts do** | Validate: approve or reject a spend | Execute: read state, compute, write state |
+| **State mutation** | Never — scripts are pure | Direct — contracts read/write ledger fields |
+| **Cost model** | ExUnits (CPU + memory) declared upfront | Gas bound declared upfront |
+| **Termination** | Guaranteed by ExUnits budget | Guaranteed by design (no backward jumps) |
+| **Privacy** | All data public | ZK proofs — private data never leaves user's machine |
+| **Block time** | ~20 seconds | ~6 seconds |
 
 ---
 
-## Three Enterprise Scenarios
+## What This Means in Practice
 
-### Scenario 1: Individual Credential Verification
+The biggest shift is from validation to execution.
 
-**Need:** A job applicant proves they completed a cloud security certification without revealing their full credential history.
+On Cardano, your Aiken validator is a gatekeeper. It inspects a proposed state transition and says yes or no. The transaction builder (off-chain code) is responsible for constructing the new state. The validator just checks it.
 
-**Cardano:** The certification body issued the credential. The public registry confirms it exists and hasn't been revoked.
+On Midnight, your Compact circuit is the computation itself. It reads the current contract state, performs logic, and writes the new state. There's no separate off-chain builder constructing the next state — the circuit does it. The ZK proof guarantees the computation was correct without revealing the private inputs.
 
-**Midnight:** The applicant's Compact circuit reads their full credential set (private), finds the relevant one, and produces a ZK proof that they hold a valid cloud security certification from a trusted issuer. The employer verifies the proof. They never see the applicant's other credentials, their wallet address, or their identity.
+This changes how you think about contract design:
 
-### Scenario 2: Team Capability Aggregation
+- **Aiken:** You think about what transitions are valid. "Can this UTxO be spent under these conditions?"
+- **Compact:** You think about what the contract does. "Given this input, update the ledger state."
 
-**Need:** An enterprise proves to a client that their team includes 15 certified professionals, without revealing who they are.
-
-**Cardano:** Individual credentials are on the public registry, but querying "show me everyone with certification X" would reveal individual identities.
-
-**Midnight:** A Compact circuit aggregates credential commitments from team members' wallets (each provides their data privately via witnesses), counts how many meet the criteria, and produces a ZK proof: "this organization has >= 15 members holding certification X." No individual is identified.
-
-### Scenario 3: Private Plan Review
-
-**Need:** A contributor reviewed and improved a proprietary project plan. The review should earn a credential, but the plan contents are confidential.
-
-**Cardano:** The credential records "contributor Y provided a verified review for project Z." The fact of contribution is public.
-
-**Midnight:** The plan itself, the review content, and the improvement diff live in the contributor's local environment. A Compact circuit proves the review was substantive (e.g., the diff meets a minimum threshold or includes specific sections) without revealing what was reviewed. The credential earned is public. The work that earned it is private.
+The Impact VM's five fundamental value types — Null, Field-aligned binary cells, Maps, Arrays (up to 16 elements), and Merkle Trees (depth 1-32) — reflect this execution-first design. These aren't types for a type checker. They're the values that live on the stack during program execution.
 
 ---
 
-## Architecture Decision Framework
+## Why Non-Turing-Complete?
 
-When deciding where a piece of your system lives, ask:
+This is the question that surprises most Cardano developers, since Plutus is Turing-complete.
 
-| Question | If Yes → Cardano | If Yes → Midnight |
-|----------|-------------------|-------------------|
-| Does anyone need to verify this without trusting the issuer? | Public registry | — |
-| Do other projects need to set prerequisites on this? | Composable credentials | — |
-| Does the holder need to prove this without revealing details? | — | Selective disclosure circuit |
-| Would revealing this data expose the holder's identity? | — | Private proof |
-| Is this data needed for compliance without full disclosure? | — | ZK attestation |
-| Should this record survive both platforms? | Both — dual representation | Both — dual representation |
+Midnight generates a zero-knowledge proof for every transaction. The proof says: "this computation was performed correctly on these private inputs." For that proof to be sound, the computation must be bounded. Unbounded loops would mean unbounded proof generation time and unbounded verification cost.
 
-The default: **start on Cardano, add Midnight when privacy is required.** Not everything needs a ZK proof. Most credentials work fine as public records. Midnight adds value specifically when "who holds what" is sensitive information.
+By making Impact non-Turing-complete — no backward jumps, linear execution only — every program's cost is known before it runs. The proof system can guarantee termination. This is why the 35+ opcodes include `jmp` (forward jump) and `branch` (conditional forward jump) but nothing that creates a loop.
+
+The tradeoff: you can't express arbitrary recursion. In practice, this means you decompose recursive logic into bounded iterations or handle it in the witness layer (TypeScript), where the proof system doesn't need to verify every step.
 
 ---
 
-## What's Coming
+## Questions to consider:
 
-The current manual coordination pattern works but adds friction. The roadmap for tighter integration includes:
-
-- **Credential commitment bridges** — automated sync from Cardano credential mints to Midnight MerkleTree insertions
-- **Cross-chain proof receipts** — Midnight proof results posted back to Cardano as transaction metadata
-- **Pintent protocol** (0xAtelerix) — cross-chain intent system; Cardano support is planned but not yet available
-
-When these materialize, the dual-chain architecture becomes seamless. Until then, the manual pattern is functional and the separation of concerns is the same either way.
+- If Impact VM contracts mutate state directly, what happens to the concurrency advantages of the eUTxO model? How might Midnight handle multiple users calling the same contract?
+- Cardano's determinism lets you know a transaction will succeed before submitting it. Does Midnight's model preserve that property, or does direct state mutation introduce new failure modes?
+- ZK proofs guarantee computation correctness without revealing inputs. What does this change about the trust model between a contract and its users compared to Cardano's public validation?
 
 ---
 
 ## What's Next
 
-Lesson 6.2 gets specific about what can and can't cross the bridge between Cardano and Midnight today.
+Lesson 1.2 examines how Midnight's dual-ledger system draws the boundary between public and private data.
 
 ---
 
 ## Assignment
 
-Design a dual-chain credential architecture for one of these scenarios:
+A colleague building on Cardano asks: "If Midnight's VM isn't Turing-complete, doesn't that make it less capable than Plutus?"
 
-1. **A professional association** that wants members to prove their certification status to employers without the association revealing its full membership list.
-2. **A university** that wants graduates to prove their degree and specific competencies to hiring platforms without exposing their transcript.
-3. **A development team** that wants to prove collective capability to a client without revealing individual contributor identities.
-
-For your chosen scenario, specify:
-- What data lives on Cardano and why
-- What data lives on Midnight and why
-- How the user coordinates between the two chains
-- What the verification flow looks like from the verifier's perspective
+Write a response that addresses:
+- Why Midnight chose non-Turing-completeness and what it enables
+- How the validation-vs-execution difference changes what contracts can do
+- One scenario where Midnight's model handles something that would be difficult on Cardano, and one where Cardano's eUTxO model has an advantage

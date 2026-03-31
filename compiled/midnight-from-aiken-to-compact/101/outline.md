@@ -1,10 +1,10 @@
 ---
-title: "Dual-Chain Architecture — Cardano + Midnight"
+title: "Midnight Architecture for Cardano Developers"
 code: 101
 ---
 
 ## SLTs
 
-1. Design an architecture where public credential verification runs on Cardano and private attribute proofs run on Midnight
-2. Describe the current interoperability constraints between Cardano and Midnight
-3. Evaluate when a use case requires Midnight's privacy features versus when Cardano's public verification is sufficient
+1. Compare Midnight's execution model to Cardano's eUTxO model
+2. Describe the dual-ledger system and when data lives on the public ledger versus the private ledger
+3. Explain how Midnight relates to Cardano as a partner chain

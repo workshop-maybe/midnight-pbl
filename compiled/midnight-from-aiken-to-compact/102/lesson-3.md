@@ -1,250 +1,221 @@
-# Lesson 4.3: Deploying to Preprod
+# Lesson 2.3: Writing Your First Compact Contract
 
-## What You'll Do
+## What You'll Build
 
-Deploy the counter contract to Midnight's preprod testnet, fund a wallet with test tokens, and interact with the deployed contract through the CLI. This is your first on-chain transaction on Midnight.
+A counter contract — the simplest Compact contract that does something meaningful. One ledger field, one circuit, no witnesses. This is the "Hello World" of Midnight.
 
----
-
-## Prerequisites
-
-- Compact toolchain installed and contracts compiled (Lessons 4.1 and 4.2)
-- Docker Desktop running
-- The example-counter repo cloned and built:
-
-```bash
-cd example-counter
-npm install
-cd contract && npm run compact && npm run build && cd ..
-cd counter-cli && npm install && cd ..
-```
+After walking through the counter, you'll extend it with an owner and access control to see how ledger fields, circuits, and witnesses work together.
 
 ---
 
-## Step 1: Start the Proof Server and CLI
+## The Counter Contract
 
-The counter CLI can auto-start the proof server:
+Here's the complete source:
 
-```bash
-cd example-counter/counter-cli
-npm run preprod-ps
+```compact
+pragma language_version >= 0.20;
+
+import CompactStandardLibrary;
+
+// public state
+export ledger round: Counter;
+
+// transition function changing public state
+export circuit increment(): [] {
+  round.increment(1);
+}
 ```
 
-This pulls the Docker image (`midnightntwrk/proof-server:7.0.0`), starts the proof server on port 6300, and launches the CLI.
+Source: [midnightntwrk/example-counter](https://github.com/midnightntwrk/example-counter/blob/main/contract/src/counter.compact)
 
-**Verify the proof server is running:**
+### Line by line
 
-The CLI output should include the proof server startup. If you see connection errors, start the proof server manually in a separate terminal:
+**`pragma language_version >= 0.20;`**
 
-```bash
-cd example-counter/counter-cli
-docker compose -f proof-server.yml up
-```
+Declares the minimum Compact language version this contract requires. The compiler (currently 0.30.0) will reject contracts that require a newer version than it supports.
 
-Wait for:
-```
-INFO actix_server::server: starting service: "actix-web-service-0.0.0.0:6300", workers: 24, listening on: 0.0.0.0:6300
-```
+**`import CompactStandardLibrary;`**
 
-Then in another terminal:
-```bash
-cd example-counter/counter-cli
-npm run preprod
-```
+Imports cryptographic primitives, hash functions, and type utilities. Nearly every contract needs this.
 
-**Apple Silicon note:** If the proof server hangs, open Docker Desktop → Settings → General → "Virtual Machine Options" → select **Docker VMM**. Restart Docker.
+**`export ledger round: Counter;`**
 
----
+Declares a single ledger field named `round` of type `Counter`. The `Counter` type is a 64-bit unsigned integer with `increment()` and `decrement()` methods. The `export` keyword makes it readable from DApp code.
 
-## Step 2: Create a Wallet
+The `Counter` type auto-initializes to 0. No constructor needed.
 
-The CLI presents options:
+**`export circuit increment(): []`**
 
-```
-[1] Create a new wallet
-[2] Restore wallet from seed
-```
+Declares a circuit named `increment` that takes no arguments and returns an empty tuple `[]`. The `export` keyword makes it callable from DApp code. When a user calls this circuit, a ZK proof is generated and a transaction is submitted.
 
-Choose **[1]**. The system generates a headless wallet (separate from Lace or other browser wallets) and displays:
+**`round.increment(1);`**
+
+Increments the counter by 1. This modifies the on-chain ledger state directly.
+
+### What the compiler produces
+
+When you run `compact compile src/counter.compact src/managed/counter`, the compiler generates:
 
 ```
-──────────────────────────────────────────────────────────────
-  Wallet Overview                            Network: preprod
-──────────────────────────────────────────────────────────────
-  Seed: <64-character hex string>
-
-  Unshielded Address (send tNight here):
-  mn_addr_preprod1...
-──────────────────────────────────────────────────────────────
+src/managed/counter/
+├── compiler/contract-info.json    # Metadata: circuits, witnesses, versions
+├── contract/
+│   ├── index.d.ts                 # TypeScript type definitions
+│   ├── index.js                   # JavaScript runtime binding
+│   └── index.js.map
+├── keys/
+│   ├── increment.prover           # 14K — proving key for this circuit
+│   └── increment.verifier         # 1.3K — verification key
+└── zkir/
+    ├── increment.bzkir            # Binary ZK intermediate representation
+    └── increment.zkir             # Human-readable ZKIR
 ```
 
-Save the seed and unshielded address. You'll need the seed to restore this wallet in future sessions.
+One circuit produces one prover/verifier key pair and one ZKIR file. The prover key is what the proof server uses to generate ZK proofs. The verifier key is what the network uses to verify them.
 
----
+The generated TypeScript types give you a fully-typed interface:
 
-## Step 3: Fund Your Wallet
+```typescript
+export type Ledger = {
+  readonly round: bigint;    // Counter → bigint in TypeScript
+}
 
-1. Copy the unshielded address (`mn_addr_preprod1...`)
-2. Visit the preprod faucet: **https://faucet.preprod.midnight.network**
-3. Paste your address and request tNight tokens
-
-The CLI detects incoming funds automatically. No manual refresh needed.
-
-**If the faucet is unavailable:** The preprod network is in active development. If the faucet is down, try again later or check the [Midnight Discord](https://discord.gg/midnight-network) for status updates.
-
----
-
-## Step 4: Wait for DUST Generation
-
-After receiving tNight, the CLI registers your NIGHT UTXOs for dust generation. DUST is Midnight's gas token — non-transferable, tied to your NIGHT holdings. You need it for every transaction.
-
-The CLI shows progress:
-
-```
-✓ Registering 1 NIGHT UTXO(s) for dust generation
-✓ Waiting for dust to generate
-✓ Configuring providers
-```
-
-DUST generates over time. The CLI waits until you have enough to deploy. When ready:
-
-```
-──────────────────────────────────────────────────────────────
-  Contract Actions                    DUST: 405,083,000,000,000
-──────────────────────────────────────────────────────────────
-  [1] Deploy a new counter contract
-  [2] Join an existing counter contract
-  [3] Monitor DUST balance
-  [4] Exit
+export type Circuits<PS> = {
+  increment(context: CircuitContext<PS>): CircuitResults<PS, []>;
+}
 ```
 
 ---
 
-## Step 5: Deploy the Counter Contract
+## Adding State and Access Control
 
-Choose **[1]** to deploy. The CLI:
+The counter works, but it has no owner. Anyone can increment it. Let's look at how the bulletin board contract adds state management and access control.
 
-1. Builds the deployment transaction
-2. Sends the circuit to the proof server for proof generation
-3. Balances the transaction (attaches DUST for gas)
-4. Submits the transaction to the preprod network
+```compact
+pragma language_version >= 0.20;
 
+import CompactStandardLibrary;
+
+export enum State {
+  VACANT,
+  OCCUPIED
+}
+
+export ledger state: State;
+export ledger message: Maybe<Opaque<"string">>;
+export ledger sequence: Counter;
+export ledger owner: Bytes<32>;
 ```
-✓ Deploying counter contract
-Contract deployed at: <contract address>
+
+Four ledger fields instead of one:
+- `state` — an enum tracking whether the board is empty or has a post
+- `message` — a `Maybe` type (like Aiken's `Option`) holding an opaque string
+- `sequence` — a counter for unlinkability across rounds
+- `owner` — 32 bytes storing the current poster's public key
+
+### The constructor
+
+```compact
+constructor() {
+  state = State.VACANT;
+  message = none<Opaque<"string">>();
+  sequence.increment(1);
+}
 ```
 
-Save the contract address. You'll need it to reconnect in future sessions.
+Runs once at deployment. Sets initial state, empty message, and initializes the sequence counter. Unlike circuits, the constructor doesn't generate a ZK proof — it runs during contract deployment.
 
-**What just happened:** The deployment transaction included the contract's initial state (round = 0), the verification keys for the `increment` circuit, and a ZK proof that the constructor executed correctly. The network verified the proof, accepted the transaction, and the contract is now live on preprod.
+### A witness declaration
+
+```compact
+witness localSecretKey(): Bytes<32>;
+```
+
+This declares that the contract expects a function called `localSecretKey` that returns 32 bytes. The implementation lives in TypeScript (covered in Lesson 3.3). The secret key never appears on-chain.
+
+### A circuit with disclose()
+
+```compact
+export circuit post(newMessage: Opaque<"string">): [] {
+  assert(state == State.VACANT, "Attempted to post to an occupied board");
+  owner = disclose(publicKey(localSecretKey(), sequence as Field as Bytes<32>));
+  message = disclose(some<Opaque<"string">>(newMessage));
+  state = State.OCCUPIED;
+}
+```
+
+Step through this:
+
+1. `assert` checks the board is vacant. If not, the circuit aborts — no proof generated, no transaction.
+2. `localSecretKey()` calls the witness to get the private key from the user's machine.
+3. `publicKey(...)` derives a public key from the secret key and the current sequence.
+4. `disclose(...)` makes the public key visible on the ledger as the `owner`.
+5. `disclose(some<...>(newMessage))` wraps the message in `Maybe.some` and discloses it.
+6. `state = State.OCCUPIED` updates the board state (no `disclose()` needed — enum writes to ledger are inherently visible).
+
+### Access control via assertion
+
+```compact
+export circuit takeDown(): Opaque<"string"> {
+  assert(state == State.OCCUPIED, "Attempted to take down post from an empty board");
+  assert(owner == publicKey(localSecretKey(), sequence as Field as Bytes<32>),
+         "Attempted to take down post, but not the current owner");
+  const formerMsg = message.value;
+  state = State.VACANT;
+  sequence.increment(1);
+  message = none<Opaque<"string">>();
+  return formerMsg;
+}
+```
+
+The second `assert` is the access control. The circuit derives the public key from the caller's secret key and compares it to the stored `owner`. If they don't match, the circuit aborts. The caller proves ownership without revealing their secret key.
+
+After a successful takedown, `sequence.increment(1)` ensures the next post derives a different public key from the same secret. This breaks the link between posting rounds.
+
+### A pure circuit
+
+```compact
+export circuit publicKey(sk: Bytes<32>, sequence: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([pad(32, "bboard:pk:"), sequence, sk]);
+}
+```
+
+This is a pure circuit — it doesn't read or write ledger state. The compiler marks it `pure: true, proof: false` in the contract metadata. It's a utility function for key derivation using `persistentHash` with a domain separator (`"bboard:pk:"`).
 
 ---
 
-## Step 6: Interact with the Contract
+## Patterns to Remember
 
-After deployment, the counter menu appears:
+### 1. Ledger fields are your state machine
 
-```
-[1] Increment counter
-[2] Display current counter value
-[3] Exit
-```
+Declare the state you need. Types available: `Uint<n>`, `Bytes<n>`, `Field`, `Boolean`, `Counter`, `Set<T>`, `Map<K,V>`, `List<T>`, `MerkleTree<n,T>`, `HistoricMerkleTree<n,T>`, `Opaque<'string'>`, `Opaque<'Uint8Array'>`.
 
-**Increment the counter** (option [1]):
+### 2. Circuits are your API
 
-The CLI calls the `increment` circuit. The proof server generates a ZK proof, the transaction is submitted, and the on-chain counter increments by 1. Each increment is a real transaction on Midnight preprod.
+Each `export circuit` is an entry point. It defines what callers can do. Think of them as methods on a contract object.
 
-**Display current value** (option [2]):
+### 3. assert is your guard
 
-Reads the current `round` value from the on-chain ledger state.
+Every circuit should start with assertions that check preconditions. Failed assertions abort the circuit before any state changes.
 
----
+### 4. disclose() is your visibility decision
 
-## Step 7: Rejoin in a Future Session
+Use it when the value should be part of the public record. Omit it when the ZK proof is sufficient.
 
-Next time you run the CLI:
+### 5. Witnesses are your private inputs
 
-1. Choose **[2]** to restore wallet from seed
-2. Enter your saved seed
-3. Wait for sync and DUST generation
-4. Choose **[2]** to join existing contract
-5. Enter your saved contract address
-
-The CLI reconnects to the deployed contract. You can continue incrementing.
-
----
-
-## What's Happening Under the Hood
-
-Each `increment` call follows the pipeline from Lesson 3.2:
-
-```
-CLI calls increment()
-    → Runtime evaluates circuit (round.increment(1))
-    → Proof server generates ZK proof using increment.prover key
-    → Transaction: proof + new state (round = N+1) + gas
-    → Network verifies proof using increment.verifier key
-    → Ledger updated: round = N+1
-```
-
-The counter is simple enough that proof generation is nearly instant. More complex circuits (like the bulletin board's `post`) take longer because they include hash computation and `disclose()` operations.
-
----
-
-## The Standalone Alternative
-
-If preprod is unavailable, run everything locally:
-
-```bash
-cd example-counter/counter-cli
-npm run standalone
-```
-
-This starts three Docker containers:
-- `midnightntwrk/midnight-node:0.20.0` — a local Midnight node
-- `midnightntwrk/indexer-standalone:3.0.0` — a local blockchain indexer
-- `midnightntwrk/proof-server:7.0.0` — the proof server
-
-No faucet needed — the local network provides funds automatically. Good for development when you don't need real testnet interaction.
-
----
-
-## Troubleshooting
-
-**`connect ECONNREFUSED 127.0.0.1:6300`**
-
-The proof server isn't running. Start it with `docker compose -f proof-server.yml up` in a separate terminal.
-
-**DUST balance stays at 0**
-
-DUST generation takes time after registering NIGHT UTXOs. Wait a few minutes. If it persists, check that the faucet transaction confirmed — the CLI should show the NIGHT balance.
-
-**DUST balance drops to 0 after a failed deploy**
-
-Known issue. Restart the CLI to release locked DUST coins.
-
-**Wallet shows 0 balance after faucet**
-
-Wait for the sync to complete. The CLI needs to scan the chain for your transactions. If still 0, verify you sent to the correct unshielded address.
-
-**Proof server hangs (no output)**
-
-On Apple Silicon Macs, enable Docker VMM (Settings → General → "Virtual Machine Options" → Docker VMM). Restart Docker.
-
----
-
-## What's Next
-
-You've installed the toolchain, compiled contracts, and deployed to a live network. Module 5 applies everything you've learned to build credential systems — the use case where Midnight's privacy model matters most.
+Declare them in Compact, implement them in TypeScript. The contract can't trust witness data on its own — verify it (e.g., by checking a derived public key against a stored value).
 
 ---
 
 ## Assignment
 
-Deploy the counter contract to preprod (or standalone) and complete the following:
+Write a Compact contract for a simple token vault with these requirements:
 
-1. Record the compiler version, contract address, and initial round value
-2. Increment the counter three times. How long does each proof take?
-3. Display the counter value — confirm it reads 3
-4. Exit and rejoin using your saved seed and contract address. Does the counter value persist?
-5. Try deploying the bulletin board contract using the same process (it uses `example-bboard/bboard-cli`). What differences do you notice in proof generation time?
+1. **Ledger fields:** an owner (public key), a balance (unsigned 64-bit integer), and a locked/unlocked state.
+2. **Constructor:** initialize with an owner public key and starting balance. The owner should be disclosed.
+3. **deposit circuit:** accepts an amount, adds it to the balance, discloses the new balance.
+4. **withdraw circuit:** accepts an amount, verifies the caller is the owner (via witness + public key derivation), subtracts from the balance, and discloses the new balance. Assert the vault is unlocked and has sufficient funds.
+5. **lock/unlock circuits:** only the owner can toggle the lock state.
+
+You don't need to compile this — focus on getting the structure right. What gets disclosed? What stays private? Where do you use witnesses?

@@ -1,10 +1,10 @@
 ---
-title: "Developer Workflow — Compile, Prove, Deploy"
+title: "Compact Language Fundamentals"
 code: 102
 ---
 
 ## SLTs
 
-1. Install the Compact toolchain and run the proof server locally via Docker
-2. Compile a Compact contract and identify its output artifacts
-3. Deploy a contract to the Midnight preprod testnet and interact with it via the TypeScript SDK
+1. Describe the core components of a Compact contract
+2. Compare Aiken concepts to their Compact equivalents
+3. Write a Compact contract that declares ledger state and exposes a circuit to modify it

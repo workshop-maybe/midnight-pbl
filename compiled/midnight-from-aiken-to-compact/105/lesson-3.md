@@ -1,221 +1,245 @@
-# Lesson 2.3: Writing Your First Compact Contract
+# Lesson 5.3: Selective Disclosure
 
-## What You'll Build
+## The Capstone Pattern
 
-A counter contract — the simplest Compact contract that does something meaningful. One ledger field, one circuit, no witnesses. This is the "Hello World" of Midnight.
+You now have two credential verification patterns:
 
-After walking through the counter, you'll extend it with an owner and access control to see how ledger fields, circuits, and witnesses work together.
+- **Lesson 5.1:** Signature-based — prove a specific credential is valid. The verifier knows which credential type but not the holder's identity.
+- **Lesson 5.2:** MerkleTree-based — prove you hold some credential from a set. The verifier doesn't know which one.
 
----
+Selective disclosure combines elements of both. The user proves a specific claim ("I am over 21," "I hold certification X," "My team has 15 certified members") while revealing nothing else. The credential attributes — name, exact age, national ID — stay private.
 
-## The Counter Contract
-
-Here's the complete source:
-
-```compact
-pragma language_version >= 0.20;
-
-import CompactStandardLibrary;
-
-// public state
-export ledger round: Counter;
-
-// transition function changing public state
-export circuit increment(): [] {
-  round.increment(1);
-}
-```
-
-Source: [midnightntwrk/example-counter](https://github.com/midnightntwrk/example-counter/blob/main/contract/src/counter.compact)
-
-### Line by line
-
-**`pragma language_version >= 0.20;`**
-
-Declares the minimum Compact language version this contract requires. The compiler (currently 0.30.0) will reject contracts that require a newer version than it supports.
-
-**`import CompactStandardLibrary;`**
-
-Imports cryptographic primitives, hash functions, and type utilities. Nearly every contract needs this.
-
-**`export ledger round: Counter;`**
-
-Declares a single ledger field named `round` of type `Counter`. The `Counter` type is a 64-bit unsigned integer with `increment()` and `decrement()` methods. The `export` keyword makes it readable from DApp code.
-
-The `Counter` type auto-initializes to 0. No constructor needed.
-
-**`export circuit increment(): []`**
-
-Declares a circuit named `increment` that takes no arguments and returns an empty tuple `[]`. The `export` keyword makes it callable from DApp code. When a user calls this circuit, a ZK proof is generated and a transaction is submitted.
-
-**`round.increment(1);`**
-
-Increments the counter by 1. This modifies the on-chain ledger state directly.
-
-### What the compiler produces
-
-When you run `compact compile src/counter.compact src/managed/counter`, the compiler generates:
-
-```
-src/managed/counter/
-├── compiler/contract-info.json    # Metadata: circuits, witnesses, versions
-├── contract/
-│   ├── index.d.ts                 # TypeScript type definitions
-│   ├── index.js                   # JavaScript runtime binding
-│   └── index.js.map
-├── keys/
-│   ├── increment.prover           # 14K — proving key for this circuit
-│   └── increment.verifier         # 1.3K — verification key
-└── zkir/
-    ├── increment.bzkir            # Binary ZK intermediate representation
-    └── increment.zkir             # Human-readable ZKIR
-```
-
-One circuit produces one prover/verifier key pair and one ZKIR file. The prover key is what the proof server uses to generate ZK proofs. The verifier key is what the network uses to verify them.
-
-The generated TypeScript types give you a fully-typed interface:
-
-```typescript
-export type Ledger = {
-  readonly round: bigint;    // Counter → bigint in TypeScript
-}
-
-export type Circuits<PS> = {
-  increment(context: CircuitContext<PS>): CircuitResults<PS, []>;
-}
-```
+This is the pattern that makes Midnight useful for enterprises. Not "hide everything" and not "reveal everything." Reveal exactly what's needed.
 
 ---
 
-## Adding State and Access Control
+## How Brick Towers Does It
 
-The counter works, but it has no owner. Anyone can increment it. Let's look at how the bulletin board contract adds state management and access control.
-
-```compact
-pragma language_version >= 0.20;
-
-import CompactStandardLibrary;
-
-export enum State {
-  VACANT,
-  OCCUPIED
-}
-
-export ledger state: State;
-export ledger message: Maybe<Opaque<"string">>;
-export ledger sequence: Counter;
-export ledger owner: Bytes<32>;
-```
-
-Four ledger fields instead of one:
-- `state` — an enum tracking whether the board is empty or has a post
-- `message` — a `Maybe` type (like Aiken's `Option`) holding an opaque string
-- `sequence` — a counter for unlinkability across rounds
-- `owner` — 32 bytes storing the current poster's public key
-
-### The constructor
+The wine shop from Lesson 5.1 is a selective disclosure system. Let's trace exactly what's revealed and what isn't:
 
 ```compact
-constructor() {
-  state = State.VACANT;
-  message = none<Opaque<"string">>();
-  sequence.increment(1);
+export circuit submit_order(id: Bytes<16>): [] {
+  const order = get_order(id);
+  const identity = get_identity();
+
+  // These checks happen privately — inside the ZK circuit
+  assert identity.signature.pk == trusted_issuer_public_key   // private check
+  assert identity.subject.id == own_public_key().bytes         // private check
+  verify_signature(subject_hash(identity.subject), identity.signature); // private check
+  assert order.timestamp - identity.subject.birth_timestamp
+         > 21 * 365 * 24 * 60 * 60 * 1000                    // private check
+
+  // Only the payment crosses the privacy boundary
+  receive(disclose(order.payment));
+  send_immediate(disclose(order.payment), ...);
 }
 ```
 
-Runs once at deployment. Sets initial state, empty message, and initializes the sequence counter. Unlike circuits, the constructor doesn't generate a ZK proof — it runs during contract deployment.
+**What the verifier (shop) learns:**
+- The proof passed — someone with a valid credential from the trusted issuer is over 21
+- The payment amount and coin type (disclosed)
 
-### A witness declaration
+**What the verifier doesn't learn:**
+- The person's name
+- Their exact date of birth
+- Their national identifier
+- Which specific credential was used
+- Any other identity attributes
 
-```compact
-witness localSecretKey(): Bytes<32>;
-```
-
-This declares that the contract expects a function called `localSecretKey` that returns 32 bytes. The implementation lives in TypeScript (covered in Lesson 3.3). The secret key never appears on-chain.
-
-### A circuit with disclose()
-
-```compact
-export circuit post(newMessage: Opaque<"string">): [] {
-  assert(state == State.VACANT, "Attempted to post to an occupied board");
-  owner = disclose(publicKey(localSecretKey(), sequence as Field as Bytes<32>));
-  message = disclose(some<Opaque<"string">>(newMessage));
-  state = State.OCCUPIED;
-}
-```
-
-Step through this:
-
-1. `assert` checks the board is vacant. If not, the circuit aborts — no proof generated, no transaction.
-2. `localSecretKey()` calls the witness to get the private key from the user's machine.
-3. `publicKey(...)` derives a public key from the secret key and the current sequence.
-4. `disclose(...)` makes the public key visible on the ledger as the `owner`.
-5. `disclose(some<...>(newMessage))` wraps the message in `Maybe.some` and discloses it.
-6. `state = State.OCCUPIED` updates the board state (no `disclose()` needed — enum writes to ledger are inherently visible).
-
-### Access control via assertion
-
-```compact
-export circuit takeDown(): Opaque<"string"> {
-  assert(state == State.OCCUPIED, "Attempted to take down post from an empty board");
-  assert(owner == publicKey(localSecretKey(), sequence as Field as Bytes<32>),
-         "Attempted to take down post, but not the current owner");
-  const formerMsg = message.value;
-  state = State.VACANT;
-  sequence.increment(1);
-  message = none<Opaque<"string">>();
-  return formerMsg;
-}
-```
-
-The second `assert` is the access control. The circuit derives the public key from the caller's secret key and compares it to the stored `owner`. If they don't match, the circuit aborts. The caller proves ownership without revealing their secret key.
-
-After a successful takedown, `sequence.increment(1)` ensures the next post derives a different public key from the same secret. This breaks the link between posting rounds.
-
-### A pure circuit
-
-```compact
-export circuit publicKey(sk: Bytes<32>, sequence: Bytes<32>): Bytes<32> {
-  return persistentHash<Vector<3, Bytes<32>>>([pad(32, "bboard:pk:"), sequence, sk]);
-}
-```
-
-This is a pure circuit — it doesn't read or write ledger state. The compiler marks it `pure: true, proof: false` in the contract metadata. It's a utility function for key derivation using `persistentHash` with a domain separator (`"bboard:pk:"`).
+The `disclose()` calls control the boundary. Only `order.payment` is disclosed. Everything about `identity` stays behind the proof.
 
 ---
 
-## Patterns to Remember
+## Building Selective Disclosure Circuits
 
-### 1. Ledger fields are your state machine
+The general pattern:
 
-Declare the state you need. Types available: `Uint<n>`, `Bytes<n>`, `Field`, `Boolean`, `Counter`, `Set<T>`, `Map<K,V>`, `List<T>`, `MerkleTree<n,T>`, `HistoricMerkleTree<n,T>`, `Opaque<'string'>`, `Opaque<'Uint8Array'>`.
+```compact
+witness get_credential(): SignedCredentialSubject;
 
-### 2. Circuits are your API
+export circuit prove_claim(claim_type: Uint<8>): [] {
+  const cred = get_credential();
 
-Each `export circuit` is an entry point. It defines what callers can do. Think of them as methods on a contract object.
+  // Always verify the credential is authentic
+  verify_signature(subject_hash(cred.subject), cred.signature);
 
-### 3. assert is your guard
+  // Always verify the credential belongs to the caller
+  assert cred.subject.id == own_public_key().bytes
+         "Not your credential";
 
-Every circuit should start with assertions that check preconditions. Failed assertions abort the circuit before any state changes.
+  // Selectively check one claim
+  if (claim_type == 1) {
+    // Age verification: prove over 21 without revealing DOB
+    assert current_timestamp() - cred.subject.birth_timestamp
+           > 21 * 365 * 24 * 60 * 60 * 1000
+           "Not over 21";
+  }
 
-### 4. disclose() is your visibility decision
+  if (claim_type == 2) {
+    // Nationality: prove a specific country without revealing which
+    assert cred.subject.national_identifier != pad(32, "")
+           "No national ID on file";
+    // Disclose only the country code, not the full ID
+    disclose(slice(cred.subject.national_identifier, 0, 2));
+  }
 
-Use it when the value should be part of the public record. Omit it when the ZK proof is sufficient.
+  // The proof succeeds. No credential attributes are disclosed
+  // unless explicitly wrapped in disclose().
+}
+```
 
-### 5. Witnesses are your private inputs
+The caller passes `claim_type` to select which check runs. The credential is always verified for authenticity and ownership. Only the specific claim is checked — and even then, the raw attribute isn't disclosed unless you explicitly choose to reveal it.
 
-Declare them in Compact, implement them in TypeScript. The contract can't trust witness data on its own — verify it (e.g., by checking a derived public key against a stored value).
+---
+
+## Three Disclosure Levels
+
+Selective disclosure isn't binary. You control how much to reveal for each attribute:
+
+### Level 1: Boolean Proof (Reveal Nothing)
+
+Prove a fact about an attribute without revealing the attribute itself.
+
+```compact
+// Prove: "I am over 21"
+// Reveal: nothing (the proof passing is the answer)
+assert timestamp - cred.subject.birth_timestamp > threshold
+```
+
+The verifier learns one bit: yes or no.
+
+### Level 2: Derived Value (Reveal a Transformation)
+
+Disclose a computed value that reveals less than the raw attribute.
+
+```compact
+// Prove: "My age bracket is 25-34"
+// Reveal: the bracket, not the exact age
+const age_years = (timestamp - cred.subject.birth_timestamp)
+                  / (365 * 24 * 60 * 60 * 1000);
+const bracket = if (age_years < 25) { 0 }
+                else if (age_years < 35) { 1 }
+                else if (age_years < 45) { 2 }
+                else { 3 };
+disclose(bracket);
+```
+
+The verifier learns the bracket but not the exact age.
+
+### Level 3: Partial Attribute (Reveal a Slice)
+
+Disclose part of an attribute.
+
+```compact
+// Prove: "My national ID starts with 'US'"
+// Reveal: country prefix only
+disclose(slice(cred.subject.national_identifier, 0, 2));
+```
+
+The verifier learns the country but not the full ID number.
+
+Choose the minimum disclosure level that satisfies the verifier's need. Most use cases only require Level 1.
+
+---
+
+## Team Capability Proofs
+
+Individual selective disclosure extends to teams. An enterprise can prove "we have N members with certification X" without revealing who:
+
+```compact
+export ledger team_credentials: MerkleTree<16, Bytes<32>>;
+export ledger team_nullifiers: Set<Bytes<32>>;
+
+witness load_member_credentials(): Vector<20, SignedCredentialSubject>;
+
+export circuit prove_team_capability(
+  required_cert: Bytes<32>,
+  min_count: Uint<8>
+): [] {
+  const members = load_member_credentials();
+  var count: Uint<8> = 0;
+
+  // Count members with the required certification
+  // Each member's credential is verified but never disclosed
+  for (i in 0..20) {
+    const cred = members[i];
+    if (cred.subject.id != pad(32, "")) {  // non-empty slot
+      verify_signature(subject_hash(cred.subject), cred.signature);
+      if (cred.subject.certification_type == required_cert) {
+        count = count + 1;
+      }
+    }
+  }
+
+  assert count >= min_count "Insufficient team capability";
+
+  // Disclose only the count, not the individuals
+  disclose(count);
+}
+```
+
+The verifier learns: "this team has at least N members with certification X." They don't learn who those members are, what other certifications the team holds, or which specific credentials were used.
+
+---
+
+## Combining Patterns
+
+A production credential system often combines all three patterns:
+
+```
+Credential Issuance (Cardano):
+  └── Public registry: "credential X exists, issued by Y"
+
+Credential Commitment (Midnight):
+  └── MerkleTree: anonymous set membership
+
+Individual Verification:
+  └── Signature check: "this credential is authentic"
+
+Selective Disclosure:
+  └── Boolean proof: "holder meets criterion Z"
+
+Single-Use Proof:
+  └── Nullifier: "this credential was used once for this purpose"
+```
+
+The Cardano layer provides the trust anchor (Lesson 6.1). The Midnight layer provides the privacy. Selective disclosure is the interface between them — it's how you extract value from private credentials without compromising them.
+
+---
+
+## The Trust Chain
+
+Every selective disclosure proof rests on a trust chain:
+
+1. **Issuer trust.** The verifier trusts the issuer's public key (stored on-chain or in a registry).
+2. **Signature validity.** The ZK proof guarantees the credential's signature is valid.
+3. **Ownership binding.** The credential is bound to the caller's wallet via `own_public_key()`.
+4. **Claim truth.** The specific claim (age, certification, membership) is checked arithmetically inside the circuit.
+5. **Proof soundness.** The ZK proof guarantees all of the above without revealing the inputs.
+
+If any link breaks — compromised issuer key, stolen credential, tampered attributes — the chain fails. The circuit's assertions catch it at proof generation time. A bad proof never reaches the network.
+
+---
+
+## Questions to consider:
+
+- Selective disclosure reveals the minimum needed. But "minimum" is a judgment call. Who decides? The user (choose what to reveal)? The verifier (demand what they need)? The contract designer (hardcode the disclosure)?
+- Team capability proofs aggregate individual credentials. What prevents a single member's credential from being counted twice in the same proof? How would you add a deduplication mechanism?
+- The age check `timestamp - birth_timestamp > 21 years` leaks information at boundaries. If someone barely passes, the verifier can estimate their age. How would you design a fuzzier check?
 
 ---
 
 ## Assignment
 
-Write a Compact contract for a simple token vault with these requirements:
+Build a complete selective disclosure system for a professional services firm. The system must support three operations:
 
-1. **Ledger fields:** an owner (public key), a balance (unsigned 64-bit integer), and a locked/unlocked state.
-2. **Constructor:** initialize with an owner public key and starting balance. The owner should be disclosed.
-3. **deposit circuit:** accepts an amount, adds it to the balance, discloses the new balance.
-4. **withdraw circuit:** accepts an amount, verifies the caller is the owner (via witness + public key derivation), subtracts from the balance, and discloses the new balance. Assert the vault is unlocked and has sufficient funds.
-5. **lock/unlock circuits:** only the owner can toggle the lock state.
+1. **Individual proof:** A consultant proves they hold a specific certification (e.g., AWS Solutions Architect) without revealing their name or other certifications. Write the circuit.
 
-You don't need to compile this — focus on getting the structure right. What gets disclosed? What stays private? Where do you use witnesses?
+2. **Team proof:** The firm proves it has at least 5 consultants with a specific certification. Individual identities remain private. Sketch the circuit.
+
+3. **Expiry check:** A client verifies that a consultant's certification hasn't expired. The exact issue and expiry dates stay private — the client only learns "valid" or "expired." Write the assertion logic.
+
+For each operation, specify:
+- What enters via witness (private)
+- What gets checked via assert (verified but hidden)
+- What gets disclosed (public)

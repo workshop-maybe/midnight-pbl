@@ -1,10 +1,10 @@
 ---
-title: "Building Credential Systems on Midnight"
+title: "The Privacy Model — Proving Without Revealing"
 code: 103
 ---
 
 ## SLTs
 
-1. Design a Compact contract that verifies a signed credential without revealing its attributes
-2. Use MerkleTree commitments and nullifiers to prove credential membership without exposing which credential
-3. Implement selective disclosure — proving a specific claim about a credential holder without revealing their identity
+1. Explain how Compact's disclose() primitive controls what becomes public versus what stays private
+2. Describe how a ZK proof is generated from a Compact circuit and verified on-chain by the Impact VM
+3. Implement a witness function in TypeScript that provides private data to a Compact circuit
