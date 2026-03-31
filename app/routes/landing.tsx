@@ -41,7 +41,7 @@ export default function Landing() {
         </div>
 
         {/* CTA */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+        <div className="mb-12 sm:mb-16 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
           <Link to="/">
             <Button size="lg">Start Learning</Button>
           </Link>
@@ -57,6 +57,22 @@ export default function Landing() {
             </a>
             .
           </p>
+        </div>
+
+        {/* Community */}
+        <div className="border-t border-midnight-border pt-10 sm:pt-12">
+          <p className="mb-4 text-base text-mn-text-muted leading-relaxed sm:text-lg">
+            This course is a free community resource. It's made to be refined
+            over time by the people who use it — if something is unclear, missing,
+            or could be better, that's a contribution waiting to happen.
+          </p>
+          <a
+            href="https://github.com/workshop-maybe/midnight-pbl/issues"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button variant="secondary" size="md">Give Feedback</Button>
+          </a>
         </div>
       </div>
     </AppShell>

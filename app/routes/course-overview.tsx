@@ -12,6 +12,7 @@ import type { MetaFunction } from "react-router";
 import { useLoaderData, Link } from "react-router";
 import { fetchCourseModules } from "~/lib/gateway.server";
 import { serverEnv } from "~/env.server";
+import { Button } from "~/components/ui/button";
 import { getPageTitle } from "~/config/branding";
 import { MIDNIGHT_PBL } from "~/config/midnight";
 import type { CourseModule } from "~/hooks/api/course/use-course";
@@ -104,6 +105,22 @@ export default function CourseOverview() {
           })}
         </div>
       )}
+
+      {/* Community */}
+      <div className="mt-12 border-t border-midnight-border pt-10 sm:mt-16 sm:pt-12">
+        <p className="mb-4 text-base text-mn-text-muted leading-relaxed">
+          This course is a free community resource. It's made to be refined
+          over time by the people who use it — if something is unclear, missing,
+          or could be better, that's a contribution waiting to happen.
+        </p>
+        <a
+          href="https://github.com/workshop-maybe/midnight-pbl/issues"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Button variant="secondary" size="md">Give Feedback</Button>
+        </a>
+      </div>
     </div>
   );
 }
