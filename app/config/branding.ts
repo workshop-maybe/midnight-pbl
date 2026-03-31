@@ -45,11 +45,11 @@ export const BRANDING = {
   colors: {
     accent: "#d4a053",
     primary: "#d4a053",
-    bgDark: "#1c1c1c",
-    bgSurface: "#242424",
-    bgCard: "#2a2a2a",
-    textOnDark: "#e8e8e8",
-    textMuted: "#999999",
+    bgDark: "#161618",
+    bgSurface: "#1e1e20",
+    bgCard: "#252527",
+    textOnDark: "#ececec",
+    textMuted: "#a0a0a4",
     borderDark: "#ffffff12",
   },
 

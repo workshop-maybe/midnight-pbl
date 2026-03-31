@@ -17,18 +17,18 @@
   --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", "Menlo",
     monospace;
 
-  /* Charcoal palette */
-  --color-midnight: #1c1c1c;
-  --color-midnight-surface: #242424;
-  --color-midnight-card: #2a2a2a;
+  /* Charcoal palette — cool neutral, not warm */
+  --color-midnight: #161618;
+  --color-midnight-surface: #1e1e20;
+  --color-midnight-card: #252527;
   --color-midnight-border: #ffffff12;
 
   --color-mn-primary: #d4a053;
   --color-mn-primary-light: #d4a053;
   --color-mn-primary-hover: #ddb06a;
 
-  --color-mn-text: #e8e8e8;
-  --color-mn-text-muted: #999999;
+  --color-mn-text: #ececec;
+  --color-mn-text-muted: #a0a0a4;
 
   /* Semantic aliases */
   --color-primary: #d4a053;
@@ -50,11 +50,11 @@
 :root {
   --mn-primary: #d4a053;
   --mn-primary-light: #d4a053;
-  --mn-bg-dark: #1c1c1c;
-  --mn-bg-surface: #242424;
-  --mn-bg-card: #2a2a2a;
-  --mn-text-on-dark: #e8e8e8;
-  --mn-text-muted: #999999;
+  --mn-bg-dark: #161618;
+  --mn-bg-surface: #1e1e20;
+  --mn-bg-card: #252527;
+  --mn-text-on-dark: #ececec;
+  --mn-text-muted: #a0a0a4;
   --mn-border-dark: #ffffff12;
   --mn-radius: 2px;
 }
@@ -124,7 +124,7 @@ samp {
 .prose-midnight {
   font-family: var(--font-prose);
   font-size: 1.1875rem; /* 19px — slightly larger for comfortable reading */
-  color: #b0b0b0; /* warm gray — easy on eyes against charcoal */
+  color: #b8b8bc; /* cool gray — easy on eyes against charcoal */
   line-height: 1.7;
   max-width: 65ch;
 }
