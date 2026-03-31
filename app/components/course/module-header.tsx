@@ -29,7 +29,7 @@ export function ModuleHeader({ module }: ModuleHeaderProps) {
       </nav>
 
       {/* Module code badge */}
-      <Badge variant="violet" className="mb-3">
+      <Badge variant="accent" className="mb-3">
         {module.moduleCode ?? "Module"}
       </Badge>
 

@@ -85,7 +85,7 @@ export function ConnectWallet() {
   if (authState === "NEEDS_REGISTRATION" && isWalletConnected) {
     return (
       <div className="flex items-center gap-2">
-        <span className="text-sm text-mn-violet">Register</span>
+        <span className="text-sm text-mn-primary">Register</span>
         <button
           onClick={logout}
           className="rounded-md px-2 py-1 text-xs text-mn-text-muted transition-colors hover:bg-midnight-surface hover:text-mn-text min-h-[44px]"

@@ -38,7 +38,7 @@ export function Skeleton({
 export function SkeletonCard({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`rounded-xl border border-midnight-border bg-[#0a0e19eb] p-6 ${className}`}
+      className={`rounded-xl border border-midnight-border bg-midnight-card p-6 ${className}`}
     >
       <Skeleton height="h-5" width="w-2/3" className="mb-3" />
       <Skeleton height="h-3" width="w-full" className="mb-2" />

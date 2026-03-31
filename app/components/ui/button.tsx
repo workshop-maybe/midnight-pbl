@@ -12,8 +12,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary: `
-    bg-mn-primary-light text-mn-text
-    hover:brightness-110 shadow-sm
+    bg-[#d4a053] text-[#1c1c1c]
+    hover:bg-[#ddb06a] shadow-sm
   `,
   secondary: `
     border border-midnight-border bg-transparent
@@ -36,9 +36,9 @@ const sizeStyles: Record<ButtonSize, string> = {
 };
 
 /**
- * Button — Midnight design system.
+ * Button — charcoal design system.
  *
- * Primary variant uses a blue-to-violet gradient.
+ * Primary variant uses amber accent with dark text.
  * Supports loading state with spinner animation.
  */
 export function Button({
@@ -58,7 +58,7 @@ export function Button({
       className={`
         inline-flex items-center justify-center gap-2
         font-medium transition-all duration-200
-        focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary-light
+        focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d4a053]
         disabled:cursor-not-allowed disabled:opacity-50
         ${variantStyles[variant]}
         ${sizeStyles[size]}

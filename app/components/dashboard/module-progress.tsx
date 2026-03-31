@@ -51,7 +51,7 @@ export function ModuleProgress({
         completed
           ? "border-success/30"
           : status !== "NOT_STARTED"
-            ? "border-mn-primary/30"
+            ? "border-[#d4a053]/30"
             : ""
       }`}
     >
@@ -86,7 +86,7 @@ export function ModuleProgress({
         {/* Action link */}
         <Link
           to={MIDNIGHT_PBL.routes.assignment(moduleCode)}
-          className="inline-flex min-h-[44px] items-center gap-1 text-xs font-medium text-mn-primary-light transition-colors hover:text-mn-text"
+          className="inline-flex min-h-[44px] items-center gap-1 text-xs font-medium text-[#d4a053] transition-colors hover:text-mn-text"
         >
           {completed ? "View assignment" : "Go to assignment"}
           <ArrowRightIcon />

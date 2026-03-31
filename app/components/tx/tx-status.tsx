@@ -99,7 +99,7 @@ export function TxStatus({
   if (txState === "idle") return null;
 
   return (
-    <div className="space-y-4 rounded-xl border border-midnight-border bg-midnight-card/60 p-3 backdrop-blur-sm sm:p-4">
+    <div className="space-y-4 rounded-xl border border-midnight-border bg-midnight-card p-3 sm:p-4">
       {/* Step list */}
       <div className="space-y-2">
         {TX_STEPS.map((step, index) => {
@@ -219,7 +219,7 @@ function WatchStatusBadge({ status }: { status: TxWatchStatus }) {
     },
     confirmed: {
       label: "Confirmed on chain, updating database...",
-      className: "text-mn-sky bg-mn-sky/10 border-mn-sky/30",
+      className: "text-mn-primary bg-mn-primary/10 border-mn-primary/30",
     },
     updated: {
       label: "Complete!",

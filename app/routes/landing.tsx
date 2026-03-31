@@ -8,15 +8,12 @@ export default function Landing() {
   return (
     <AppShell>
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        {/* Gradient backdrop */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-mn-primary/5 via-transparent to-transparent" />
-
+      <section>
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
           <div className="mx-auto max-w-3xl text-center">
             {/* Title */}
-            <h1 className="mb-6 text-3xl font-bold font-heading tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
-              <span className="gradient-text">{MIDNIGHT_PBL.title}</span>
+            <h1 className="mb-6 text-3xl font-bold font-heading tracking-tight text-mn-text sm:text-4xl md:text-5xl lg:text-6xl">
+              {MIDNIGHT_PBL.title}
             </h1>
 
             {/* Description */}

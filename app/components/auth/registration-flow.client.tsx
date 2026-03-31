@@ -90,7 +90,7 @@ export function RegistrationFlow() {
   ].includes(txState);
 
   return (
-    <div className="mx-auto max-w-md space-y-6 rounded-2xl border border-midnight-border bg-midnight-card/80 p-4 backdrop-blur-sm sm:p-6">
+    <div className="mx-auto max-w-md space-y-6 rounded-2xl border border-midnight-border bg-midnight-card p-4 sm:p-6">
       <div className="space-y-2 text-center">
         <h2 className="font-heading text-xl font-semibold text-mn-text">
           Welcome to Midnight PBL

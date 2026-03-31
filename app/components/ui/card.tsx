@@ -9,10 +9,10 @@ interface CardProps {
 }
 
 /**
- * Glassmorphic card — Midnight design system.
+ * Card — charcoal design system.
  *
- * Semi-transparent dark background with subtle border and
- * sky-blue glow on hover. 20px border radius.
+ * Flat dark surface with subtle border. Optional border
+ * brighten on hover.
  */
 export function Card({
   children,
@@ -23,9 +23,8 @@ export function Card({
   return (
     <Element
       className={`
-        rounded-xl border border-midnight-border bg-[#0a0e19eb]
-        backdrop-blur-sm
-        ${noHover ? "" : "transition-shadow duration-200 hover:shadow-[0_0_24px_var(--mn-glow)]"}
+        rounded-xl border border-midnight-border bg-midnight-card
+        ${noHover ? "" : "transition-colors duration-200 hover:border-[#ffffff20]"}
         ${className}
       `.trim()}
     >

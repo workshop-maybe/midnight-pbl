@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 /*
- * Midnight Design System
+ * Charcoal Design System
  *
- * Dark-mode only. Colors derived from Midnight Network brand guidelines.
- * See docs/brainstorms/2026-03-29-midnight-pbl-site-requirements.md for source.
+ * Dark-mode only. Warm charcoal palette with amber accent.
+ * Content-first — no glassmorphism, no gradients, no glow.
  */
 
 /* ── Tailwind v4 theme tokens ─────────────────────────────────────────── */
@@ -17,30 +17,25 @@
   --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", "Menlo",
     monospace;
 
-  /* Midnight palette */
-  --color-midnight: #0b0e1a;
-  --color-midnight-surface: #0a0e19;
-  --color-midnight-card: #141828;
-  --color-midnight-border: #ffffff26;
+  /* Charcoal palette */
+  --color-midnight: #1c1c1c;
+  --color-midnight-surface: #242424;
+  --color-midnight-card: #2a2a2a;
+  --color-midnight-border: #ffffff12;
 
-  --color-mn-blue: #0000fe;
-  --color-mn-primary: #2a48ff;
-  --color-mn-primary-light: #5bb6f2;
-  --color-mn-violet: #7a5cff;
-  --color-mn-purple: #8756ff;
-  --color-mn-sky: #5bb6f2;
+  --color-mn-primary: #d4a053;
+  --color-mn-primary-light: #d4a053;
 
-  --color-mn-text: #f7f8ff;
-  --color-mn-text-muted: #e1e1e6;
-  --color-mn-glow: #5bb6f240;
+  --color-mn-text: #e8e8e8;
+  --color-mn-text-muted: #999999;
 
   /* Semantic aliases */
-  --color-primary: #2a48ff;
-  --color-primary-light: #5bb6f2;
+  --color-primary: #d4a053;
+  --color-primary-light: #d4a053;
   --color-success: #34d399;
   --color-warning: #fbbf24;
   --color-error: #f87171;
-  --color-info: #5bb6f2;
+  --color-info: #d4a053;
 
   /* Border radius */
   --radius-xl: 20px;
@@ -52,19 +47,14 @@
 /* ── CSS Custom Properties (for non-Tailwind consumers) ───────────────── */
 
 :root {
-  --mn-blue: #0000fe;
-  --mn-primary-light: #2a48ff;
-  --mn-primary-dark: #5bb6f2;
-  --mn-violet: #7a5cff;
-  --mn-purple: #8756ff;
-  --mn-bg-dark: #0b0e1a;
-  --mn-bg-surface: #0a0e19;
-  --mn-bg-card: #141828;
-  --mn-text-on-dark: #f7f8ff;
-  --mn-text-muted: #e1e1e6;
-  --mn-sky: #5bb6f2;
-  --mn-glow: #5bb6f240;
-  --mn-border-dark: #ffffff26;
+  --mn-primary: #d4a053;
+  --mn-primary-light: #d4a053;
+  --mn-bg-dark: #1c1c1c;
+  --mn-bg-surface: #242424;
+  --mn-bg-card: #2a2a2a;
+  --mn-text-on-dark: #e8e8e8;
+  --mn-text-muted: #999999;
+  --mn-border-dark: #ffffff12;
   --mn-radius: 20px;
 }
 
@@ -104,30 +94,9 @@ samp {
 
 /* ── Utilities ────────────────────────────────────────────────────────── */
 
-/* Glassmorphic card base */
-.glass-card {
-  background-color: #0a0e19eb;
-  border: 1px solid var(--mn-border-dark);
-  border-radius: var(--mn-radius);
-  backdrop-filter: blur(12px);
-  transition: box-shadow 0.2s ease;
-}
-
-.glass-card:hover {
-  box-shadow: 0 0 24px var(--mn-glow);
-}
-
-/* Gradient text utility */
-.gradient-text {
-  background: linear-gradient(135deg, #2a48ff 0%, #7a5cff 50%, #5bb6f2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 /* Focus ring for accessibility */
 :focus-visible {
-  outline: 2px solid var(--mn-primary-light);
+  outline: 2px solid var(--mn-primary);
   outline-offset: 2px;
 }
 
@@ -154,8 +123,8 @@ samp {
 .prose-midnight {
   font-family: var(--font-prose);
   font-size: 1.1875rem; /* 19px — slightly larger for comfortable reading */
-  color: #c8ccd4; /* light charcoal — softer than pure white, easier on eyes */
-  line-height: 1.7; /* tightened from 1.85 — less airy paragraph spacing */
+  color: #b0b0b0; /* warm gray — easy on eyes against charcoal */
+  line-height: 1.7;
   max-width: 65ch;
 }
 
@@ -167,7 +136,7 @@ samp {
 .prose-midnight h5,
 .prose-midnight h6 {
   font-family: var(--font-heading);
-  color: var(--mn-text-on-dark); /* headings stay bright white for hierarchy */
+  color: var(--mn-text-on-dark); /* headings stay bright for hierarchy */
   font-weight: 600;
   line-height: 1.3;
   margin-top: 1.75em;
@@ -183,7 +152,7 @@ samp {
 }
 
 .prose-midnight a {
-  color: var(--mn-sky);
+  color: var(--mn-primary);
   text-decoration: underline;
   text-underline-offset: 2px;
   transition: color 0.15s;
@@ -222,7 +191,7 @@ samp {
 
 .prose-midnight blockquote {
   font-family: var(--font-prose);
-  border-left: 3px solid var(--mn-sky);
+  border-left: 3px solid var(--mn-primary);
   padding-left: 1em;
   margin-left: 0;
   margin-bottom: 1em;
@@ -235,8 +204,8 @@ samp {
 .prose-midnight code {
   font-family: var(--font-mono);
   font-size: 0.85em;
-  background-color: #1e293b;
-  color: var(--mn-sky);
+  background-color: #2a2a2a;
+  color: var(--mn-primary);
   border-radius: 5px;
   padding: 0.15em 0.4em;
   word-break: break-word;
@@ -249,26 +218,15 @@ samp {
   font-family: var(--font-mono);
   font-size: 0.9rem;
   line-height: 1.6;
-  background-color: #0f1629;
-  border: 1px solid #ffffff10;
+  background-color: #1e1e1e;
+  border: 1px solid var(--mn-border-dark);
+  border-left: 3px solid #d4a05380;
   border-radius: 12px;
   padding: 1rem 1.25rem;
   padding-top: 1.25rem;
   margin-bottom: 1.25em;
   overflow-x: auto;
   overflow-y: hidden;
-}
-
-/* Gradient accent line on top of code blocks */
-.prose-midnight pre::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 12px;
-  right: 12px;
-  height: 2px;
-  background: linear-gradient(90deg, #2a48ff, #7a5cff);
-  border-radius: 0 0 2px 2px;
 }
 
 /* Language label in top-right corner */
@@ -284,7 +242,7 @@ samp {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #94a3b8;
-  background-color: #1a2038;
+  background-color: #2a2a2a;
   border-bottom-left-radius: 8px;
   border-top-right-radius: 11px;
 }
@@ -299,89 +257,89 @@ samp {
   word-break: normal;
 }
 
-/* ── Midnight syntax highlighting (hljs overrides) ─────────────────── */
+/* ── Charcoal syntax highlighting (hljs overrides) ────────────────── */
 
 .prose-midnight pre .hljs-keyword,
 .prose-midnight pre .hljs-selector-tag,
 .prose-midnight pre .hljs-built_in {
-  color: #5bb6f2;
+  color: #d4a053;
 }
 
 .prose-midnight pre .hljs-string,
 .prose-midnight pre .hljs-attr {
-  color: #a78bfa;
+  color: #c9826b;
 }
 
 .prose-midnight pre .hljs-comment,
 .prose-midnight pre .hljs-quote {
-  color: #4b5563;
+  color: #555555;
   font-style: italic;
 }
 
 .prose-midnight pre .hljs-title,
 .prose-midnight pre .hljs-section,
 .prose-midnight pre .hljs-title.function_ {
-  color: #7a5cff;
+  color: #d4d4d4;
 }
 
 .prose-midnight pre .hljs-number,
 .prose-midnight pre .hljs-literal {
-  color: #5bb6f2;
+  color: #d4a053;
 }
 
 .prose-midnight pre .hljs-type,
 .prose-midnight pre .hljs-title.class_ {
-  color: #c4b5fd;
+  color: #a0a0a0;
 }
 
 .prose-midnight pre .hljs-variable,
 .prose-midnight pre .hljs-template-variable {
-  color: #e2e8f0;
+  color: #d4d4d4;
 }
 
 .prose-midnight pre .hljs-name,
 .prose-midnight pre .hljs-selector-id,
 .prose-midnight pre .hljs-selector-class {
-  color: #7a5cff;
+  color: #d4a053;
 }
 
 .prose-midnight pre .hljs-symbol,
 .prose-midnight pre .hljs-bullet {
-  color: #a78bfa;
+  color: #c9826b;
 }
 
 .prose-midnight pre .hljs-meta {
-  color: #94a3b8;
+  color: #777777;
 }
 
 .prose-midnight pre .hljs-params {
-  color: #e2e8f0;
+  color: #d4d4d4;
 }
 
 .prose-midnight pre .hljs-punctuation {
-  color: #94a3b8;
+  color: #777777;
 }
 
 .prose-midnight pre .hljs-operator {
-  color: #94a3b8;
+  color: #777777;
 }
 
 .prose-midnight pre .hljs-property {
-  color: #c4b5fd;
+  color: #a0a0a0;
 }
 
 .prose-midnight pre .hljs-regexp {
-  color: #a78bfa;
+  color: #c9826b;
 }
 
 .prose-midnight pre .hljs-tag {
-  color: #5bb6f2;
+  color: #d4a053;
 }
 
 /* Ensure hljs base theme doesn't bleed through */
 .prose-midnight pre .hljs {
   background: transparent;
-  color: #e2e8f0;
+  color: #d4d4d4;
   padding: 0;
 }
 
@@ -419,7 +377,7 @@ samp {
 }
 
 .prose-midnight th {
-  background-color: #ffffff08;
+  background-color: #ffffff0a;
   font-weight: 600;
 }
 
@@ -467,8 +425,7 @@ samp {
   border: 1px solid var(--mn-border-dark);
   color: var(--mn-text-on-dark);
   cursor: pointer;
-  transition: box-shadow 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: border-color 0.2s ease;
 }
 
 /* Respect safe-area for the FAB on notched phones */
@@ -480,7 +437,7 @@ samp {
 }
 
 .learn-sidebar-toggle:hover {
-  box-shadow: 0 4px 16px var(--mn-glow);
+  border-color: #ffffff20;
 }
 
 /* Mobile overlay backdrop — rendered conditionally by React */
@@ -541,7 +498,7 @@ samp {
 }
 
 .sidebar-slt-item--active {
-  background-color: #2a48ff18;
+  background-color: #d4a05318;
   color: var(--mn-text-on-dark);
 }
 
@@ -561,7 +518,7 @@ samp {
 }
 
 .sidebar-slt-item--active .sidebar-slt-index {
-  background-color: var(--mn-primary-light);
+  background-color: var(--mn-primary);
   color: var(--mn-bg-dark);
 }
 
@@ -593,7 +550,7 @@ samp {
 }
 
 .sidebar-assignment-link--active {
-  background-color: #2a48ff18;
+  background-color: #d4a05318;
   color: var(--mn-text-on-dark);
 }
 

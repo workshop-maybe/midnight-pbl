@@ -60,7 +60,7 @@ export default function CourseOverview() {
 
       {/* Module grid */}
       {modules.length === 0 ? (
-        <div className="rounded-xl border border-midnight-border bg-midnight-surface/50 p-6 text-center sm:p-12">
+        <div className="rounded-xl border border-midnight-border bg-midnight-surface p-6 text-center sm:p-12">
           <p className="text-lg text-mn-text-muted">
             No modules available yet. Check back soon.
           </p>

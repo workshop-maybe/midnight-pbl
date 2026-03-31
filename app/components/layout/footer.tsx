@@ -5,7 +5,7 @@ import { BRANDING } from "~/config/branding";
  */
 export function Footer() {
   return (
-    <footer className="border-t border-midnight-border bg-midnight/50 py-8 supports-[padding:env(safe-area-inset-bottom)]:pb-[calc(2rem+env(safe-area-inset-bottom))]">
+    <footer className="border-t border-midnight-border bg-midnight-surface py-8 supports-[padding:env(safe-area-inset-bottom)]:pb-[calc(2rem+env(safe-area-inset-bottom))]">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
           <p className="text-sm text-mn-text-muted">
@@ -14,7 +14,7 @@ export function Footer() {
               href={BRANDING.links.andamio}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-[44px] items-center text-mn-primary-light transition-colors hover:text-mn-text"
+              className="inline-flex min-h-[44px] items-center text-[#d4a053] transition-colors hover:text-mn-text"
             >
               Andamio
             </a>

@@ -127,7 +127,7 @@ export default function AssignmentInteractive({
       <Card noHover>
         <CardBody className="py-8">
           <div className="flex flex-col items-center gap-4 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-mn-violet/10">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-mn-primary/10">
               <CredentialIcon />
             </div>
             <CommitmentStatus status={status} />
@@ -392,7 +392,7 @@ function AcceptedIcon() {
 function CredentialIcon() {
   return (
     <svg
-      className="h-8 w-8 text-mn-violet"
+      className="h-8 w-8 text-mn-primary"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"

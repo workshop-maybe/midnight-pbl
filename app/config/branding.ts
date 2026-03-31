@@ -41,27 +41,23 @@ export const BRANDING = {
     docs: "https://docs.andamio.io",
   },
 
-  /** Midnight brand colors — mirrors CSS custom properties for JS consumers */
+  /** Charcoal palette — mirrors CSS custom properties for JS consumers */
   colors: {
-    blue: "#0000fe",
-    primary: "#2a48ff",
-    primaryLight: "#5bb6f2",
-    violet: "#7a5cff",
-    purple: "#8756ff",
-    bgDark: "#0b0e1a",
-    bgSurface: "#0a0e19",
-    bgCard: "#0e1220",
-    textOnDark: "#f7f8ff",
-    textMuted: "#e1e1e6",
-    sky: "#5bb6f2",
-    glow: "#5bb6f240",
-    borderDark: "#ffffff1a",
+    accent: "#d4a053",
+    primary: "#d4a053",
+    bgDark: "#1c1c1c",
+    bgSurface: "#242424",
+    bgCard: "#2a2a2a",
+    textOnDark: "#e8e8e8",
+    textMuted: "#999999",
+    borderDark: "#ffffff12",
   },
 
   /** Font families */
   fonts: {
     heading: "Outfit",
     body: "Urbanist",
+    prose: "Lora",
     mono: "Geist Mono",
   },
 } as const;

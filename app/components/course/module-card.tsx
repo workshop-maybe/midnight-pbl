@@ -23,13 +23,13 @@ export function ModuleCard({ module, index }: ModuleCardProps) {
     <Link
       to={MIDNIGHT_PBL.routes.module(moduleCode)}
       prefetch="intent"
-      className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary-light rounded-xl"
+      className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d4a053] rounded-xl"
     >
       <Card noHover={false} className="h-full">
         <CardBody className="flex flex-col gap-3">
           {/* Module number badge */}
           <div className="flex items-center gap-3">
-            <Badge variant="violet">Module {index + 1}</Badge>
+            <Badge variant="accent">Module {index + 1}</Badge>
             {sltCount > 0 && (
               <span className="text-xs text-mn-text-muted">
                 {sltCount} {sltCount === 1 ? "lesson" : "lessons"}

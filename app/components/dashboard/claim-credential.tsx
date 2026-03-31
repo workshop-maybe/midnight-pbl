@@ -91,14 +91,14 @@ export function ClaimCredential({
   // Already has credential
   if (hasCredential) {
     return (
-      <Card className="border-mn-violet/30">
+      <Card className="border-mn-primary/30">
         <CardBody className="py-6 text-center">
           <div className="mb-3 flex justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-mn-violet/30 bg-mn-violet/10">
-              <TrophyIcon className="h-6 w-6 text-mn-violet" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-mn-primary/30 bg-mn-primary/10">
+              <TrophyIcon className="h-6 w-6 text-mn-primary" />
             </div>
           </div>
-          <Badge variant="violet" className="mb-2">
+          <Badge variant="accent" className="mb-2">
             Credential Earned
           </Badge>
           <p className="text-sm text-mn-text-muted">
@@ -213,7 +213,7 @@ export function ClaimCredential({
         {/* Progress bar */}
         <div className="mx-auto mt-3 h-1.5 w-full max-w-[12rem] overflow-hidden rounded-full bg-midnight-surface">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-mn-primary to-mn-violet transition-all duration-500"
+            className="h-full rounded-full bg-mn-primary transition-all duration-500"
             style={{
               width: `${(acceptedCount / MIDNIGHT_PBL.moduleCount) * 100}%`,
             }}

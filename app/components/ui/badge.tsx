@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 
-type BadgeVariant = "default" | "success" | "warning" | "error" | "info" | "violet";
+type BadgeVariant = "default" | "success" | "warning" | "error" | "info" | "accent";
 
 interface BadgeProps {
   children: ReactNode;
@@ -13,12 +13,12 @@ const variantStyles: Record<BadgeVariant, string> = {
   success: "bg-success/10 text-success border-success/30",
   warning: "bg-warning/10 text-warning border-warning/30",
   error: "bg-error/10 text-error border-error/30",
-  info: "bg-info/10 text-info border-info/30",
-  violet: "bg-mn-violet/10 text-mn-violet border-mn-violet/30",
+  info: "bg-[#d4a053]/10 text-[#d4a053] border-[#d4a053]/30",
+  accent: "bg-[#d4a053]/10 text-[#d4a053] border-[#d4a053]/30",
 };
 
 /**
- * Badge — Midnight design system.
+ * Badge — charcoal design system.
  *
  * Small colored label for status indicators, tags, and categories.
  */

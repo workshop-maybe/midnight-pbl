@@ -51,8 +51,8 @@ export function CredentialsList({
         <Card key={credential.txHash ?? index}>
           <CardBody className="flex items-start gap-3 sm:items-center sm:gap-4">
             {/* Credential icon */}
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-mn-violet/30 bg-mn-violet/10">
-              <CredentialIcon className="h-5 w-5 text-mn-violet" />
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-mn-primary/30 bg-mn-primary/10">
+              <CredentialIcon className="h-5 w-5 text-mn-primary" />
             </div>
 
             {/* Info */}
@@ -61,7 +61,7 @@ export function CredentialsList({
                 <h4 className="text-sm font-semibold text-mn-text truncate">
                   {courseTitle}
                 </h4>
-                <Badge variant="violet">Credential</Badge>
+                <Badge variant="accent">Credential</Badge>
               </div>
 
               <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-mn-text-muted">

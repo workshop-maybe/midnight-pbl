@@ -31,7 +31,7 @@ interface CommitmentStatusProps {
 
 interface StatusConfig {
   label: string;
-  variant: "default" | "success" | "warning" | "error" | "info" | "violet";
+  variant: "default" | "success" | "warning" | "error" | "info" | "accent";
   description: string;
 }
 
@@ -66,7 +66,7 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
   },
   CREDENTIAL_CLAIMED: {
     label: "Credential Earned",
-    variant: "violet",
+    variant: "accent",
     description: "You have earned the credential for this module.",
   },
 };

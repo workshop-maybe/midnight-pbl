@@ -65,13 +65,13 @@ export function Nav() {
   }, [mobileOpen, handleKeyDown]);
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-midnight-border bg-midnight/80 backdrop-blur-md supports-[padding:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top)]">
+    <nav className="sticky top-0 z-50 border-b border-midnight-border bg-midnight-surface supports-[padding:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Brand / course title */}
         <Link
           to="/"
           prefetch="intent"
-          className="flex items-center gap-3 text-mn-text transition-colors hover:text-mn-primary-light"
+          className="flex items-center gap-3 text-mn-text transition-colors hover:text-[#d4a053]"
         >
           <span className="text-lg font-semibold font-heading">
             {BRANDING.name}
@@ -127,7 +127,7 @@ export function Nav() {
             onClick={() => setMobileOpen(false)}
             aria-hidden="true"
           />
-          <div className="absolute left-0 right-0 z-50 border-b border-midnight-border bg-midnight/95 backdrop-blur-md sm:hidden supports-[padding:env(safe-area-inset-left)]:pl-[env(safe-area-inset-left)] supports-[padding:env(safe-area-inset-right)]:pr-[env(safe-area-inset-right)]">
+          <div className="absolute left-0 right-0 z-50 border-b border-midnight-border bg-midnight-surface sm:hidden supports-[padding:env(safe-area-inset-left)]:pl-[env(safe-area-inset-left)] supports-[padding:env(safe-area-inset-right)]:pr-[env(safe-area-inset-right)]">
             <div className="flex flex-col gap-2 px-4 py-4">
               <Link
                 to={MIDNIGHT_PBL.routes.learn}
