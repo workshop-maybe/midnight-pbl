@@ -23,7 +23,7 @@ export function ModuleCard({ module, index }: ModuleCardProps) {
     <Link
       to={MIDNIGHT_PBL.routes.module(moduleCode)}
       prefetch="intent"
-      className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d4a053] rounded-xl"
+      className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary rounded-xl"
     >
       <Card noHover={false} className="h-full">
         <CardBody className="flex flex-col gap-3">

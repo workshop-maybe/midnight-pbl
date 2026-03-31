@@ -14,7 +14,7 @@ export function Footer() {
               href={BRANDING.links.andamio}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-[44px] items-center text-[#d4a053] transition-colors hover:text-mn-text"
+              className="inline-flex min-h-[44px] items-center text-mn-primary transition-colors hover:text-mn-text"
             >
               Andamio
             </a>

@@ -13,8 +13,8 @@ const variantStyles: Record<BadgeVariant, string> = {
   success: "bg-success/10 text-success border-success/30",
   warning: "bg-warning/10 text-warning border-warning/30",
   error: "bg-error/10 text-error border-error/30",
-  info: "bg-[#d4a053]/10 text-[#d4a053] border-[#d4a053]/30",
-  accent: "bg-[#d4a053]/10 text-[#d4a053] border-[#d4a053]/30",
+  info: "bg-mn-primary/10 text-mn-primary border-mn-primary/30",
+  accent: "bg-mn-primary/10 text-mn-primary border-mn-primary/30",
 };
 
 /**

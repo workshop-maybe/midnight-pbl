@@ -12,8 +12,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary: `
-    bg-[#d4a053] text-[#1c1c1c]
-    hover:bg-[#ddb06a] shadow-sm
+    bg-mn-primary text-midnight
+    hover:bg-mn-primary-hover shadow-sm
   `,
   secondary: `
     border border-midnight-border bg-transparent
@@ -58,7 +58,7 @@ export function Button({
       className={`
         inline-flex items-center justify-center gap-2
         font-medium transition-all duration-200
-        focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d4a053]
+        focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary
         disabled:cursor-not-allowed disabled:opacity-50
         ${variantStyles[variant]}
         ${sizeStyles[size]}

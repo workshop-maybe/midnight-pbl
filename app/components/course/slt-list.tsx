@@ -38,7 +38,7 @@ export function SLTList({ slts, moduleCode }: SLTListProps) {
             key={slt.sltId ?? index}
             to={MIDNIGHT_PBL.routes.lesson(moduleCode, lessonIndex)}
             prefetch="intent"
-            className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d4a053] rounded-xl"
+            className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary rounded-xl"
           >
             <Card noHover={false}>
               <CardBody className="flex items-start gap-4 min-h-[44px]">

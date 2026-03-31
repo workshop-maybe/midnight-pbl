@@ -71,7 +71,7 @@ export function Nav() {
         <Link
           to="/"
           prefetch="intent"
-          className="flex items-center gap-3 text-mn-text transition-colors hover:text-[#d4a053]"
+          className="flex items-center gap-3 text-mn-text transition-colors hover:text-mn-primary"
         >
           <span className="text-lg font-semibold font-heading">
             {BRANDING.name}
