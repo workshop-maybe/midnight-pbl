@@ -1,0 +1,18 @@
+---
+/**
+ * Card — charcoal design system.
+ *
+ * Flat dark surface with subtle border.
+ */
+interface Props {
+  class?: string;
+  noHover?: boolean;
+}
+
+const { class: className = "", noHover = true } = Astro.props;
+const hoverClass = noHover ? "" : "transition-colors duration-200 hover:border-[#ffffff20]";
+---
+
+<div class={`rounded-sm border border-midnight-border bg-midnight-card ${hoverClass} ${className}`.trim()}>
+  <slot />
+</div>

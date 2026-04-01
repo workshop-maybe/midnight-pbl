@@ -1,0 +1,7 @@
+---
+/**
+ * /learn/:moduleCode — redirects to first lesson.
+ */
+const { moduleCode } = Astro.params;
+return Astro.redirect(`/learn/${moduleCode}/1`);
+---

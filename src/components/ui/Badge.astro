@@ -1,0 +1,30 @@
+---
+/**
+ * Badge — charcoal design system.
+ *
+ * Small colored label for status indicators, tags, and categories.
+ */
+interface Props {
+  variant?: "default" | "success" | "warning" | "error" | "info" | "accent";
+  class?: string;
+}
+
+const { variant = "default", class: className = "" } = Astro.props;
+
+const variantStyles: Record<string, string> = {
+  default: "bg-midnight-surface text-mn-text-muted border-midnight-border",
+  success: "bg-success/10 text-success border-success/30",
+  warning: "bg-warning/10 text-warning border-warning/30",
+  error: "bg-error/10 text-error border-error/30",
+  info: "bg-mn-primary/10 text-mn-primary border-mn-primary/30",
+  accent: "bg-mn-primary/10 text-mn-primary border-mn-primary/30",
+};
+
+const style = variantStyles[variant] ?? variantStyles.default;
+---
+
+<span
+  class={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-medium ${style} ${className}`.trim()}
+>
+  <slot />
+</span>

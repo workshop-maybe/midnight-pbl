@@ -1,13 +1,99 @@
 ---
-// Placeholder — will be replaced in Unit 4
+/**
+ * Course Overview / Homepage
+ *
+ * Displays the course with wordmark, description, vertical module list,
+ * and community section. Content-first layout.
+ */
+import AppLayout from "@/layouts/AppLayout.astro";
+import ModuleCard from "@/components/course/ModuleCard.astro";
+import { fetchCourseModules } from "@/lib/gateway.server";
+import { COURSE_ID } from "astro:env/server";
+import { BRANDING } from "@/config/branding";
+
+if (!COURSE_ID) {
+  return Astro.redirect("/");
+}
+
+const modules = await fetchCourseModules(COURSE_ID);
+
+const sorted = [...modules].sort((a, b) => {
+  const codeA = parseInt(a.moduleCode ?? "0", 10);
+  const codeB = parseInt(b.moduleCode ?? "0", 10);
+  return codeA - codeB;
+});
 ---
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Midnight PBL</title>
-</head>
-<body class="bg-midnight text-mn-text font-body antialiased">
-  <h1 class="text-2xl font-heading p-8">Midnight PBL — Astro</h1>
-</body>
-</html>
+
+<AppLayout title={BRANDING.fullTitle}>
+  <div class="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
+    <!-- Midnight wordmark -->
+    <div class="mb-12 sm:mb-16">
+      <p class="font-heading text-4xl font-bold tracking-tight text-mn-text sm:text-5xl md:text-6xl">
+        midnight pbl
+      </p>
+      <p class="mt-1 font-heading text-lg text-mn-text-muted sm:text-xl">
+        From Aiken to Compact
+      </p>
+    </div>
+
+    <!-- Course description -->
+    <div class="mb-12 sm:mb-16 max-w-2xl">
+      <p class="text-base text-mn-text-muted leading-relaxed sm:text-lg">
+        {BRANDING.longDescription}
+      </p>
+    </div>
+
+    <!-- Module list -->
+    <div class="mb-12 sm:mb-16">
+      <h2 class="mb-6 text-sm font-medium uppercase tracking-wider text-mn-text-muted">
+        Modules
+      </h2>
+      {sorted.length === 0 ? (
+        <p class="text-mn-text-muted py-4">
+          No modules available yet.
+        </p>
+      ) : (
+        <div class="divide-y divide-midnight-border border-t border-b border-midnight-border">
+          {sorted.map((module, index) => (
+            <ModuleCard module={module} index={index} />
+          ))}
+        </div>
+      )}
+    </div>
+
+    <!-- Credentials note -->
+    <div class="mb-12 sm:mb-16">
+      <p class="text-sm text-mn-text-muted">
+        Self-paced. On-chain credentials via{" "}
+        <a
+          href={BRANDING.links.andamio}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-mn-primary transition-colors hover:text-mn-text underline underline-offset-2"
+        >
+          Andamio
+        </a>.
+      </p>
+    </div>
+
+    <!-- Community -->
+    <div class="border-t border-midnight-border pt-10 sm:pt-12">
+      <p class="mb-4 text-base text-mn-text-muted leading-relaxed">
+        This course is a free community resource. It's made to be refined
+        over time by the people who use it — if something is unclear, missing,
+        or could be better, that's a contribution waiting to happen.
+      </p>
+      <a
+        href="https://github.com/workshop-maybe/midnight-pbl/issues"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <button
+          class="inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary border border-midnight-border bg-transparent text-mn-text hover:bg-midnight-surface px-5 py-2.5 text-sm rounded-sm min-h-[44px]"
+        >
+          Give Feedback
+        </button>
+      </a>
+    </div>
+  </div>
+</AppLayout>

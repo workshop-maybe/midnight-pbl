@@ -1,0 +1,128 @@
+---
+/**
+ * Lesson Page
+ *
+ * Renders lesson content with server-side markdown formatting.
+ * Provides previous/next navigation between lessons.
+ *
+ * Route: /learn/:moduleCode/:lessonIndex
+ */
+import LearnLayout from "@/layouts/LearnLayout.astro";
+import { fetchModuleDetail, fetchSLTs, fetchLesson } from "@/lib/gateway.server";
+import { renderMarkdown } from "@/lib/markdown";
+import { COURSE_ID } from "astro:env/server";
+import { getPageTitle } from "@/config/branding";
+
+const { moduleCode, lessonIndex: lessonIndexStr } = Astro.params;
+
+if (!COURSE_ID || !moduleCode || !lessonIndexStr) {
+  return Astro.redirect("/");
+}
+
+const lessonIndex = parseInt(lessonIndexStr, 10);
+if (isNaN(lessonIndex) || lessonIndex < 0) {
+  return Astro.redirect(`/learn/${moduleCode}/1`);
+}
+
+// Fetch module detail, SLTs, and lesson content in parallel
+const [module, slts, lesson] = await Promise.all([
+  fetchModuleDetail(COURSE_ID, moduleCode),
+  fetchSLTs(COURSE_ID, moduleCode),
+  fetchLesson(COURSE_ID, moduleCode, lessonIndex),
+]);
+
+if (!module) {
+  return new Response("Module not found", { status: 404 });
+}
+
+if (!lesson) {
+  return new Response("Lesson not found", { status: 404 });
+}
+
+// Render lesson content to HTML
+const contentHtml = renderMarkdown(lesson.contentJson);
+
+// Determine prev/next indices from SLT list
+const sortedIndices = slts
+  .map((s) => s.moduleIndex ?? 0)
+  .sort((a, b) => a - b);
+const currentPos = sortedIndices.indexOf(lessonIndex);
+const prevIndex = currentPos > 0 ? sortedIndices[currentPos - 1] : null;
+const nextIndex =
+  currentPos < sortedIndices.length - 1
+    ? sortedIndices[currentPos + 1]
+    : null;
+const totalLessons = slts.length;
+
+const title = getPageTitle(lesson.title ?? "Lesson");
+---
+
+<LearnLayout
+  title={title}
+  moduleCode={moduleCode}
+  moduleTitle={module.title ?? "Untitled Module"}
+  moduleDescription={module.description}
+  slts={slts}
+  currentLessonIndex={lessonIndex}
+  isAssignment={false}
+>
+  <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
+    <!-- Lesson header -->
+    <div class="mb-6 sm:mb-8">
+      <p class="mb-2 text-sm text-mn-text-muted">
+        Lesson {lessonIndex} of {totalLessons}
+      </p>
+      {lesson.title && (
+        <h1 class="text-2xl font-bold font-heading text-mn-text sm:text-3xl">
+          {lesson.title}
+        </h1>
+      )}
+    </div>
+
+    <!-- Lesson content -->
+    <section class="mb-12">
+      {contentHtml ? (
+        <article class="prose-midnight" set:html={contentHtml} />
+      ) : (
+        <div class="rounded-sm border border-midnight-border bg-midnight-surface/50 p-8 text-center">
+          <p class="text-mn-text-muted">
+            No content available for this lesson yet.
+          </p>
+        </div>
+      )}
+    </section>
+
+    <!-- Previous / Next navigation -->
+    <nav class="flex flex-col gap-3 border-t border-midnight-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+      {prevIndex !== null ? (
+        <a href={`/learn/${moduleCode}/${prevIndex}`} class="w-full sm:w-auto">
+          <button
+            class="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary border border-midnight-border bg-transparent text-mn-text hover:bg-midnight-surface px-5 py-2.5 text-sm rounded-sm"
+          >
+            <span class="truncate">Previous Lesson</span>
+          </button>
+        </a>
+      ) : (
+        <div />
+      )}
+
+      {nextIndex !== null ? (
+        <a href={`/learn/${moduleCode}/${nextIndex}`} class="w-full sm:w-auto">
+          <button
+            class="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary bg-mn-primary text-midnight hover:bg-mn-primary-hover shadow-sm px-5 py-2.5 text-sm rounded-sm"
+          >
+            <span class="truncate">Next Lesson</span>
+          </button>
+        </a>
+      ) : (
+        <a href={`/learn/${moduleCode}/assignment`} class="w-full sm:w-auto">
+          <button
+            class="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary bg-mn-primary text-midnight hover:bg-mn-primary-hover shadow-sm px-5 py-2.5 text-sm rounded-sm"
+          >
+            <span class="truncate">View Assignment</span>
+          </button>
+        </a>
+      )}
+    </nav>
+  </div>
+</LearnLayout>

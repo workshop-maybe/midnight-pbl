@@ -1,0 +1,234 @@
+---
+/**
+ * Learn layout with sidebar navigation.
+ *
+ * Renders the module sidebar with SLT list and assignment link.
+ * The sidebar toggle for mobile uses an inline <script> tag.
+ */
+import AppLayout from "@/layouts/AppLayout.astro";
+import type { SLT } from "@/types/course";
+
+interface Props {
+  title: string;
+  moduleCode: string;
+  moduleTitle: string;
+  moduleDescription?: string;
+  slts: SLT[];
+  currentLessonIndex: number | null;
+  isAssignment: boolean;
+}
+
+const {
+  title,
+  moduleCode,
+  moduleTitle,
+  moduleDescription,
+  slts,
+  currentLessonIndex,
+  isAssignment,
+} = Astro.props;
+
+// Sort SLTs by moduleIndex for consistent ordering
+const sortedSlts = [...slts].sort(
+  (a, b) => (a.moduleIndex ?? 0) - (b.moduleIndex ?? 0)
+);
+---
+
+<AppLayout title={title}>
+  <div class="learn-layout">
+    <!-- Mobile sidebar toggle (FAB) -->
+    <button
+      type="button"
+      class="learn-sidebar-toggle"
+      id="sidebar-toggle"
+      aria-label="Open navigation"
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 20 20"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        aria-hidden="true"
+        class="sidebar-icon-menu"
+      >
+        <path d="M3 5h14M3 10h14M3 15h14"></path>
+      </svg>
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 20 20"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        aria-hidden="true"
+        class="sidebar-icon-close hidden"
+      >
+        <path d="M5 5l10 10M15 5L5 15"></path>
+      </svg>
+      <span class="ml-2 text-sm font-medium sidebar-toggle-label">Navigation</span>
+    </button>
+
+    <!-- Mobile overlay backdrop -->
+    <div
+      id="sidebar-overlay"
+      class="learn-sidebar-overlay hidden"
+      role="button"
+      tabindex="-1"
+      aria-label="Close navigation"
+    ></div>
+
+    <!-- Sidebar -->
+    <aside class="learn-sidebar" id="learn-sidebar" aria-label="Module navigation">
+      <!-- Mobile close button inside sidebar -->
+      <div class="flex items-center justify-end px-2 pt-2 lg:hidden">
+        <button
+          type="button"
+          id="sidebar-close"
+          class="flex h-11 w-11 items-center justify-center rounded-sm text-mn-text-muted transition-colors hover:bg-midnight-surface hover:text-mn-text"
+          aria-label="Close navigation"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M5 5l10 10M15 5L5 15"></path>
+          </svg>
+        </button>
+      </div>
+
+      <nav class="flex h-full flex-col">
+        <!-- Back to modules -->
+        <a href="/" class="sidebar-back-link">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M10 12L6 8l4-4"></path>
+          </svg>
+          <span>All modules</span>
+        </a>
+
+        <!-- Module title + description -->
+        <div class="px-4 pb-4">
+          <h2 class="text-base font-semibold font-heading text-mn-text leading-tight">
+            {moduleTitle}
+          </h2>
+          {moduleDescription && (
+            <p class="mt-1.5 text-xs text-mn-text-muted line-clamp-2">
+              {moduleDescription}
+            </p>
+          )}
+        </div>
+
+        <!-- Divider -->
+        <div class="mx-4 border-t border-midnight-border"></div>
+
+        <!-- SLT list -->
+        <div class="flex-1 overflow-y-auto px-2 py-3">
+          <p class="mb-2 px-2 text-[11px] font-medium uppercase tracking-wider text-mn-text-muted/60">
+            Lessons
+          </p>
+          <ul class="space-y-0.5">
+            {sortedSlts.map((slt, idx) => {
+              const lessonIndex = slt.moduleIndex ?? idx + 1;
+              const isActive =
+                currentLessonIndex !== null && currentLessonIndex === lessonIndex;
+
+              return (
+                <li>
+                  <a
+                    href={`/learn/${moduleCode}/${lessonIndex}`}
+                    class={`sidebar-slt-item ${isActive ? "sidebar-slt-item--active" : ""}`}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    <span class="sidebar-slt-index">{lessonIndex}</span>
+                    <span class="sidebar-slt-text">
+                      {slt.sltText ?? `Lesson ${lessonIndex}`}
+                    </span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        <!-- Assignment link -->
+        <div class="border-t border-midnight-border px-2 py-3">
+          <a
+            href={`/learn/${moduleCode}/assignment`}
+            class={`sidebar-assignment-link ${isAssignment ? "sidebar-assignment-link--active" : ""}`}
+            aria-current={isAssignment ? "page" : undefined}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="2" width="10" height="12" rx="1.5"></rect>
+              <path d="M6 5h4M6 8h4M6 11h2"></path>
+            </svg>
+            <span>Module Assignment</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main content -->
+    <div class="learn-content">
+      <slot />
+    </div>
+  </div>
+</AppLayout>
+
+<script>
+  const toggle = document.getElementById("sidebar-toggle");
+  const sidebar = document.getElementById("learn-sidebar");
+  const overlay = document.getElementById("sidebar-overlay");
+  const closeBtn = document.getElementById("sidebar-close");
+  const iconMenu = toggle?.querySelector(".sidebar-icon-menu");
+  const iconClose = toggle?.querySelector(".sidebar-icon-close");
+  const label = toggle?.querySelector(".sidebar-toggle-label");
+
+  let open = false;
+
+  function setOpen(value: boolean) {
+    open = value;
+    sidebar?.classList.toggle("learn-sidebar--open", open);
+    overlay?.classList.toggle("hidden", !open);
+    iconMenu?.classList.toggle("hidden", open);
+    iconClose?.classList.toggle("hidden", !open);
+    toggle?.setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+    if (label) label.textContent = open ? "Close" : "Navigation";
+  }
+
+  toggle?.addEventListener("click", () => setOpen(!open));
+  overlay?.addEventListener("click", () => setOpen(false));
+  closeBtn?.addEventListener("click", () => setOpen(false));
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && open) setOpen(false);
+  });
+</script>
