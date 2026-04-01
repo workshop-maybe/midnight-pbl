@@ -6,6 +6,7 @@
 
 import type { APIRoute } from "astro";
 import { ANDAMIO_API_KEY, ANDAMIO_GATEWAY_URL } from "astro:env/server";
+import { isValidTransactionType } from "@/config/transaction-ui";
 
 interface TxRegisterRequest {
   txHash: string;
@@ -26,8 +27,8 @@ export const POST: APIRoute = async ({ request }) => {
     return Response.json({ error: "txHash is required" }, { status: 400 });
   }
 
-  if (!txType || typeof txType !== "string") {
-    return Response.json({ error: "txType is required" }, { status: 400 });
+  if (!txType || typeof txType !== "string" || !isValidTransactionType(txType)) {
+    return Response.json({ error: "Invalid or missing txType" }, { status: 400 });
   }
 
   const gatewayUrl = `${ANDAMIO_GATEWAY_URL}/api/v2/tx/register`;

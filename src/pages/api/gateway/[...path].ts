@@ -8,12 +8,33 @@
 import type { APIRoute } from "astro";
 import { ANDAMIO_API_KEY, ANDAMIO_GATEWAY_URL } from "astro:env/server";
 
+/** Allowed API path prefixes. Reject anything outside this set. */
+const ALLOWED_PREFIXES = [
+  "api/v2/course/user/",
+  "api/v2/auth/login/",
+  "api/v2/auth/session/",
+  "api/v2/student/",
+  "api/v2/tx/",
+];
+
+function isAllowedPath(path: string): boolean {
+  const normalized = path.replace(/^\/+/, "");
+  return ALLOWED_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+}
+
 async function proxyRequest(
   request: Request,
   path: string,
   method: "GET" | "POST"
 ) {
   try {
+    if (!isAllowedPath(path)) {
+      return Response.json(
+        { error: "Forbidden: path not allowed" },
+        { status: 403 }
+      );
+    }
+
     const url = new URL(request.url);
     const queryString = url.searchParams.toString();
     const fullPath = `${path}${queryString ? `?${queryString}` : ""}`;

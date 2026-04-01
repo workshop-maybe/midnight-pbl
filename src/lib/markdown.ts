@@ -10,6 +10,44 @@ import { markedHighlight } from "marked-highlight";
 import hljs from "highlight.js";
 import type { JSONContent } from "@/types/course";
 
+/** Escape HTML special characters to prevent attribute injection. */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/** Only allow safe URL protocols for links. */
+function isSafeHref(href: string): boolean {
+  const trimmed = href.trim().toLowerCase();
+  return (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("mailto:") ||
+    trimmed.startsWith("#") ||
+    trimmed.startsWith("/")
+  );
+}
+
+/**
+ * Strip dangerous HTML from rendered output.
+ * Removes script tags, event handlers, and javascript: URLs.
+ */
+function sanitizeHtml(html: string): string {
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replace(/\bon\w+\s*=\s*"[^"]*"/gi, "")
+    .replace(/\bon\w+\s*=\s*'[^']*'/gi, "")
+    .replace(/\bon\w+\s*=[^\s>]*/gi, "")
+    .replace(/href\s*=\s*"javascript:[^"]*"/gi, 'href="#"')
+    .replace(/href\s*=\s*'javascript:[^']*'/gi, "href='#'")
+    .replace(/src\s*=\s*"javascript:[^"]*"/gi, 'src=""')
+    .replace(/src\s*=\s*'javascript:[^']*'/gi, "src=''");
+}
+
 // =============================================================================
 // Marked instance with highlight.js
 // =============================================================================
@@ -35,12 +73,13 @@ marked.setOptions({
 const renderer = {
   code({ text, lang }: { text: string; lang?: string | undefined }) {
     const language = lang ?? "";
+    const safeLang = escapeHtml(language);
     const highlighted =
       language && hljs.getLanguage(language)
         ? hljs.highlight(text, { language }).value
         : hljs.highlightAuto(text).value;
-    const dataAttr = language ? ` data-language="${language}"` : "";
-    return `<pre><code class="hljs language-${language}"${dataAttr}>${highlighted}</code></pre>\n`;
+    const dataAttr = safeLang ? ` data-language="${safeLang}"` : "";
+    return `<pre><code class="hljs language-${safeLang}"${dataAttr}>${highlighted}</code></pre>\n`;
   },
 };
 
@@ -63,7 +102,7 @@ export function renderMarkdown(
 ): string {
   const md = extractMarkdown(contentJson);
   if (!md) return "";
-  return marked.parse(md) as string;
+  return sanitizeHtml(marked.parse(md) as string);
 }
 
 /**
@@ -71,7 +110,7 @@ export function renderMarkdown(
  */
 export function renderRawMarkdown(markdown: string): string {
   if (!markdown) return "";
-  return marked.parse(markdown) as string;
+  return sanitizeHtml(marked.parse(markdown) as string);
 }
 
 // =============================================================================
@@ -212,7 +251,7 @@ function extractInlineText(node: JSONContent): string {
             break;
           case "link": {
             const href = mark.attrs?.href as string | undefined;
-            if (href) {
+            if (href && isSafeHref(href)) {
               text = `[${text}](${href})`;
             }
             break;
