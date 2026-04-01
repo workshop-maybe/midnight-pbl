@@ -15,7 +15,7 @@
  * @see @/stores/tx-store.ts — SSE watcher store
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useWallet } from "@meshsdk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth-store";
@@ -85,6 +85,7 @@ export function useTransaction() {
   const [state, setState] = useState<TransactionState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TransactionResult | null>(null);
+  const isExecutingRef = useRef(false);
 
   /**
    * Execute a transaction through the full lifecycle.
@@ -103,6 +104,10 @@ export function useTransaction() {
         onSuccess?: (txHash: string) => void | Promise<void>;
       }
     ) => {
+      // Guard against concurrent execution (double-clicks)
+      if (isExecutingRef.current) return;
+      isExecutingRef.current = true;
+
       const ui = getTransactionUI(txType);
 
       // Reset state
@@ -238,6 +243,8 @@ export function useTransaction() {
         console.error(`[TX] ${txType} failed:`, err);
         setError(friendlyMessage);
         setState("error");
+      } finally {
+        isExecutingRef.current = false;
       }
     },
     [connected, wallet, jwt, queryClient]

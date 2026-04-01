@@ -22,7 +22,7 @@ import {
   storeJWT,
   clearJWT,
 } from "@/lib/andamio-auth";
-import { AuthExpiredError } from "@/lib/api-utils";
+import { AuthExpiredError, withTimeout } from "@/lib/api-utils";
 import type { AuthUser, AuthState } from "@/types/auth";
 
 // =============================================================================
@@ -201,6 +201,8 @@ export const authStore = createStore<AuthStore>()((set, get) => ({
     set({
       status: "WALLET_CONNECTED",
       walletAddress,
+      user: null,
+      jwt: null,
       error: null,
     });
   },
@@ -225,12 +227,14 @@ export const authStore = createStore<AuthStore>()((set, get) => ({
     const { jwt } = get();
     if (!jwt) return null;
     if (isJWTExpired(jwt)) {
-      // JWT expired — clear and return null
+      // JWT expired — fully disconnect (clear wallet too)
       clearJWT();
+      clearWalletAddress();
       set({
         status: "DISCONNECTED",
         user: null,
         jwt: null,
+        walletAddress: null,
         error: null,
       });
       return null;
@@ -247,13 +251,16 @@ export const authStore = createStore<AuthStore>()((set, get) => ({
       throw new AuthExpiredError();
     }
 
-    return fetch(url, {
-      ...options,
-      headers: {
-        ...options.headers,
-        Authorization: `Bearer ${jwt}`,
-      },
-    });
+    return withTimeout(
+      fetch(url, {
+        ...options,
+        headers: {
+          ...options.headers,
+          Authorization: `Bearer ${jwt}`,
+        },
+      }),
+      15_000
+    );
   },
 }));
 
