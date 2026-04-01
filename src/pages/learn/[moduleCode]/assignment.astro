@@ -1,0 +1,83 @@
+---
+/**
+ * Assignment Page
+ *
+ * Displays the assignment prompt for a module. The interactive
+ * submission/enrollment UI will be added as a React island in Unit 5.
+ *
+ * Route: /learn/:moduleCode/assignment
+ */
+import LearnLayout from "@/layouts/LearnLayout.astro";
+import { fetchModuleDetail, fetchSLTs, fetchAssignment } from "@/lib/gateway.server";
+import { renderMarkdown } from "@/lib/markdown";
+import { COURSE_ID } from "astro:env/server";
+import { getPageTitle } from "@/config/branding";
+import AssignmentInteractive from "@/components/assignment/AssignmentInteractive";
+
+const { moduleCode } = Astro.params;
+
+if (!COURSE_ID || !moduleCode) {
+  return Astro.redirect("/");
+}
+
+// Fetch module detail, SLTs, and assignment content in parallel
+const [module, slts, assignment] = await Promise.all([
+  fetchModuleDetail(COURSE_ID, moduleCode),
+  fetchSLTs(COURSE_ID, moduleCode),
+  fetchAssignment(COURSE_ID, moduleCode),
+]);
+
+if (!module) {
+  return new Response("Module not found", { status: 404 });
+}
+
+// Render assignment content to HTML
+const contentHtml = assignment ? renderMarkdown(assignment.contentJson) : "";
+
+const title = getPageTitle(`Assignment: ${module.title ?? moduleCode}`);
+---
+
+<LearnLayout
+  title={title}
+  moduleCode={moduleCode}
+  moduleTitle={module.title ?? "Untitled Module"}
+  moduleDescription={module.description}
+  slts={slts}
+  currentLessonIndex={null}
+  isAssignment={true}
+>
+  <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
+    <!-- Assignment header -->
+    <div class="mb-6 sm:mb-8">
+      <h1 class="mb-3 text-2xl font-bold font-heading text-mn-text sm:text-3xl">
+        {assignment?.title ?? `${module.title ?? "Module"} Assignment`}
+      </h1>
+      {assignment?.description && (
+        <p class="max-w-2xl text-base text-mn-text-muted sm:text-lg">
+          {assignment.description}
+        </p>
+      )}
+    </div>
+
+    <!-- Assignment content -->
+    {assignment && contentHtml ? (
+      <section class="mb-10">
+        <article class="prose-midnight" set:html={contentHtml} />
+      </section>
+    ) : (
+      <div class="mb-10 rounded-sm border border-midnight-border bg-midnight-surface p-4 text-center sm:p-8">
+        <p class="text-mn-text-muted">
+          No assignment available for this module yet.
+        </p>
+      </div>
+    )}
+
+    <!-- Interactive assignment island -->
+    <AssignmentInteractive
+      client:only="react"
+      courseId={COURSE_ID}
+      moduleCode={moduleCode}
+      sltHash={module.sltHash ?? null}
+    />
+  </div>
+</LearnLayout>

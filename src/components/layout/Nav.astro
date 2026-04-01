@@ -1,0 +1,138 @@
+---
+/**
+ * Sticky navigation bar.
+ *
+ * Shows brand name, nav links, and a placeholder slot for the
+ * wallet connect island (added in a later unit).
+ *
+ * Mobile hamburger uses an inline <script> for zero-React interactivity.
+ */
+import { BRANDING } from "@/config/branding";
+import WalletController from "@/components/auth/WalletController";
+---
+
+<nav
+  class="sticky top-0 z-50 border-b border-midnight-border bg-midnight-surface supports-[padding:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top)]"
+  id="main-nav"
+>
+  <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+    <!-- Brand -->
+    <a
+      href="/"
+      class="flex items-center gap-3 text-mn-text transition-colors hover:text-mn-primary"
+    >
+      <span class="text-lg font-semibold font-heading">{BRANDING.name}</span>
+    </a>
+
+    <!-- Desktop nav (hidden on mobile) -->
+    <div class="hidden sm:flex sm:items-center sm:gap-6">
+      <a
+        href="/"
+        class="min-h-[44px] flex items-center text-sm transition-colors hover:text-mn-text text-mn-text"
+      >
+        Learn
+      </a>
+      <a
+        href="/dashboard"
+        class="min-h-[44px] flex items-center text-sm transition-colors hover:text-mn-text text-mn-text-muted"
+      >
+        Dashboard
+      </a>
+      <WalletController client:only="react" />
+    </div>
+
+    <!-- Mobile hamburger -->
+    <button
+      type="button"
+      class="flex h-11 w-11 items-center justify-center rounded-sm text-mn-text transition-colors hover:bg-midnight-surface sm:hidden"
+      aria-label="Open menu"
+      aria-expanded="false"
+      id="nav-mobile-toggle"
+    >
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        aria-hidden="true"
+        class="nav-icon-menu"
+      >
+        <path d="M4 6h16M4 12h16M4 18h16"></path>
+      </svg>
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        aria-hidden="true"
+        class="nav-icon-close hidden"
+      >
+        <path d="M6 6l12 12M18 6L6 18"></path>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Mobile dropdown menu (hidden by default) -->
+  <div
+    id="nav-mobile-menu"
+    class="hidden absolute left-0 right-0 z-50 border-b border-midnight-border bg-midnight-surface sm:hidden supports-[padding:env(safe-area-inset-left)]:pl-[env(safe-area-inset-left)] supports-[padding:env(safe-area-inset-right)]:pr-[env(safe-area-inset-right)]"
+  >
+    <div class="flex flex-col gap-2 px-4 py-4">
+      <a
+        href="/"
+        class="min-h-[44px] flex items-center rounded-sm px-3 text-sm transition-colors hover:bg-midnight-surface text-mn-text"
+      >
+        Learn
+      </a>
+      <a
+        href="/dashboard"
+        class="min-h-[44px] flex items-center rounded-sm px-3 text-sm transition-colors hover:bg-midnight-surface text-mn-text-muted"
+      >
+        Dashboard
+      </a>
+      <div class="pt-2 border-t border-midnight-border">
+        <WalletController client:only="react" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile backdrop -->
+  <div
+    id="nav-mobile-backdrop"
+    class="hidden fixed inset-0 top-16 z-40 bg-black/50 sm:hidden"
+    aria-hidden="true"
+  ></div>
+</nav>
+
+<script>
+  const toggle = document.getElementById("nav-mobile-toggle");
+  const menu = document.getElementById("nav-mobile-menu");
+  const backdrop = document.getElementById("nav-mobile-backdrop");
+  const iconMenu = toggle?.querySelector(".nav-icon-menu");
+  const iconClose = toggle?.querySelector(".nav-icon-close");
+
+  let open = false;
+
+  function setOpen(value: boolean) {
+    open = value;
+    menu?.classList.toggle("hidden", !open);
+    backdrop?.classList.toggle("hidden", !open);
+    iconMenu?.classList.toggle("hidden", open);
+    iconClose?.classList.toggle("hidden", !open);
+    toggle?.setAttribute("aria-expanded", String(open));
+    toggle?.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+  }
+
+  toggle?.addEventListener("click", () => setOpen(!open));
+  backdrop?.addEventListener("click", () => setOpen(false));
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && open) setOpen(false);
+  });
+</script>

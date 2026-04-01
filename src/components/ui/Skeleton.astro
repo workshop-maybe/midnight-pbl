@@ -1,0 +1,28 @@
+---
+/**
+ * Skeleton — charcoal design system.
+ *
+ * Animated loading placeholder with pulse effect.
+ */
+interface Props {
+  class?: string;
+  width?: string;
+  height?: string;
+  rounded?: boolean;
+}
+
+const {
+  class: className = "",
+  width = "w-full",
+  height = "h-4",
+  rounded = false,
+} = Astro.props;
+
+const roundedClass = rounded ? "rounded-sm" : "rounded-md";
+---
+
+<div
+  class={`animate-pulse bg-midnight-surface ${roundedClass} ${width} ${height} ${className}`.trim()}
+  aria-hidden="true"
+>
+</div>

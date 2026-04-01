@@ -1,0 +1,24 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Not Found — Midnight PBL">
+  <div class="flex min-h-screen items-center justify-center">
+    <div class="text-center">
+      <h1 class="font-heading text-6xl font-bold text-mn-text">404</h1>
+      <p class="mt-4 text-lg font-medium text-mn-text">Page not found</p>
+      <p class="mt-2 text-mn-text-muted">
+        The page you're looking for doesn't exist.
+      </p>
+      <div class="mt-8 flex gap-3 justify-center">
+        <a
+          href="/"
+          class="inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 bg-mn-primary text-midnight hover:bg-mn-primary-hover px-5 py-2.5 text-sm rounded-sm min-h-[44px]"
+        >
+          Go home
+        </a>
+      </div>
+      <p class="mt-12 text-sm text-mn-text-muted">Midnight PBL</p>
+    </div>
+  </div>
+</BaseLayout>

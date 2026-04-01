@@ -1,32 +1,32 @@
 # Deploying Midnight PBL
 
-The app runs as a standard Node.js server via `react-router-serve`. The included Dockerfile packages everything needed.
+The app runs as a standalone Node.js server via Astro's Node adapter. The included Dockerfile packages everything needed.
 
 ## Environment Variables
 
-| Variable | Required | Server/Client | Description |
-|----------|----------|---------------|-------------|
-| `ANDAMIO_API_KEY` | Yes | Server | Andamio API key (never exposed to browser) |
+| Variable | Required | Context | Description |
+|----------|----------|---------|-------------|
+| `ANDAMIO_API_KEY` | Yes | Server (secret) | Andamio API key (never exposed to client) |
 | `ANDAMIO_GATEWAY_URL` | Yes | Server | Gateway URL, e.g. `https://preprod.api.andamio.io` |
 | `CARDANO_NETWORK` | No | Server | `preprod` (default), `mainnet`, or `preview` |
 | `COURSE_ID` | No | Server | Course ID for single-course deployment |
-| `VITE_ACCESS_TOKEN_POLICY_ID` | No | Client | Policy ID for wallet auth (baked into client bundle at build time) |
+| `PUBLIC_ACCESS_TOKEN_POLICY_ID` | No | Client | Policy ID for wallet auth |
+| `PUBLIC_GATEWAY_URL` | No | Client | Gateway URL exposed to client islands |
+| `PUBLIC_CARDANO_NETWORK` | No | Client | Network name exposed to client islands |
 
-**Note:** `VITE_ACCESS_TOKEN_POLICY_ID` is embedded in the client bundle during `npm run build`. It must be set at build time, not just at runtime. All other variables are read at runtime.
+**Note:** Server variables are read at runtime from `process.env`. Client `PUBLIC_*` variables are embedded in the client bundle at build time. `ANDAMIO_GATEWAY_URL` and `COURSE_ID` are inlined at build time for server routes but `ANDAMIO_API_KEY` (secret) is always read at runtime.
 
 ## Prerequisites
 
 - **Docker** installed and running
-- **Node.js 20+** (for non-Docker builds)
+- **Node.js 22+** (for non-Docker builds)
 - **GCP CLI** (`gcloud`) installed and authenticated (Cloud Run only):
   ```bash
   gcloud auth login
-  gcloud config set project <PROJECT_ID>
+  gcloud config set project built-on-andamio
   ```
 
 ## Option A: GCP Cloud Run (Recommended)
-
-This fits the existing Andamio infrastructure.
 
 ### 1. Build and push the Docker image
 
@@ -34,26 +34,30 @@ This fits the existing Andamio infrastructure.
 # Authenticate with GCP
 gcloud auth configure-docker us-central1-docker.pkg.dev
 
-# Build the image (set VITE_ vars at build time)
+# Build the image
 docker build \
-  --build-arg VITE_ACCESS_TOKEN_POLICY_ID=<policy-id> \
-  -t us-central1-docker.pkg.dev/<PROJECT_ID>/andamio/midnight-pbl:latest \
+  --platform linux/amd64 \
+  -t us-central1-docker.pkg.dev/built-on-andamio/andamio-apps/midnight-pbl:latest \
   .
 
 # Push to Artifact Registry
-docker push us-central1-docker.pkg.dev/<PROJECT_ID>/andamio/midnight-pbl:latest
+docker push us-central1-docker.pkg.dev/built-on-andamio/andamio-apps/midnight-pbl:latest
 ```
 
 ### 2. Deploy to Cloud Run
 
 ```bash
 gcloud run deploy midnight-pbl \
-  --image us-central1-docker.pkg.dev/<PROJECT_ID>/andamio/midnight-pbl:latest \
+  --image us-central1-docker.pkg.dev/built-on-andamio/andamio-apps/midnight-pbl:latest \
   --region us-central1 \
   --platform managed \
   --port 3000 \
   --allow-unauthenticated \
-  --set-env-vars "ANDAMIO_API_KEY=<key>,ANDAMIO_GATEWAY_URL=https://preprod.api.andamio.io,CARDANO_NETWORK=preprod"
+  --memory 1Gi \
+  --update-env-vars ANDAMIO_API_KEY=<key> \
+  --update-env-vars ANDAMIO_GATEWAY_URL=https://preprod.api.andamio.io \
+  --update-env-vars CARDANO_NETWORK=preprod \
+  --update-env-vars COURSE_ID=<course-id>
 ```
 
 ### 3. Map a custom domain (optional)
@@ -65,18 +69,12 @@ gcloud run domain-mappings create \
   --region us-central1
 ```
 
-Follow the DNS instructions GCP provides (CNAME to `ghs.googlehosted.com`).
-
 ## Option B: Any Docker Host
-
-Works on any machine or service that runs containers (fly.io, Railway, a VPS, etc.).
 
 ### 1. Build
 
 ```bash
-docker build \
-  --build-arg VITE_ACCESS_TOKEN_POLICY_ID=<policy-id> \
-  -t midnight-pbl .
+docker build --platform linux/amd64 -t midnight-pbl .
 ```
 
 ### 2. Run
@@ -87,18 +85,17 @@ docker run -d \
   -e ANDAMIO_API_KEY=<key> \
   -e ANDAMIO_GATEWAY_URL=https://preprod.api.andamio.io \
   -e CARDANO_NETWORK=preprod \
+  -e COURSE_ID=<course-id> \
   midnight-pbl
 ```
 
-The app is now running on port 3000. Put nginx, Caddy, or a cloud load balancer in front for HTTPS.
-
 ## Option C: Without Docker
 
-### 1. Install dependencies and build
+### 1. Install and build
 
 ```bash
 npm ci
-VITE_ACCESS_TOKEN_POLICY_ID=<policy-id> npm run build
+npm run build
 ```
 
 ### 2. Start the server
@@ -107,27 +104,20 @@ VITE_ACCESS_TOKEN_POLICY_ID=<policy-id> npm run build
 ANDAMIO_API_KEY=<key> \
 ANDAMIO_GATEWAY_URL=https://preprod.api.andamio.io \
 CARDANO_NETWORK=preprod \
-npm run start
+COURSE_ID=<course-id> \
+node ./dist/server/entry.mjs
 ```
 
-This runs `react-router-serve ./build/server/index.js` on port 3000.
-
-Use a process manager like `pm2` or `systemd` to keep it running.
-
-## Build Args vs Runtime Env
-
-The Dockerfile accepts `VITE_ACCESS_TOKEN_POLICY_ID` as a build arg and bakes it into the client bundle during `npm run build`. Pass it with `--build-arg` when building the image.
-
-Server-side variables (`ANDAMIO_API_KEY`, etc.) are read at runtime and do not need build args.
+The server runs on port 3000 by default (`HOST=0.0.0.0` is set in Dockerfile).
 
 ## Verifying the Deploy
 
 ```bash
-# Health check — should return HTML
+# Health check
 curl -s -o /dev/null -w "%{http_code}" https://<your-domain>/
 
-# Check server logs for env validation errors
+# Check server logs
 docker logs <container-id>
 ```
 
-If the server fails to start, the most common cause is a missing `ANDAMIO_API_KEY` or `ANDAMIO_GATEWAY_URL` — the app validates these at startup and exits with a clear error.
+If the server fails to start, the most common cause is a missing `ANDAMIO_API_KEY` — Astro validates env vars and exits with a clear error.
