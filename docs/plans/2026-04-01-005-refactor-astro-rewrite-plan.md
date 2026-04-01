@@ -1,7 +1,7 @@
 ---
 title: "refactor: Rewrite Midnight PBL from React Router to Astro"
 type: refactor
-status: active
+status: completed
 date: 2026-04-01
 origin: docs/brainstorms/2026-03-29-midnight-pbl-site-requirements.md
 ---
