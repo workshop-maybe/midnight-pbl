@@ -2,6 +2,7 @@ import { defineConfig, envField } from "astro/config";
 import node from "@astrojs/node";
 import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 export default defineConfig({
   output: "server",
@@ -13,7 +14,18 @@ export default defineConfig({
   integrations: [react()],
 
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [
+      tailwindcss(),
+      // Mesh SDK transitive deps need browser polyfills for crypto/buffer.
+      // Safe in Astro: client:only islands are excluded from the server build,
+      // so the process shim never shadows Node's real process.env.
+      nodePolyfills({
+        include: ["crypto", "buffer"],
+        exclude: ["process"],
+        globals: { Buffer: true, process: false },
+        protocolImports: false,
+      }),
+    ],
   },
 
   server: {
