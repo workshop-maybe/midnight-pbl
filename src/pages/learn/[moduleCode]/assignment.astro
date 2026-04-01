@@ -12,6 +12,7 @@ import { fetchModuleDetail, fetchSLTs, fetchAssignment } from "@/lib/gateway.ser
 import { renderMarkdown } from "@/lib/markdown";
 import { COURSE_ID } from "astro:env/server";
 import { getPageTitle } from "@/config/branding";
+import AssignmentInteractive from "@/components/assignment/AssignmentInteractive";
 
 const { moduleCode } = Astro.params;
 
@@ -71,20 +72,12 @@ const title = getPageTitle(`Assignment: ${module.title ?? moduleCode}`);
       </div>
     )}
 
-    <!-- Interactive section placeholder (React island added in Unit 5) -->
-    <div id="assignment-interactive">
-      <div class="rounded-sm border border-midnight-border bg-midnight-card">
-        <div class="px-4 py-8 sm:px-6 text-center">
-          <p class="text-mn-text-muted mb-2">
-            Submission interface will be available soon.
-          </p>
-          <div class="flex items-center justify-center gap-2">
-            <div class="h-2 w-2 rounded-full bg-mn-primary-light opacity-40"></div>
-            <div class="h-2 w-2 rounded-full bg-mn-primary-light opacity-40"></div>
-            <div class="h-2 w-2 rounded-full bg-mn-primary-light opacity-40"></div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Interactive assignment island -->
+    <AssignmentInteractive
+      client:only="react"
+      courseId={COURSE_ID}
+      moduleCode={moduleCode}
+      sltHash={module.sltHash ?? null}
+    />
   </div>
 </LearnLayout>

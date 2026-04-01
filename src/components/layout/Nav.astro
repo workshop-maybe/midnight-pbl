@@ -8,6 +8,7 @@
  * Mobile hamburger uses an inline <script> for zero-React interactivity.
  */
 import { BRANDING } from "@/config/branding";
+import WalletController from "@/components/auth/WalletController";
 ---
 
 <nav
@@ -31,10 +32,13 @@ import { BRANDING } from "@/config/branding";
       >
         Learn
       </a>
-      <div id="wallet-slot">
-        <!-- WalletController island will be mounted here -->
-        <div class="h-9 w-[140px] rounded-sm border border-midnight-border bg-midnight-surface"></div>
-      </div>
+      <a
+        href="/dashboard"
+        class="min-h-[44px] flex items-center text-sm transition-colors hover:text-mn-text text-mn-text-muted"
+      >
+        Dashboard
+      </a>
+      <WalletController client:only="react" />
     </div>
 
     <!-- Mobile hamburger -->
@@ -86,10 +90,14 @@ import { BRANDING } from "@/config/branding";
       >
         Learn
       </a>
+      <a
+        href="/dashboard"
+        class="min-h-[44px] flex items-center rounded-sm px-3 text-sm transition-colors hover:bg-midnight-surface text-mn-text-muted"
+      >
+        Dashboard
+      </a>
       <div class="pt-2 border-t border-midnight-border">
-        <div id="wallet-slot-mobile">
-          <div class="h-9 w-[140px] rounded-sm border border-midnight-border bg-midnight-surface"></div>
-        </div>
+        <WalletController client:only="react" />
       </div>
     </div>
   </div>
