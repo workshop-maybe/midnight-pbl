@@ -208,7 +208,7 @@ Declare them in Compact, implement them in TypeScript. The contract can't trust 
 
 ---
 
-## Assignment
+## Things to Try
 
 Write a Compact contract for a simple token vault with these requirements:
 

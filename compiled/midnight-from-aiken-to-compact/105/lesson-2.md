@@ -214,7 +214,7 @@ export circuit prove_once(): [] {
 
 ---
 
-## Assignment
+## Things to Try
 
 Design an anonymous voting system using MerkleTree commitments and nullifiers:
 

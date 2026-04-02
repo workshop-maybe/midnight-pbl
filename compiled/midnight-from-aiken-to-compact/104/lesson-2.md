@@ -288,7 +288,7 @@ Lesson 4.3 takes the compiled contract and deploys it to preprod — your first 
 
 ---
 
-## Assignment
+## Conversation Starters
 
 Compile both example contracts on your machine and answer:
 

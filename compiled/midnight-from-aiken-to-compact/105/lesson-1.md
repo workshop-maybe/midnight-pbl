@@ -178,7 +178,7 @@ ZK circuits need fixed sizes. `first_name: Bytes<32>` means names are padded to 
 
 ---
 
-## Assignment
+## Things to Try
 
 Design a Compact contract for professional certification verification:
 

@@ -178,7 +178,7 @@ Lesson 2.2 maps each Aiken concept to its Compact equivalent, showing you where 
 
 ---
 
-## Assignment
+## Conversation Starters
 
 Given this Compact contract skeleton, identify each component and explain its role:
 

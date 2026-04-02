@@ -99,7 +99,7 @@ Lesson 1.2 examines how Midnight's dual-ledger system draws the boundary between
 
 ---
 
-## Assignment
+## Things to Try
 
 A colleague building on Cardano asks: "If Midnight's VM isn't Turing-complete, doesn't that make it less capable than Plutus?"
 

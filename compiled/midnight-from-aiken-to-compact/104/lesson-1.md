@@ -186,7 +186,7 @@ You're ready to compile your first contract. Lesson 4.2 walks through the compil
 
 ---
 
-## Assignment
+## Conversation Starters
 
 Confirm your setup by running the following checks and recording the output:
 

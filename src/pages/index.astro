@@ -28,14 +28,21 @@ const sorted = [...modules].sort((a, b) => {
 
 <AppLayout title={BRANDING.fullTitle}>
   <div class="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
-    <!-- Midnight wordmark -->
-    <div class="mb-12 sm:mb-16">
-      <p class="font-heading text-4xl font-bold tracking-tight text-mn-text sm:text-5xl md:text-6xl">
-        midnight pbl
-      </p>
-      <p class="mt-1 font-heading text-lg text-mn-text-muted sm:text-xl">
-        From Aiken to Compact
-      </p>
+    <!-- Midnight mark + wordmark -->
+    <div class="mb-12 sm:mb-16 flex items-start gap-5">
+      <img
+        src="/midnight_logo_pack/02_Symbol/Midnight-RGB_Symbol-White.svg"
+        alt=""
+        class="mt-1 h-12 w-12 opacity-40 sm:h-14 sm:w-14"
+      />
+      <div>
+        <p class="font-heading text-4xl font-bold tracking-tight text-mn-text sm:text-5xl md:text-6xl">
+          midnight pbl
+        </p>
+        <p class="mt-1 font-heading text-lg text-mn-text-muted sm:text-xl">
+          From Aiken to Compact
+        </p>
+      </div>
     </div>
 
     <!-- Course description -->
@@ -95,6 +102,17 @@ const sorted = [...modules].sort((a, b) => {
         >
           Give Feedback
         </button>
+      </a>
+    </div>
+
+    <!-- Midnight mark -->
+    <div class="mt-16 flex justify-center sm:mt-20">
+      <a href="https://midnight.network" target="_blank" rel="noopener noreferrer">
+        <img
+          src="/midnight_logo_pack/01_symbol_wordmark/Horizontal/Midnight-RGB_Logo-Horizontal-White.svg"
+          alt="Midnight"
+          class="h-6 opacity-20 transition-opacity hover:opacity-40"
+        />
       </a>
     </div>
   </div>

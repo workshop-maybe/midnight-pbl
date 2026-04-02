@@ -291,7 +291,7 @@ If the witness returns the wrong secret key, the derived public key won't match 
 
 ---
 
-## Assignment
+## Things to Try
 
 Write the TypeScript witness file for a contract with these Compact declarations:
 

@@ -173,7 +173,7 @@ Lesson 3.3 shows the TypeScript side: how to implement the witness functions tha
 
 ---
 
-## Assignment
+## Things to Try
 
 Trace the lifecycle of a single transaction through the four stages for the bulletin board's `takeDown` circuit:
 

@@ -143,7 +143,7 @@ Lesson 6.3 brings it all together with a decision framework: when does a use cas
 
 ---
 
-## Assignment
+## Conversation Starters
 
 You're designing a dual-chain system where professional certifications are issued on Cardano and used for anonymous team capability proofs on Midnight (Scenario 2 from Lesson 6.1).
 

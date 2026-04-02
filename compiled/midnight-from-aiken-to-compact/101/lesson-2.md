@@ -136,7 +136,7 @@ Lesson 1.3 explains how Midnight relates to Cardano as a partner chain — what'
 
 ---
 
-## Assignment
+## Things to Try
 
 Design the data layout for a simple reputation system on Midnight. For each piece of data, decide whether it belongs on the public ledger, in a MerkleTree, or as private witness data. Justify each choice.
 

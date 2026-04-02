@@ -135,6 +135,48 @@ This project keeps a build journal in `journal/`. The journal ships with the rep
 
 Create `journal/` if it doesn't exist. The journal is a non-code output of the project — treat it as a first-class artifact.
 
+## Content Management
+
+Course content lives in `compiled/` in andamio-cli import format. This is the source of truth.
+
+### Directory structure
+
+```
+compiled/midnight-from-aiken-to-compact/
+  101/   # Module 101
+    outline.md       # Module title, description, SLTs
+    lesson-1.md      # Lesson content (markdown)
+    lesson-2.md
+    lesson-3.md
+    assignment.md    # Assignment prompt
+  102/
+  ...
+  106/
+```
+
+### Content update workflow
+
+1. **Edit** markdown files in `compiled/`
+2. **Import** to Andamio API: `andamio course import-all compiled/midnight-from-aiken-to-compact --course-id <COURSE_ID>`
+3. **Rebuild** the app: `npm run build` (prerendered pages pull fresh content from the API at build time)
+4. **Deploy**: rebuild Docker image and deploy to Cloud Run
+
+Content pages (homepage, lessons) are prerendered at build time — they're static HTML with ~2ms response times. A rebuild is required after content changes. Assignment pages and dashboard are SSR (they need authenticated data).
+
+### Editing content
+
+- Lessons are standard markdown. Edit `compiled/<module>/lesson-N.md` directly.
+- `outline.md` defines the module title, description, and SLT text. Changes here affect the sidebar, module cards, and on-chain SLT registration.
+- After editing, always import then rebuild. The app will not reflect changes until both steps are done.
+- The `content/` directory was removed — do not recreate it. `compiled/` is the canonical format.
+
+### Course ID
+
+The course is registered on Cardano preprod:
+- Course ID: `5f74e419a291825c637626c196b40a7aa63313cad6e69916cfdec9e5`
+- Owner: `midnight-pbl`
+- 6 modules (101-106), 3 lessons each, 6 assignments
+
 ## Andamio API
 
 The Andamio API is the primary integration point. When building features:
@@ -143,3 +185,13 @@ The Andamio API is the primary integration point. When building features:
 2. Use the API client patterns established in the current project
 3. Staging/preprod environment: `preprod.api.andamio.io`
 4. If the API doesn't support what you need, note it — don't work around it silently
+
+## Stack
+
+- **Framework**: Astro 6 with `@astrojs/node` adapter (SSR + prerendering)
+- **Islands**: React 19 via `@astrojs/react`, used with `client:only="react"` for wallet/auth/TX flows
+- **Styling**: Tailwind CSS v4 with `@theme` tokens in `src/styles/globals.css`
+- **State**: Vanilla Zustand store for auth (shared across islands), React Query for client-side data
+- **Content rendering**: Server-side `marked` + `highlight.js` (zero client JS for lessons)
+- **Polyfills**: `vite-plugin-node-polyfills` for Mesh SDK crypto/buffer deps — `process` must be excluded (`globals: { process: false }`) to avoid shadowing Node's `process.env` in the server build
+- **Deploy**: Docker on GCP Cloud Run (project `built-on-andamio`, region `us-central1`)

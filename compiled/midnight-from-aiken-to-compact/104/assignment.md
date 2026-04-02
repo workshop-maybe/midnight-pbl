@@ -1,19 +1,37 @@
 # Module Assignment
 
-## Task
+## Your role
 
-Install the Compact toolchain, compile both example contracts (counter and bulletin board), deploy the counter to preprod (or standalone), and document the artifacts and workflow. This is a hands-on module where your deliverables prove you have a working development environment and understand the compilation and deployment pipeline.
+You're not proving you learned this — you're helping build it. This course is a community resource, and every module is a draft that gets better through the people who use it. Your credential means you engaged with the material deeply enough to improve it.
 
-## Deliverables
+## What to do
 
-1. Setup verification: output of `compact --version`, `compact compile --version`, and proof server health check (`curl -s http://localhost:6300 -o /dev/null -w "%{http_code}"`)
-2. Compilation analysis: for both the counter and bulletin board contracts, report the number of provable vs pure circuits, proving key and verification key sizes, and how `Maybe<Opaque<"string">>` in Compact maps to TypeScript in the generated `index.d.ts`
-3. Deployment walkthrough: deploy the counter contract to preprod (or standalone), record the contract address, increment three times noting proof generation time for each, confirm the counter reads 3, then exit and rejoin using saved seed and contract address to verify state persistence
+Follow the setup and deployment instructions in this module's three lessons, then respond to the following.
 
-## Notes
+### 1. Where did you get stuck?
 
-**Estimated time:** 90-120 minutes (includes toolchain installation and first-compilation parameter download)
+Document every point where the instructions didn't work as described, were ambiguous, or assumed something about your environment. Include:
 
-**Prerequisites:** macOS or Linux, Docker Desktop running, Node.js v22.15+
+- Your OS and hardware (e.g., macOS Apple Silicon, Ubuntu x86)
+- The exact step that failed or confused you
+- What you did to get past it (or if you couldn't)
 
-**Common issues:** first compilation downloads ~500MB universal parameters; Apple Silicon Macs may need Docker VMM enabled; DUST generation takes time after faucet funding
+This is the most hands-on module in the course. If the instructions have gaps, real developers hit them — and every gap you document is a fix waiting to happen.
+
+### 2. What should the troubleshooting section include?
+
+After getting through the setup (or failing to), what troubleshooting advice would have saved you time? Think about:
+
+- Error messages that were misleading or didn't appear in the lessons
+- Prerequisites that weren't mentioned (Docker settings, Node version, disk space)
+- Timing issues (how long things actually take vs. what the lessons imply)
+
+### 3. Propose a revision
+
+Rewrite the weakest set of instructions in this module. Your revision should be something another developer could follow verbatim. If the compilation or deployment steps need restructuring, restructure them. If a lesson needs a "Common Issues" section, write it.
+
+## What makes a strong submission
+
+- **Be literal** — "Step 3 says run `compact compile` but doesn't mention you need to be in the contract directory" is exactly the kind of fix that matters
+- **Include your environment** — the same instructions behave differently on macOS vs Linux, ARM vs x86. Your specific experience is data
+- **Write the guide you wish you had** — if you spent 30 minutes debugging something the lesson could have prevented with one sentence, write that sentence

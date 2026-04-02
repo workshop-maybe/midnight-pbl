@@ -264,7 +264,7 @@ Lesson 2.3 puts this into practice — you'll walk through writing a Compact con
 
 ---
 
-## Assignment
+## Conversation Starters
 
 Take a simple Aiken validator you've written (or use the counter example) and map each component to its Compact equivalent:
 

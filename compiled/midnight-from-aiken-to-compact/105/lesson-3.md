@@ -229,7 +229,7 @@ If any link breaks — compromised issuer key, stolen credential, tampered attri
 
 ---
 
-## Assignment
+## Conversation Starters
 
 Build a complete selective disclosure system for a professional services firm. The system must support three operations:
 

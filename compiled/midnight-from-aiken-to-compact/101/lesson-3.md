@@ -100,7 +100,7 @@ Lesson 1.1 and 1.2 covered the technical differences — execution models and th
 
 ---
 
-## Assignment
+## Conversation Starters
 
 Explain the Midnight partner chain model to a fellow Aiken developer who assumes Midnight is "just a Cardano sidechain." In your explanation, address:
 

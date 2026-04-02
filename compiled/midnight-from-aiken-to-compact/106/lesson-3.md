@@ -171,7 +171,7 @@ For these, Cardano alone isn't sufficient. You need the ZK proof layer.
 
 ---
 
-## Assignment
+## Conversation Starters
 
 Evaluate three use cases from your own domain. For each one:
 

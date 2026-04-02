@@ -151,7 +151,7 @@ Lesson 3.2 follows the data from the other direction: once a circuit runs and a 
 
 ---
 
-## Assignment
+## Conversation Starters
 
 You're building a sealed-bid auction on Midnight. Each bidder submits a bid that should remain hidden until the reveal phase. Design the data flow:
 

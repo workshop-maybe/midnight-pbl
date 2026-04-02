@@ -1,17 +1,31 @@
 # Module Assignment
 
-## Task
+## Your role
 
-Take an Aiken validator you have written (or use a simple counter/escrow example) and translate it into a Compact contract design. This exercise tests your ability to map Aiken concepts to Compact equivalents and write basic Compact contract structure.
+You're not proving you learned this — you're helping build it. This course is a community resource, and every module is a draft that gets better through the people who use it. Your credential means you engaged with the material deeply enough to improve it.
 
-## Deliverables
+## What to do
 
-1. A component-by-component mapping of your Aiken validator to Compact: datum to ledger fields, redeemer to circuit parameters and witnesses, validation logic to circuit execution logic, and identification of any data that would benefit from being private
-2. A complete Compact contract for a token vault with: an owner (public key), a balance (Uint<64>), a locked/unlocked state, a constructor, deposit/withdraw circuits with proper disclose() usage, and lock/unlock circuits with owner verification via witness
-3. An annotation of a provided Compact contract skeleton identifying each component (pragma, ledger, witness, constructor, circuit), what data is public vs private, and why the constructor increments the round counter
+Work through the three lessons in this module, then respond to the following.
 
-## Notes
+### 1. Where did the Aiken-to-Compact translation break down?
 
-**Estimated time:** 60-90 minutes
+This module is built around the idea that Aiken developers can map their existing mental model to Compact. Where did that mapping fail for you? Identify a concept where the Aiken analogy was misleading, incomplete, or where Compact is different enough that the comparison creates more confusion than clarity.
 
-**Key concepts to address:** ledger fields vs datums, circuits vs validators, witnesses for private input, disclose() for visibility control, assert for guards, the shift from validation to execution
+### 2. What example is missing?
+
+The lessons explain Compact components (ledger, circuits, witnesses, constructors) through description. What concrete code example would have made something click faster? Point to the specific concept and describe what the example should show — even pseudocode or a before/after comparison is valuable.
+
+### 3. Propose a revision
+
+Pick the weakest explanation in this module and rewrite it. Your revision should:
+
+- Target a specific section in a specific lesson
+- Be written for someone who thinks in Aiken
+- Include the code, analogy, or structure you wish had been there when you read it
+
+## What makes a strong submission
+
+- **Name the friction** — "Lesson 2 maps datum to ledger fields, but doesn't explain that Compact ledger fields persist across transactions while Aiken datums are consumed" is the kind of detail that makes the module better
+- **Write the thing you needed** — if you had to go read the Compact docs to understand something the lesson should have covered, write the bridge
+- **Challenge the framing** — if the Aiken-to-Compact comparison is the wrong way to teach a concept, say so and propose what would work better

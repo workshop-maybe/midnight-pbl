@@ -239,7 +239,7 @@ You've installed the toolchain, compiled contracts, and deployed to a live netwo
 
 ---
 
-## Assignment
+## Conversation Starters
 
 Deploy the counter contract to preprod (or standalone) and complete the following:
 

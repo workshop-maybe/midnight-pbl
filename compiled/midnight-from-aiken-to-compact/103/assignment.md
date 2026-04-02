@@ -1,17 +1,31 @@
 # Module Assignment
 
-## Task
+## Your role
 
-Design the privacy architecture for a sealed-bid auction on Midnight and implement the TypeScript witness layer that supports it. This exercise tests your understanding of the full privacy pipeline: disclose() for visibility control, the proof generation lifecycle, and witness functions as the bridge between private data and ZK circuits.
+You're not proving you learned this — you're helping build it. This course is a community resource, and every module is a draft that gets better through the people who use it. Your credential means you engaged with the material deeply enough to improve it.
 
-## Deliverables
+## What to do
 
-1. A sealed-bid auction design specifying: the submitBid circuit (what gets disclosed, what stays private, how the bid is stored on the ledger via commitment), the revealBid circuit (at what point and through which mechanism the bid amount becomes public), and the data flow through the privacy gradient
-2. A trace of the bulletin board's takeDown circuit through all four pipeline stages (compile, prove, submit, verify): what artifacts are produced, what private inputs enter the proof, what public outputs emerge, what the transaction contains, and at which stage a wrong secret key causes failure
-3. A TypeScript witness file for a credential contract with MerkleTree commitments and nullifiers, implementing: a CredentialPrivateState type, a loadCredential witness that returns the credential at the current counter position, and a deriveNullifier witness that derives a deterministic nullifier and increments the counter in private state
+Work through the three lessons in this module, then respond to the following.
 
-## Notes
+### 1. Where does the privacy model explanation fall short?
 
-**Estimated time:** 90-120 minutes
+The privacy model is the core of Midnight's value proposition, and this module tries to explain it through disclose(), the proof pipeline, and witness functions. Where did that explanation lose you? Identify the moment where you went from "I follow this" to "I'm lost" — that boundary is exactly where the module needs work.
 
-**Key concepts to address:** the privacy gradient (fully private, proven but hidden, hashed on ledger, fully public), persistentHash vs persistentCommit, the four-stage pipeline (compile, prove, submit, verify), WitnessContext interface, the [newPrivateState, returnValue] tuple pattern
+### 2. What would make the proof pipeline concrete?
+
+The four-stage pipeline (compile, prove, submit, verify) is abstract until you see it in action. What example, trace, or visualization would have made it tangible? Think about what you'd show a fellow developer at a whiteboard to make the pipeline click in under five minutes.
+
+### 3. Propose a revision
+
+Pick the concept in this module that's hardest to grasp and write a better explanation. Focus on one of:
+
+- A walkthrough that traces real data through the privacy gradient — what's private, what's proven, what's public, and why
+- A witness function example that's more instructive than what the lesson currently uses
+- A mental model or analogy for how ZK proofs work in this context that doesn't require cryptography background
+
+## What makes a strong submission
+
+- **Pinpoint the abstraction gap** — the privacy model has layers (disclose, commitments, witnesses, proofs). Which layer is under-explained, and what's the consequence for a developer trying to build on it?
+- **Propose something concrete** — a diagram, a code trace, a rewritten paragraph. Not "this should be clearer" but "here's what clarity looks like"
+- **Test the lesson's examples** — if you tried to extend the bulletin board or credential examples and got stuck, that's a signal about what the lesson failed to set up

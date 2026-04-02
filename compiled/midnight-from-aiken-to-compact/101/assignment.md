@@ -1,17 +1,32 @@
 # Module Assignment
 
-## Task
+## Your role
 
-Explain the Midnight partner chain model and its technical differences from Cardano to a fellow Aiken developer. Your explanation should demonstrate understanding of the execution model differences, the dual-ledger privacy system, and the structural relationship between the two chains.
+You're not proving you learned this — you're helping build it. This course is a community resource, and every module is a draft that gets better through the people who use it. Your credential means you engaged with the material deeply enough to improve it.
 
-## Deliverables
+## What to do
 
-1. A written comparison of Midnight's Impact VM and Cardano's Plutus VM that addresses: why Midnight chose non-Turing-completeness, how validation-vs-execution changes what contracts can do, and one scenario where each model has an advantage
-2. A data layout for a simple reputation system on Midnight specifying which data belongs on the public ledger, in a MerkleTree, or as private witness data, with justification for each choice
-3. An explanation of the partner chain model that covers: why Midnight is not a sidechain, what is shared between the two chains (wallet, validator set, token economics) and what is not (VM, language, consensus), and how the two chains complement each other
+Work through the three lessons in this module, then respond to the following.
 
-## Notes
+### 1. What confused you?
 
-**Estimated time:** 60-90 minutes
+Identify at least one concept that was unclear, poorly explained, or assumed knowledge you didn't have. Be specific — point to the lesson and the section. "Lesson 1 says Midnight uses a 'hybrid state model' but never defines what that means compared to eUTxO" is useful feedback. "It was confusing" is not.
 
-**Key concepts to address:** Impact VM vs Plutus VM, eUTxO vs hybrid state model, disclose() and the public/private boundary, Native Token Observation Pallet, partner chain vs sidechain vs L2
+### 2. What's missing?
+
+As a Cardano developer encountering Midnight for the first time, what did you need to understand that the lessons didn't cover? Maybe the Impact VM explanation needs a side-by-side code comparison with Plutus. Maybe the partner chain relationship needs a diagram. Maybe there's a question you had that none of the three lessons answered.
+
+### 3. Propose a revision
+
+Pick the weakest part of this module and write what should replace it. This could be:
+
+- A rewritten paragraph that explains a concept more clearly
+- An example or analogy that would help an Aiken developer orient faster
+- A comparison table or diagram description that's missing
+- A new section that fills a gap you identified
+
+## What makes a strong submission
+
+- **Specific over general** — "Lesson 2, dual-ledger section, doesn't explain when you'd choose persistentHash over persistentCommit" beats "the privacy stuff was hard"
+- **Your revision demonstrates understanding** — to improve the explanation, you have to understand the concept
+- **Honest friction is valuable** — if you're an experienced Aiken developer and still found something confusing, that's important signal

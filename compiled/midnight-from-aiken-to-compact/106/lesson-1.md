@@ -149,7 +149,7 @@ Lesson 6.2 gets specific about what can and can't cross the bridge between Carda
 
 ---
 
-## Assignment
+## Things to Try
 
 Design a dual-chain credential architecture for one of these scenarios:
 
