@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   workflow_call:
-    secrets: inherit
   workflow_dispatch:
     inputs:
       reason:
