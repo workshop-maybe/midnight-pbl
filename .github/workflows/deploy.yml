@@ -42,6 +42,9 @@ jobs:
         run: |
           docker build \
             --platform linux/amd64 \
+            --build-arg ANDAMIO_API_KEY=${{ secrets.ANDAMIO_API_KEY }} \
+            --build-arg ANDAMIO_GATEWAY_URL=https://preprod.api.andamio.io \
+            --build-arg COURSE_ID=${{ secrets.COURSE_ID }} \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }} \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest \
             .

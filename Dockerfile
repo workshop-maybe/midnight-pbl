@@ -6,6 +6,9 @@ FROM base AS deps
 RUN npm ci
 
 FROM base AS build
+ARG ANDAMIO_API_KEY
+ARG ANDAMIO_GATEWAY_URL
+ARG COURSE_ID
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
