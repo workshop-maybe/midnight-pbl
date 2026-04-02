@@ -2,9 +2,11 @@
 /**
  * Course Overview / Homepage
  *
- * Displays the course with wordmark, description, vertical module list,
- * and community section. Content-first layout.
+ * Prerendered at build time — zero API calls at request time.
+ * Rebuild when course content changes.
  */
+export const prerender = true;
+
 import AppLayout from "@/layouts/AppLayout.astro";
 import ModuleCard from "@/components/course/ModuleCard.astro";
 import { fetchCourseModules } from "@/lib/gateway.server";

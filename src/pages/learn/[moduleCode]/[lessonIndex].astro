@@ -2,50 +2,55 @@
 /**
  * Lesson Page
  *
- * Renders lesson content with server-side markdown formatting.
- * Provides previous/next navigation between lessons.
- *
- * Route: /learn/:moduleCode/:lessonIndex
+ * Prerendered at build time — zero API calls at request time.
+ * Rebuild when course content changes.
  */
+export const prerender = true;
+
+import type { GetStaticPaths } from "astro";
 import LearnLayout from "@/layouts/LearnLayout.astro";
-import { fetchModuleDetail, fetchSLTs, fetchLesson } from "@/lib/gateway.server";
+import { fetchCourseModules, fetchSLTs, fetchLesson } from "@/lib/gateway.server";
 import { renderMarkdown } from "@/lib/markdown";
 import { COURSE_ID } from "astro:env/server";
 import { getPageTitle } from "@/config/branding";
 
+export const getStaticPaths: GetStaticPaths = async () => {
+  if (!COURSE_ID) return [];
+
+  const modules = await fetchCourseModules(COURSE_ID);
+  const paths = [];
+
+  for (const mod of modules) {
+    if (!mod.moduleCode) continue;
+    const slts = await fetchSLTs(COURSE_ID, mod.moduleCode);
+
+    for (const slt of slts) {
+      const idx = slt.moduleIndex ?? 0;
+      const lesson = await fetchLesson(COURSE_ID, mod.moduleCode, idx);
+      if (!lesson) continue;
+
+      paths.push({
+        params: { moduleCode: mod.moduleCode, lessonIndex: String(idx) },
+        props: { module: mod, slts, lesson },
+      });
+    }
+  }
+
+  return paths;
+};
+
 const { moduleCode, lessonIndex: lessonIndexStr } = Astro.params;
+const { module, slts, lesson } = Astro.props;
 
-if (!COURSE_ID || !moduleCode || !lessonIndexStr) {
-  return Astro.redirect("/");
-}
-
-const lessonIndex = parseInt(lessonIndexStr, 10);
-if (isNaN(lessonIndex) || lessonIndex < 0) {
-  return Astro.redirect(`/learn/${moduleCode}/1`);
-}
-
-// Fetch module detail, SLTs, and lesson content in parallel
-const [module, slts, lesson] = await Promise.all([
-  fetchModuleDetail(COURSE_ID, moduleCode),
-  fetchSLTs(COURSE_ID, moduleCode),
-  fetchLesson(COURSE_ID, moduleCode, lessonIndex),
-]);
-
-if (!module) {
-  return new Response("Module not found", { status: 404 });
-}
-
-if (!lesson) {
-  return new Response("Lesson not found", { status: 404 });
-}
+const lessonIndex = parseInt(lessonIndexStr!, 10);
 
 // Render lesson content to HTML
 const contentHtml = renderMarkdown(lesson.contentJson);
 
 // Determine prev/next indices from SLT list
 const sortedIndices = slts
-  .map((s) => s.moduleIndex ?? 0)
-  .sort((a, b) => a - b);
+  .map((s: any) => s.moduleIndex ?? 0)
+  .sort((a: number, b: number) => a - b);
 const currentPos = sortedIndices.indexOf(lessonIndex);
 const prevIndex = currentPos > 0 ? sortedIndices[currentPos - 1] : null;
 const nextIndex =
@@ -59,7 +64,7 @@ const title = getPageTitle(lesson.title ?? "Lesson");
 
 <LearnLayout
   title={title}
-  moduleCode={moduleCode}
+  moduleCode={moduleCode!}
   moduleTitle={module.title ?? "Untitled Module"}
   moduleDescription={module.description}
   slts={slts}

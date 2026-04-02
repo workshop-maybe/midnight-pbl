@@ -2,6 +2,31 @@
 /**
  * /learn/:moduleCode — redirects to first lesson.
  */
+export const prerender = true;
+
+import type { GetStaticPaths } from "astro";
+import { fetchCourseModules, fetchSLTs } from "@/lib/gateway.server";
+import { COURSE_ID } from "astro:env/server";
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  if (!COURSE_ID) return [];
+  const modules = await fetchCourseModules(COURSE_ID);
+  const paths = [];
+
+  for (const mod of modules) {
+    if (!mod.moduleCode) continue;
+    const slts = await fetchSLTs(COURSE_ID, mod.moduleCode);
+    const firstIndex = slts.length > 0 ? (slts[0].moduleIndex ?? 0) : 1;
+    paths.push({
+      params: { moduleCode: mod.moduleCode },
+      props: { firstIndex },
+    });
+  }
+
+  return paths;
+};
+
 const { moduleCode } = Astro.params;
-return Astro.redirect(`/learn/${moduleCode}/1`);
+const { firstIndex } = Astro.props;
+return Astro.redirect(`/learn/${moduleCode}/${firstIndex}`);
 ---
