@@ -1,6 +1,6 @@
 ---
 course: "Midnight for Cardano Developers"
-status: slts-drafted
+status: readiness-assessed
 last_updated: 2026-04-02
 audience: Cardano developers (any smart contract language — Aiken, Plutus, Opshin) who want to build on Midnight
 prerequisite_knowledge: EUTXO model, native assets, datums, validators, transaction building, basic Cardano DApp development
