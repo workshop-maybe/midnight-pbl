@@ -2,9 +2,9 @@
  * Enrollment Flow
  *
  * Orchestrates the full assignment enrollment/submission flow:
- *   1. Student fills evidence form (notes + URLs)
- *   2. Evidence is saved to DB via gateway
- *   3. On-chain commitment TX is executed
+ *   1. Student writes evidence in TipTap editor
+ *   2. Evidence (JSONContent) is saved to DB via gateway
+ *   3. On-chain commitment TX is executed with blake2b hash
  *   4. On success, commitment query is invalidated to refresh status
  *
  * Also handles evidence updates for IN_PROGRESS and ASSIGNMENT_DENIED states.
@@ -21,13 +21,13 @@ import {
   type EvidencePayload,
 } from "@/hooks/api/course/use-assignment-commitment";
 import { gatewayAuthPost } from "@/lib/gateway";
-import {
-  EvidenceForm,
-  type EvidenceFormData,
-} from "@/components/assignment/EvidenceForm";
+import { hashEvidence } from "@/lib/evidence-hash";
+import { EvidenceEditor } from "@/components/editor/EvidenceEditor";
 import { TransactionButton } from "@/components/tx/transaction-button";
 import { TxStatus } from "@/components/tx/tx-status";
+import { Button } from "@/components/ui/button";
 import { commitmentKeys } from "@/hooks/api/query-keys";
+import type { JSONContent } from "@tiptap/core";
 
 // =============================================================================
 // Types
@@ -44,7 +44,7 @@ interface EnrollmentFlowProps {
   alias: string;
   /** Whether this is an update to an existing submission */
   isUpdate?: boolean;
-  /** Pre-existing evidence to pre-fill the form */
+  /** Pre-existing evidence to pre-fill the editor */
   existingEvidence?: EvidencePayload | null;
 }
 
@@ -54,21 +54,16 @@ interface SaveEvidenceResponse {
   [key: string]: unknown;
 }
 
-// =============================================================================
-// Helpers
-// =============================================================================
-
 /**
- * Compute a simple hash of the evidence object for on-chain storage.
- * Uses a hex-encoded SHA-256 digest of the JSON-serialized evidence.
+ * Check if existing evidence is TipTap JSONContent (has `type` field)
+ * vs legacy format ({notes, urls}).
  */
-async function hashEvidence(evidence: EvidenceFormData): Promise<string> {
-  const payload = JSON.stringify(evidence);
-  const encoder = new TextEncoder();
-  const data = encoder.encode(payload);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+function toJSONContent(evidence: EvidencePayload | null | undefined): JSONContent | undefined {
+  if (!evidence) return undefined;
+  if ("type" in evidence && typeof evidence.type === "string") {
+    return evidence as unknown as JSONContent;
+  }
+  return undefined;
 }
 
 // =============================================================================
@@ -94,94 +89,102 @@ export function EnrollmentFlow({
     reset,
   } = useTransaction();
 
+  const [editorContent, setEditorContent] = useState<JSONContent | null>(
+    toJSONContent(existingEvidence) ?? null
+  );
   const [isSavingEvidence, setIsSavingEvidence] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  /** Once evidence is submitted, show the TX flow instead of the form */
+  /** Once evidence is submitted, show the TX flow instead of the editor */
   const [evidenceSubmitted, setEvidenceSubmitted] = useState(false);
+
+  const isEditorEmpty = !editorContent ||
+    (editorContent.type === "doc" &&
+      (!editorContent.content || editorContent.content.length === 0 ||
+        (editorContent.content.length === 1 &&
+          editorContent.content[0].type === "paragraph" &&
+          (!editorContent.content[0].content || editorContent.content[0].content.length === 0))));
 
   /**
    * Full submission flow:
    * 1. Save evidence to DB
    * 2. Execute on-chain commitment TX
    */
-  const handleSubmit = useCallback(
-    async (data: EvidenceFormData) => {
-      if (!jwt) return;
+  const handleSubmit = useCallback(async () => {
+    if (!jwt || !editorContent) return;
 
-      setSaveError(null);
-      setIsSavingEvidence(true);
+    setSaveError(null);
+    setIsSavingEvidence(true);
 
-      try {
-        // Step 1: Save evidence to DB
-        const evidenceHash = await hashEvidence(data);
+    try {
+      // Step 1: Save evidence to DB
+      const evidenceHash = hashEvidence(editorContent);
 
-        const saveEndpoint = isUpdate
-          ? "/api/v2/course/student/assignment-commitment/update-evidence"
-          : "/api/v2/course/student/assignment-commitment/create";
+      const saveEndpoint = isUpdate
+        ? "/api/v2/course/student/assignment-commitment/update-evidence"
+        : "/api/v2/course/student/assignment-commitment/create";
 
-        const saveBody: Record<string, unknown> = {
-          course_id: courseId,
-          evidence: { notes: data.notes, urls: data.urls },
-          evidence_hash: evidenceHash,
-        };
+      const saveBody: Record<string, unknown> = {
+        course_id: courseId,
+        evidence: editorContent,
+        evidence_hash: evidenceHash,
+      };
 
-        if (isUpdate) {
-          saveBody.course_module_code = moduleCode;
-        } else {
-          saveBody.slt_hash = sltHash;
-          saveBody.course_module_code = moduleCode;
-        }
-
-        await gatewayAuthPost<SaveEvidenceResponse>(
-          saveEndpoint,
-          jwt,
-          saveBody
-        );
-
-        setIsSavingEvidence(false);
-        setEvidenceSubmitted(true);
-
-        // Step 2: Execute on-chain TX
-        const txType = isUpdate
-          ? ("COURSE_STUDENT_ASSIGNMENT_UPDATE" as const)
-          : ("COURSE_STUDENT_ASSIGNMENT_COMMIT" as const);
-
-        await execute(
-          txType,
-          {
-            alias,
-            course_id: courseId,
-            slt_hash: sltHash,
-            assignment_info: evidenceHash,
-          },
-          {
-            invalidateKeys: [
-              [...commitmentKeys.detail(courseId, moduleCode)],
-              [...commitmentKeys.all],
-            ],
-            onSuccess: async () => {
-              await invalidateCommitment(courseId, moduleCode);
-            },
-          }
-        );
-      } catch (err) {
-        setIsSavingEvidence(false);
-        const message =
-          err instanceof Error ? err.message : "Failed to save evidence";
-        setSaveError(message);
+      if (isUpdate) {
+        saveBody.course_module_code = moduleCode;
+      } else {
+        saveBody.slt_hash = sltHash;
+        saveBody.course_module_code = moduleCode;
       }
-    },
-    [
-      jwt,
-      courseId,
-      moduleCode,
-      sltHash,
-      alias,
-      isUpdate,
-      execute,
-      invalidateCommitment,
-    ]
-  );
+
+      await gatewayAuthPost<SaveEvidenceResponse>(
+        saveEndpoint,
+        jwt,
+        saveBody
+      );
+
+      setIsSavingEvidence(false);
+      setEvidenceSubmitted(true);
+
+      // Step 2: Execute on-chain TX
+      const txType = isUpdate
+        ? ("COURSE_STUDENT_ASSIGNMENT_UPDATE" as const)
+        : ("COURSE_STUDENT_ASSIGNMENT_COMMIT" as const);
+
+      await execute(
+        txType,
+        {
+          alias,
+          course_id: courseId,
+          slt_hash: sltHash,
+          assignment_info: evidenceHash,
+        },
+        {
+          invalidateKeys: [
+            [...commitmentKeys.detail(courseId, moduleCode)],
+            [...commitmentKeys.all],
+          ],
+          onSuccess: async () => {
+            await invalidateCommitment(courseId, moduleCode);
+          },
+        }
+      );
+    } catch (err) {
+      setIsSavingEvidence(false);
+      const message =
+        err instanceof Error ? err.message : "Failed to save evidence";
+      setSaveError(message);
+    }
+  }, [
+    jwt,
+    editorContent,
+    courseId,
+    moduleCode,
+    sltHash,
+    alias,
+    isUpdate,
+    execute,
+    invalidateCommitment,
+  ]);
 
   const handleReset = useCallback(() => {
     reset();
@@ -240,7 +243,7 @@ export function EnrollmentFlow({
     );
   }
 
-  // Default: show the evidence form
+  // Default: show the evidence editor
   return (
     <div className="space-y-4">
       {/* Save error */}
@@ -250,12 +253,24 @@ export function EnrollmentFlow({
         </div>
       )}
 
-      <EvidenceForm
-        initialEvidence={existingEvidence}
-        onSubmit={(data) => void handleSubmit(data)}
-        isSubmitting={isSavingEvidence}
-        submitLabel={isUpdate ? "Update & Resubmit" : "Enroll & Submit"}
+      <EvidenceEditor
+        content={toJSONContent(existingEvidence)}
+        onContentChange={setEditorContent}
+        disabled={isSavingEvidence}
       />
+
+      <Button
+        variant="primary"
+        className="w-full"
+        onClick={() => void handleSubmit()}
+        disabled={isEditorEmpty || isSavingEvidence}
+      >
+        {isSavingEvidence
+          ? "Saving..."
+          : isUpdate
+            ? "Update & Resubmit"
+            : "Enroll & Submit"}
+      </Button>
     </div>
   );
 }

@@ -382,6 +382,98 @@ samp {
   font-weight: 600;
 }
 
+/* ── TipTap Evidence Editor ─────────────────────────────────────────── */
+
+.evidence-editor-content {
+  min-height: 12rem;
+  outline: none;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: #b8b8bc;
+  line-height: 1.7;
+}
+
+.evidence-editor-content p {
+  margin-bottom: 0.75em;
+}
+
+.evidence-editor-content h2,
+.evidence-editor-content h3,
+.evidence-editor-content h4 {
+  font-family: var(--font-heading);
+  color: var(--mn-text-on-dark);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+}
+
+.evidence-editor-content h2 { font-size: 1.25rem; }
+.evidence-editor-content h3 { font-size: 1.1rem; }
+.evidence-editor-content h4 { font-size: 1rem; }
+
+.evidence-editor-content strong { color: var(--mn-text-on-dark); font-weight: 600; }
+.evidence-editor-content em { font-style: italic; }
+
+.evidence-editor-content a {
+  color: var(--mn-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.evidence-editor-content ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 0.75em; }
+.evidence-editor-content ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 0.75em; }
+.evidence-editor-content li { margin-bottom: 0.2em; }
+
+.evidence-editor-content blockquote {
+  border-left: 3px solid var(--mn-primary);
+  padding-left: 1em;
+  margin-left: 0;
+  margin-bottom: 0.75em;
+  color: var(--mn-text-muted);
+  font-style: italic;
+}
+
+.evidence-editor-content code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background-color: #2a2a2a;
+  color: var(--mn-primary);
+  border-radius: 2px;
+  padding: 0.15em 0.4em;
+}
+
+.evidence-editor-content pre {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  background-color: #1e1e1e;
+  border: 1px solid var(--mn-border-dark);
+  border-left: 3px solid #d4a05380;
+  border-radius: 2px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75em;
+  overflow-x: auto;
+}
+
+.evidence-editor-content pre code {
+  background: none;
+  color: #e2e8f0;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+}
+
+/* Placeholder */
+.evidence-editor-content.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #64748b;
+  opacity: 0.5;
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
 /* ── Learn Layout (sidebar + content) ────────────────────────────────── */
 
 .learn-layout {

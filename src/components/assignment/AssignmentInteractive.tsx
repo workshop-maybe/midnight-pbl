@@ -26,7 +26,7 @@ import { useAssignmentCommitment } from "@/hooks/api/course/use-assignment-commi
 import { isPendingStatus } from "@/lib/assignment-status";
 import { AuthExpiredError } from "@/lib/api-utils";
 import { CommitmentStatus } from "@/components/assignment/CommitmentStatus";
-import { EvidenceForm } from "@/components/assignment/EvidenceForm";
+import { EvidenceViewer } from "@/components/editor/EvidenceViewer";
 import { EnrollmentFlow } from "@/components/assignment/EnrollmentFlow";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -208,13 +208,7 @@ function AssignmentInteractiveInner({
             <h3 className="text-sm font-medium text-mn-text">
               Your Submitted Evidence
             </h3>
-            <EvidenceForm
-              initialEvidence={commitment?.networkEvidence}
-              onSubmit={() => {
-                /* read-only */
-              }}
-              readOnly
-            />
+            <EvidenceViewer content={commitment?.networkEvidence ?? null} />
           </div>
         </CardBody>
       </Card>
