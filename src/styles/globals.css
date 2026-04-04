@@ -128,19 +128,6 @@ samp {
   line-height: 1.7;
 }
 
-/* Reading width for prose — code blocks break out to full container */
-.prose-midnight > p,
-.prose-midnight > h1,
-.prose-midnight > h2,
-.prose-midnight > h3,
-.prose-midnight > h4,
-.prose-midnight > h5,
-.prose-midnight > h6,
-.prose-midnight > ul,
-.prose-midnight > ol,
-.prose-midnight > blockquote {
-  max-width: 65ch;
-}
 
 /* Headings stay sans-serif for contrast with serif body */
 .prose-midnight h1,
