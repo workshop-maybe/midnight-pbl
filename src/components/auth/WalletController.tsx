@@ -73,6 +73,8 @@ function WalletControllerInner() {
 
   const isValidatingRef = useRef(false);
   const lastAddressRef = useRef<string | null>(null);
+  /** Track if wallet was ever connected — prevents clearing auth on initial render */
+  const wasConnectedRef = useRef(false);
 
   const isAuthenticated = status === "AUTHENTICATED";
   const isAuthenticating = status === "AUTHENTICATING" || status === "SCANNING_TOKEN";
@@ -177,7 +179,11 @@ function WalletControllerInner() {
   // ===========================================================================
 
   useEffect(() => {
-    if (!connected) {
+    if (connected) {
+      wasConnectedRef.current = true;
+    } else if (wasConnectedRef.current) {
+      // Only clear auth on actual disconnect (was connected, now isn't)
+      // — not on initial render when Mesh hasn't auto-reconnected yet
       const currentStatus = authStore.getState().status;
       if (currentStatus !== "DISCONNECTED") {
         authStore.getState().setDisconnected();
