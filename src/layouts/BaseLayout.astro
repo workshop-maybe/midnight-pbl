@@ -21,6 +21,21 @@ import "@/styles/globals.css";
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Process shim: Mesh SDK transitive deps reference `process` which
+         doesn't exist in the browser. The full vite-plugin-node-polyfills
+         process shim can't be used because it shadows Node's real process.env
+         in the server build. This inline script runs before any module scripts
+         (which are deferred), providing the global before islands hydrate. -->
+    <script is:inline>
+      if (typeof globalThis.process === "undefined") {
+        globalThis.process = {
+          env: {},
+          version: "",
+          browser: true,
+          nextTick: function(cb) { var args = Array.prototype.slice.call(arguments, 1); queueMicrotask(function() { cb.apply(null, args); }); }
+        };
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
