@@ -9,6 +9,7 @@ FROM base AS build
 ARG ANDAMIO_API_KEY
 ARG ANDAMIO_GATEWAY_URL
 ARG COURSE_ID
+ARG PUBLIC_ACCESS_TOKEN_POLICY_ID
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build

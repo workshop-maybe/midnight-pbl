@@ -45,6 +45,7 @@ jobs:
             --build-arg ANDAMIO_API_KEY=${{ secrets.ANDAMIO_API_KEY }} \
             --build-arg ANDAMIO_GATEWAY_URL=https://preprod.api.andamio.io \
             --build-arg COURSE_ID=${{ secrets.COURSE_ID }} \
+            --build-arg PUBLIC_ACCESS_TOKEN_POLICY_ID=aa1cbea2524d369768283d7c8300755880fd071194a347cf0a4e274f \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }} \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest \
             .
