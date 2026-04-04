@@ -160,7 +160,7 @@ function AssignmentInteractiveInner({
       <Card noHover>
         <CardBody className="py-8">
           <div className="flex flex-col items-center gap-4 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-mn-primary/10">
+            <div className="flex h-14 w-14 items-center justify-center rounded-sm bg-mn-primary/10">
               <CredentialIcon />
             </div>
             <CommitmentStatus status={commitmentStatus} />
@@ -181,7 +181,7 @@ function AssignmentInteractiveInner({
       <Card noHover>
         <CardBody className="py-8">
           <div className="flex flex-col items-center gap-4 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success/10">
+            <div className="flex h-14 w-14 items-center justify-center rounded-sm bg-success/10">
               <AcceptedIcon />
             </div>
             <CommitmentStatus status={commitmentStatus} />
@@ -352,11 +352,33 @@ function UnauthenticatedCTA({
 function CommitmentLoadingSkeleton() {
   return (
     <Card noHover>
-      <CardBody className="space-y-4 py-6">
-        <Skeleton className="h-6 w-32" />
-        <Skeleton className="h-4 w-64" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-10 w-full" />
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-5 w-20 rounded-full" />
+        </div>
+        <Skeleton className="mt-2 h-4 w-72" />
+      </CardHeader>
+      <CardBody>
+        <div className="space-y-4">
+          {/* Editor skeleton */}
+          <div className="rounded-sm border border-midnight-border overflow-hidden">
+            <div className="flex items-center gap-1 border-b border-midnight-border bg-midnight-surface/50 px-2 py-1.5">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-6 w-6" />
+              ))}
+            </div>
+            <div className="bg-midnight-surface/20 p-5">
+              <div className="space-y-3">
+                <Skeleton className="h-3.5 w-3/4" />
+                <Skeleton className="h-3.5 w-1/2" />
+                <Skeleton className="h-3.5 w-5/6" />
+              </div>
+            </div>
+          </div>
+          {/* Submit button skeleton */}
+          <Skeleton className="h-10 w-full" />
+        </div>
       </CardBody>
     </Card>
   );

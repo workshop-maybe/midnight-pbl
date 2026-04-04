@@ -75,16 +75,27 @@ export function EvidenceEditor({
 
   if (!editor) {
     return (
-      <div className="rounded-sm border border-midnight-border bg-midnight-card p-4">
-        <div className="h-48 animate-pulse rounded bg-midnight-surface" />
+      <div className="rounded-sm border border-midnight-border overflow-hidden">
+        <div className="flex items-center gap-0.5 border-b border-midnight-border bg-midnight-surface/50 px-2 py-1.5">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-7 w-7 animate-pulse rounded-sm bg-midnight-surface" />
+          ))}
+        </div>
+        <div className="bg-white p-5">
+          <div className="space-y-3">
+            <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200" />
+            <div className="h-4 w-1/2 animate-pulse rounded bg-gray-200" />
+            <div className="h-4 w-5/6 animate-pulse rounded bg-gray-200" />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-sm border border-midnight-border bg-midnight-card overflow-hidden">
+    <div className="rounded-sm border border-midnight-border overflow-hidden">
       {!disabled && <Toolbar editor={editor} />}
-      <div className="p-4">
+      <div className="bg-white p-5">
         <EditorContent editor={editor} />
       </div>
     </div>

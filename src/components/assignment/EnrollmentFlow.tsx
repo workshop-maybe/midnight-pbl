@@ -256,7 +256,7 @@ export function EnrollmentFlow({
     <div className="space-y-4">
       {/* Save error */}
       {saveError && (
-        <div className="rounded-sm border border-error/30 bg-error/10 p-3">
+        <div className="rounded-sm border border-error/30 bg-error/10 p-4">
           <p className="text-sm text-error">{saveError}</p>
         </div>
       )}

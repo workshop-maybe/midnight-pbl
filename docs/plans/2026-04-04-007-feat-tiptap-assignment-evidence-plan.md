@@ -1,7 +1,7 @@
 ---
 title: "feat: TipTap editor for assignment evidence submission"
 type: feat
-status: active
+status: completed
 date: 2026-04-04
 ---
 

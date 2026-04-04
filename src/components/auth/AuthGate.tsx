@@ -64,9 +64,9 @@ function ConnectWalletPrompt({
     status === "AUTHENTICATING" || status === "SCANNING_TOKEN";
 
   return (
-    <div className="flex flex-col items-center justify-center gap-6 px-4 py-12 sm:py-20">
+    <div className="flex flex-col items-center justify-center gap-5 px-4 py-10 sm:py-16">
       {/* Wallet icon */}
-      <div className="flex h-16 w-16 items-center justify-center rounded-sm border border-midnight-border bg-midnight-card">
+      <div className="flex h-14 w-14 items-center justify-center rounded-sm border border-midnight-border bg-midnight-card">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
@@ -75,7 +75,7 @@ function ConnectWalletPrompt({
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="h-8 w-8 text-mn-primary-light"
+          className="h-7 w-7 text-mn-primary-light"
           aria-hidden="true"
         >
           <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
@@ -84,7 +84,7 @@ function ConnectWalletPrompt({
         </svg>
       </div>
 
-      <div className="space-y-2 text-center">
+      <div className="space-y-1.5 text-center">
         <h3 className="font-heading text-lg font-semibold text-mn-text">
           Wallet Required
         </h3>

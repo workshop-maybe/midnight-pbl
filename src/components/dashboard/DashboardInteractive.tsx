@@ -4,10 +4,6 @@
  * Client-only React island that fetches authenticated data
  * (commitments + credentials) and renders the interactive progress UI.
  *
- * Used as `<DashboardInteractive client:only="react" />` in the
- * dashboard Astro page. Wraps itself with QueryClientProvider since
- * each Astro island is an independent React root.
- *
  * MUST be client:only="react" because it uses:
  * - useAuthStore (reads auth state)
  * - useDashboard (uses authenticatedFetch)
@@ -23,7 +19,7 @@ import { CredentialsList } from "@/components/dashboard/CredentialsList";
 import { ClaimCredential } from "@/components/dashboard/ClaimCredential";
 import { AccountDetails } from "@/components/dashboard/AccountDetails";
 import { Button } from "@/components/ui/button";
-import { SkeletonCard } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { MIDNIGHT_PBL } from "@/config/midnight";
 import { AuthExpiredError } from "@/lib/api-utils";
 import type { CourseModule } from "@/types/course";
@@ -91,6 +87,64 @@ function DashboardInteractiveInner({
 }
 
 // =============================================================================
+// Loading Skeleton
+// =============================================================================
+
+function DashboardLoadingSkeleton() {
+  return (
+    <div className="space-y-10">
+      {/* Account skeleton */}
+      <div className="rounded-sm border border-midnight-border bg-midnight-card">
+        <div className="border-b border-midnight-border px-5 py-4">
+          <Skeleton className="h-4 w-20" />
+        </div>
+        <div className="px-5 py-5 space-y-5">
+          <div className="space-y-1.5">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <div className="space-y-1.5">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+          <div className="space-y-1.5">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-4 w-28" />
+          </div>
+        </div>
+      </div>
+
+      {/* Module grid skeleton */}
+      <div>
+        <Skeleton className="h-5 w-36 mb-5" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: MIDNIGHT_PBL.moduleCount }).map((_, i) => (
+            <div key={i} className="rounded-sm border border-midnight-border bg-midnight-card px-4 py-4 sm:px-6">
+              <div className="space-y-3">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-6 w-20" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Credential skeleton */}
+      <div>
+        <Skeleton className="h-5 w-36 mb-5" />
+        <div className="rounded-sm border border-midnight-border bg-midnight-card px-5 py-6">
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-10 w-40" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
 // Authenticated Dashboard Content
 // =============================================================================
 
@@ -113,28 +167,17 @@ function DashboardContent({
   } = useDashboard(courseId);
 
   if (isLoading) {
-    return (
-      <div className="space-y-8">
-        {/* Loading skeleton for module grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: MIDNIGHT_PBL.moduleCount }).map((_, i) => (
-            <SkeletonCard key={i} />
-          ))}
-        </div>
-      </div>
-    );
+    return <DashboardLoadingSkeleton />;
   }
 
   if (error) {
     const isExpired = error instanceof AuthExpiredError;
 
-    // Even on error, we can render modules from the server loader.
-    // Show an inline error for the commitments section only.
     return (
       <div className="space-y-10">
         {/* Module grid — always rendered from server data */}
         <section>
-          <h2 className="mb-4 text-lg font-semibold font-heading text-mn-text">
+          <h2 className="mb-5 text-lg font-semibold font-heading text-mn-text">
             Module Progress
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -155,8 +198,8 @@ function DashboardContent({
           </div>
         </section>
 
-        {/* Inline error for commitments */}
-        <div className="rounded-sm border border-error/30 bg-error/10 p-6 text-center">
+        {/* Inline error */}
+        <div className="rounded-sm border border-error/30 bg-error/10 p-4 text-center">
           <p className="text-sm text-error">
             {isExpired
               ? "Your session has expired. Please reconnect your wallet."
@@ -202,7 +245,7 @@ function DashboardContent({
 
       {/* Module progress grid */}
       <section>
-        <h2 className="mb-4 text-lg font-semibold font-heading text-mn-text">
+        <h2 className="mb-5 text-lg font-semibold font-heading text-mn-text">
           Module Progress
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -227,7 +270,7 @@ function DashboardContent({
 
       {/* Credential claim section */}
       <section>
-        <h2 className="mb-4 text-lg font-semibold font-heading text-mn-text">
+        <h2 className="mb-5 text-lg font-semibold font-heading text-mn-text">
           Course Credential
         </h2>
         <ClaimCredential
@@ -241,7 +284,7 @@ function DashboardContent({
       {/* Earned credentials */}
       {hasCredential && (
         <section>
-          <h2 className="mb-4 text-lg font-semibold font-heading text-mn-text">
+          <h2 className="mb-5 text-lg font-semibold font-heading text-mn-text">
             Earned Credentials
           </h2>
           <CredentialsList

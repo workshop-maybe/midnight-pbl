@@ -30,7 +30,6 @@ export function AccountDetails() {
   const [copied, setCopied] = useState(false);
   const [expiry, setExpiry] = useState<string>("");
 
-  // Update expiry every 30s
   useEffect(() => {
     if (!jwt) return;
     const payload = decodeJWTPayload(jwt);
@@ -60,65 +59,64 @@ export function AccountDetails() {
   return (
     <Card>
       <CardHeader>
-        <h3 className="text-sm font-semibold font-heading text-mn-text">
+        <h2 className="text-lg font-semibold font-heading text-mn-text">
           Account
-        </h3>
+        </h2>
       </CardHeader>
-      <CardBody className="space-y-4">
-        {/* Access Token */}
-        <div>
-          <dt className="text-xs text-mn-text-muted uppercase tracking-wide mb-1">
-            Access Token
-          </dt>
-          <dd className="text-sm font-mono">
-            {user.alias ? (
-              <span className="text-mn-primary font-medium">{user.alias}</span>
-            ) : (
-              <span className="text-mn-text-muted italic">Not minted</span>
-            )}
-          </dd>
-        </div>
+      <CardBody>
+        <dl className="grid gap-5 sm:grid-cols-3">
+          {/* Access Token */}
+          <div>
+            <dt className="text-xs text-mn-text-muted uppercase tracking-wider mb-1.5">
+              Access Token
+            </dt>
+            <dd className="text-sm font-mono">
+              {user.alias ? (
+                <span className="text-mn-primary font-medium">{user.alias}</span>
+              ) : (
+                <span className="text-mn-text-muted italic">Not minted</span>
+              )}
+            </dd>
+          </div>
 
-        {/* Wallet Address */}
-        <div>
-          <dt className="text-xs text-mn-text-muted uppercase tracking-wide mb-1">
-            Wallet
-          </dt>
-          <dd className="flex items-center gap-2">
-            <span
-              className="text-sm font-mono text-mn-text"
-              title={address}
-            >
-              {truncateAddress(address)}
-            </span>
-            <button
-              onClick={copyAddress}
-              className="text-xs text-mn-text-muted hover:text-mn-text transition-colors"
-              aria-label="Copy wallet address"
-            >
-              {copied ? "Copied" : "Copy"}
-            </button>
-          </dd>
-        </div>
-
-        {/* Session */}
-        <div>
-          <dt className="text-xs text-mn-text-muted uppercase tracking-wide mb-1">
-            Session
-          </dt>
-          <dd className="text-sm">
-            {jwt && expiry ? (
-              <span className="text-green-400">
-                Active
-                <span className="text-mn-text-muted ml-2 text-xs">
-                  {expiry} remaining
-                </span>
+          {/* Wallet Address */}
+          <div>
+            <dt className="text-xs text-mn-text-muted uppercase tracking-wider mb-1.5">
+              Wallet
+            </dt>
+            <dd className="flex items-center gap-2">
+              <span className="text-sm font-mono text-mn-text" title={address}>
+                {truncateAddress(address)}
               </span>
-            ) : (
-              <span className="text-mn-text-muted">Inactive</span>
-            )}
-          </dd>
-        </div>
+              <button
+                onClick={copyAddress}
+                className="text-xs text-mn-text-muted hover:text-mn-text transition-colors cursor-pointer"
+                aria-label="Copy wallet address"
+              >
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </dd>
+          </div>
+
+          {/* Session */}
+          <div>
+            <dt className="text-xs text-mn-text-muted uppercase tracking-wider mb-1.5">
+              Session
+            </dt>
+            <dd className="text-sm">
+              {jwt && expiry ? (
+                <span className="text-green-400">
+                  Active
+                  <span className="text-mn-text-muted ml-2 text-xs">
+                    {expiry} remaining
+                  </span>
+                </span>
+              ) : (
+                <span className="text-mn-text-muted">Inactive</span>
+              )}
+            </dd>
+          </div>
+        </dl>
       </CardBody>
     </Card>
   );
