@@ -21,6 +21,7 @@ import { AuthGate } from "@/components/auth/AuthGate";
 import { ModuleProgress } from "@/components/dashboard/ModuleProgress";
 import { CredentialsList } from "@/components/dashboard/CredentialsList";
 import { ClaimCredential } from "@/components/dashboard/ClaimCredential";
+import { AccountDetails } from "@/components/dashboard/AccountDetails";
 import { Button } from "@/components/ui/button";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { MIDNIGHT_PBL } from "@/config/midnight";
@@ -194,6 +195,11 @@ function DashboardContent({
 
   return (
     <div className="space-y-10">
+      {/* Account details */}
+      <section>
+        <AccountDetails />
+      </section>
+
       {/* Module progress grid */}
       <section>
         <h2 className="mb-4 text-lg font-semibold font-heading text-mn-text">
