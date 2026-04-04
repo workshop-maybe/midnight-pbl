@@ -123,7 +123,7 @@ samp {
 
 .prose-midnight {
   font-family: var(--font-prose);
-  font-size: 1.1875rem; /* 19px — slightly larger for comfortable reading */
+  font-size: 0.875rem; /* 14px */
   color: #b8b8bc; /* cool gray — easy on eyes against charcoal */
   line-height: 1.7;
 }
@@ -230,7 +230,7 @@ samp {
 .prose-midnight pre {
   position: relative;
   font-family: var(--font-mono);
-  font-size: 0.9rem;
+  font-size: 0.75rem; /* 12px */
   line-height: 1.6;
   background-color: #1e1e1e;
   border: 1px solid var(--mn-border-dark);
