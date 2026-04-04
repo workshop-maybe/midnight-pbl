@@ -13,6 +13,7 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { MeshProvider, CardanoWallet, useWallet } from "@meshsdk/react";
+import "@meshsdk/react/styles.css";
 import { authStore, useAuthStore } from "@/stores/auth-store";
 import {
   buildSession,
