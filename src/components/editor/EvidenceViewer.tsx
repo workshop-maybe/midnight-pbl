@@ -29,7 +29,7 @@ function isTipTapContent(content: unknown): content is JSONContent {
     typeof content === "object" &&
     content !== null &&
     "type" in content &&
-    typeof (content as Record<string, unknown>).type === "string"
+    (content as Record<string, unknown>).type === "doc"
   );
 }
 

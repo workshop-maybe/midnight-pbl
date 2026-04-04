@@ -13,7 +13,7 @@
  * (which imports useWallet from @meshsdk/react).
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useAuthStore } from "@/stores/auth-store";
 import { useTransaction } from "@/hooks/tx/use-transaction";
 import {
@@ -60,7 +60,7 @@ interface SaveEvidenceResponse {
  */
 function toJSONContent(evidence: EvidencePayload | null | undefined): JSONContent | undefined {
   if (!evidence) return undefined;
-  if ("type" in evidence && typeof evidence.type === "string") {
+  if ("type" in evidence && evidence.type === "doc") {
     return evidence as unknown as JSONContent;
   }
   return undefined;
@@ -96,13 +96,17 @@ export function EnrollmentFlow({
   const [saveError, setSaveError] = useState<string | null>(null);
   /** Once evidence is submitted, show the TX flow instead of the editor */
   const [evidenceSubmitted, setEvidenceSubmitted] = useState(false);
+  /** Track saved evidence hash to skip re-save on TX retry */
+  const savedEvidenceHashRef = useRef<string | null>(null);
 
   const isEditorEmpty = !editorContent ||
     (editorContent.type === "doc" &&
       (!editorContent.content || editorContent.content.length === 0 ||
-        (editorContent.content.length === 1 &&
-          editorContent.content[0].type === "paragraph" &&
-          (!editorContent.content[0].content || editorContent.content[0].content.length === 0))));
+        editorContent.content.every((node) =>
+          node.type === "paragraph" &&
+          (!node.content || node.content.length === 0 ||
+            node.content.every((c) => c.type === "text" && !c.text?.trim()))
+        )));
 
   /**
    * Full submission flow:
@@ -116,31 +120,35 @@ export function EnrollmentFlow({
     setIsSavingEvidence(true);
 
     try {
-      // Step 1: Save evidence to DB
       const evidenceHash = hashEvidence(editorContent);
 
-      const saveEndpoint = isUpdate
-        ? "/api/v2/course/student/assignment-commitment/update-evidence"
-        : "/api/v2/course/student/assignment-commitment/create";
+      // Step 1: Save evidence to DB (skip if already saved with same hash)
+      if (savedEvidenceHashRef.current !== evidenceHash) {
+        const saveEndpoint = isUpdate
+          ? "/api/v2/course/student/assignment-commitment/update-evidence"
+          : "/api/v2/course/student/assignment-commitment/create";
 
-      const saveBody: Record<string, unknown> = {
-        course_id: courseId,
-        evidence: editorContent,
-        evidence_hash: evidenceHash,
-      };
+        const saveBody: Record<string, unknown> = {
+          course_id: courseId,
+          evidence: editorContent,
+          evidence_hash: evidenceHash,
+        };
 
-      if (isUpdate) {
-        saveBody.course_module_code = moduleCode;
-      } else {
-        saveBody.slt_hash = sltHash;
-        saveBody.course_module_code = moduleCode;
+        if (isUpdate) {
+          saveBody.course_module_code = moduleCode;
+        } else {
+          saveBody.slt_hash = sltHash;
+          saveBody.course_module_code = moduleCode;
+        }
+
+        await gatewayAuthPost<SaveEvidenceResponse>(
+          saveEndpoint,
+          jwt,
+          saveBody
+        );
+
+        savedEvidenceHashRef.current = evidenceHash;
       }
-
-      await gatewayAuthPost<SaveEvidenceResponse>(
-        saveEndpoint,
-        jwt,
-        saveBody
-      );
 
       setIsSavingEvidence(false);
       setEvidenceSubmitted(true);
