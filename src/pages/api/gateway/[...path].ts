@@ -11,10 +11,12 @@ import { ANDAMIO_API_KEY, ANDAMIO_GATEWAY_URL } from "astro:env/server";
 /** Allowed API path prefixes. Reject anything outside this set. */
 const ALLOWED_PREFIXES = [
   "api/v2/course/user/",
+  "api/v2/course/student/",
   "api/v2/auth/login/",
   "api/v2/auth/session/",
   "api/v2/student/",
   "api/v2/tx/",
+  "api/v2/user/",
 ];
 
 function isAllowedPath(path: string): boolean {
