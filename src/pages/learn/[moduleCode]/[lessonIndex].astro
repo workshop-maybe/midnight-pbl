@@ -13,6 +13,7 @@ import { fetchCourseModules, fetchSLTs, fetchLesson } from "@/lib/gateway.server
 import { renderMarkdown } from "@/lib/markdown";
 import { COURSE_ID } from "astro:env/server";
 import { getPageTitle } from "@/config/branding";
+import CodeCopyButton from "@/components/CodeCopyButton.astro";
 
 export const getStaticPaths: GetStaticPaths = async () => {
   if (!COURSE_ID) return [];
@@ -87,7 +88,10 @@ const title = getPageTitle(lesson.title ?? "Lesson");
     <!-- Lesson content -->
     <section class="mb-12">
       {contentHtml ? (
-        <article class="prose-midnight" set:html={contentHtml} />
+        <>
+          <article class="prose-midnight" set:html={contentHtml} />
+          <CodeCopyButton />
+        </>
       ) : (
         <div class="rounded-sm border border-midnight-border bg-midnight-surface/50 p-8 text-center">
           <p class="text-mn-text-muted">

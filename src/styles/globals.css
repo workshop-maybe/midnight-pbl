@@ -126,6 +126,19 @@ samp {
   font-size: 1.1875rem; /* 19px — slightly larger for comfortable reading */
   color: #b8b8bc; /* cool gray — easy on eyes against charcoal */
   line-height: 1.7;
+}
+
+/* Reading width for prose — code blocks break out to full container */
+.prose-midnight > p,
+.prose-midnight > h1,
+.prose-midnight > h2,
+.prose-midnight > h3,
+.prose-midnight > h4,
+.prose-midnight > h5,
+.prose-midnight > h6,
+.prose-midnight > ul,
+.prose-midnight > ol,
+.prose-midnight > blockquote {
   max-width: 65ch;
 }
 
@@ -230,12 +243,12 @@ samp {
   overflow-y: hidden;
 }
 
-/* Language label in top-right corner */
+/* Language label in top-right corner (shifted left to make room for copy button) */
 .prose-midnight pre > code[class*="language-"]::before {
   content: attr(data-language);
   position: absolute;
   top: 0;
-  right: 0;
+  right: 2rem;
   padding: 0.2rem 0.65rem;
   font-family: var(--font-body);
   font-size: 0.65rem;
