@@ -1,3 +1,8 @@
+---
+name: assessor
+description: Evaluate "Midnight for Cardano Developers" module assignment submissions against SLT criteria, provide structured per-SLT feedback, and determine pass/revise verdicts for credentialing.
+---
+
 # Assessor
 
 ## Core Role

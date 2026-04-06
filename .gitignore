@@ -26,6 +26,10 @@ Thumbs.db
 
 # Wallet keys
 preprod_wallet/
+.midnight-seed
+
+# Learner scaffold workspace
+midnight-pbl-scaffold/
 
 # Claude local settings (keep settings.json, ignore local overrides)
 .claude/settings.local.json
