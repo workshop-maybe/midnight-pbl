@@ -1,0 +1,82 @@
+---
+/**
+ * Injects copy-to-clipboard buttons into all code blocks within .prose-midnight.
+ * Depends on .prose-midnight pre having position: relative (set in globals.css).
+ * Pure vanilla JS — no React island needed. Include once on any page with code blocks.
+ */
+---
+
+<script>
+  const ICON_COPY = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+  const ICON_CHECK = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+  const pres = document.querySelectorAll(".prose-midnight pre");
+
+  for (const pre of pres) {
+    if (pre.querySelector(".code-copy-btn")) continue;
+
+    const btn = document.createElement("button");
+    btn.className = "code-copy-btn";
+    btn.setAttribute("aria-label", "Copy code");
+    btn.innerHTML = ICON_COPY;
+
+    let resetTimeout: ReturnType<typeof setTimeout>;
+
+    btn.addEventListener("click", async () => {
+      const code = pre.querySelector("code");
+      if (!code) return;
+
+      try {
+        await navigator.clipboard.writeText(code.textContent ?? "");
+        btn.innerHTML = ICON_CHECK;
+        btn.classList.add("copied");
+
+        clearTimeout(resetTimeout);
+        resetTimeout = setTimeout(() => {
+          btn.innerHTML = ICON_COPY;
+          btn.classList.remove("copied");
+        }, 2000);
+      } catch {
+        // Clipboard API not available — fail silently
+      }
+    });
+
+    pre.appendChild(btn);
+  }
+</script>
+
+<style is:global>
+  .code-copy-btn {
+    position: absolute;
+    top: 0.35rem;
+    right: 0.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: none;
+    border-radius: 2px;
+    background-color: transparent;
+    color: #64748b;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s, background-color 0.15s;
+    z-index: 1;
+  }
+
+  .prose-midnight pre:hover .code-copy-btn {
+    opacity: 1;
+  }
+
+  .code-copy-btn:hover {
+    color: var(--mn-text-on-dark);
+    background-color: #2a2a2a;
+  }
+
+  .code-copy-btn.copied {
+    opacity: 1;
+    color: var(--mn-primary);
+  }
+</style>

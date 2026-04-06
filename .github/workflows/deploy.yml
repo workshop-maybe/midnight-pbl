@@ -1,0 +1,75 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [main]
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual deploy (e.g., content update)"
+        required: false
+        default: "Manual deploy"
+
+env:
+  PROJECT_ID: built-on-andamio
+  REGION: us-central1
+  SERVICE: midnight-pbl
+  REGISTRY: us-central1-docker.pkg.dev/built-on-andamio/andamio-apps
+  IMAGE: midnight-pbl
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            --build-arg ANDAMIO_API_KEY=${{ secrets.ANDAMIO_API_KEY }} \
+            --build-arg ANDAMIO_GATEWAY_URL=https://preprod.api.andamio.io \
+            --build-arg COURSE_ID=${{ secrets.COURSE_ID }} \
+            --build-arg PUBLIC_ACCESS_TOKEN_POLICY_ID=aa1cbea2524d369768283d7c8300755880fd071194a347cf0a4e274f \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest \
+            .
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE }} \
+            --image ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --port 3000 \
+            --allow-unauthenticated \
+            --memory 1Gi \
+            --update-env-vars ANDAMIO_API_KEY=${{ secrets.ANDAMIO_API_KEY }} \
+            --update-env-vars ANDAMIO_GATEWAY_URL=https://preprod.api.andamio.io \
+            --update-env-vars CARDANO_NETWORK=preprod \
+            --update-env-vars COURSE_ID=${{ secrets.COURSE_ID }}
+
+      - name: Show URL
+        run: |
+          URL=$(gcloud run services describe ${{ env.SERVICE }} --region ${{ env.REGION }} --format 'value(status.url)')
+          echo "## Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "[$URL]($URL)" >> $GITHUB_STEP_SUMMARY
+          echo "${{ github.event.inputs.reason || 'Push to main' }}" >> $GITHUB_STEP_SUMMARY

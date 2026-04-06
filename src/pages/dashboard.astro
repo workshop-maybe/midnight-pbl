@@ -1,0 +1,52 @@
+---
+/**
+ * Dashboard Page
+ *
+ * Shows the learner's progress across all modules, earned credentials,
+ * and the credential claim CTA.
+ *
+ * Server-side: fetches the public modules list (no auth required).
+ * Client-side: fetches authenticated data (commitments + credentials)
+ * via the DashboardInteractive React island.
+ *
+ * Route: /dashboard
+ */
+import AppLayout from "@/layouts/AppLayout.astro";
+import { fetchCourseModules } from "@/lib/gateway.server";
+import { getPageTitle } from "@/config/branding";
+import { MIDNIGHT_PBL } from "@/config/midnight";
+import { COURSE_ID } from "astro:env/server";
+import DashboardInteractive from "@/components/dashboard/DashboardInteractive";
+
+if (!COURSE_ID) {
+  return Astro.redirect("/");
+}
+
+// Fetch modules server-side (public endpoint, no auth)
+const modules = await fetchCourseModules(COURSE_ID);
+const modulesJson = JSON.stringify(modules);
+
+const title = getPageTitle("Dashboard");
+---
+
+<AppLayout title={title}>
+  <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+    <!-- Page header (server-rendered) -->
+    <div class="mb-10 sm:mb-12">
+      <h1 class="mb-3 text-2xl font-bold font-heading text-mn-text sm:text-3xl md:text-4xl">
+        Your Progress
+      </h1>
+      <p class="max-w-2xl text-base text-mn-text-muted sm:text-lg">
+        Track your enrollment status across all {MIDNIGHT_PBL.moduleCount}
+        modules and claim your credential when complete.
+      </p>
+    </div>
+
+    <!-- Interactive section — client-only React island -->
+    <DashboardInteractive
+      client:only="react"
+      modulesJson={modulesJson}
+      courseId={COURSE_ID}
+    />
+  </div>
+</AppLayout>

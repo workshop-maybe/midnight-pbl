@@ -1,0 +1,43 @@
+---
+/**
+ * Module card for the course overview page.
+ *
+ * Displays module number, title, description, and SLT count.
+ * Links to the first lesson of the module.
+ */
+import type { CourseModule } from "@/types/course";
+
+interface Props {
+  module: CourseModule;
+  index: number;
+}
+
+const { module, index } = Astro.props;
+
+const moduleCode = module.moduleCode ?? "";
+const sltCount = module.slts?.length ?? 0;
+---
+
+<a
+  href={`/learn/${moduleCode}/1`}
+  class="group flex items-baseline gap-4 py-4 transition-colors hover:bg-midnight-surface/50 sm:py-5 -mx-4 px-4 sm:-mx-6 sm:px-6"
+>
+  <span class="text-sm font-mono text-mn-text-muted w-6 shrink-0">
+    {index + 1}
+  </span>
+  <div class="min-w-0 flex-1">
+    <span class="text-base font-medium text-mn-text group-hover:text-mn-primary-hover">
+      {module.title ?? "Untitled Module"}
+    </span>
+    {module.description && (
+      <p class="mt-1 text-sm text-mn-text-muted line-clamp-1">
+        {module.description}
+      </p>
+    )}
+  </div>
+  {sltCount > 0 && (
+    <span class="text-xs text-mn-text-muted shrink-0">
+      {sltCount} {sltCount === 1 ? "lesson" : "lessons"}
+    </span>
+  )}
+</a>

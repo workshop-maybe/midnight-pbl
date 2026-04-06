@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build
+dist/
+build/
+.next/
+out/
+.react-router/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Wallet keys
+preprod_wallet/
+
+# Claude local settings (keep settings.json, ignore local overrides)
+.claude/settings.local.json
+
+# Learner progress (local state)
+progress.json

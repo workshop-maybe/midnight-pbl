@@ -1,0 +1,137 @@
+---
+/**
+ * Lesson Page
+ *
+ * Prerendered at build time — zero API calls at request time.
+ * Rebuild when course content changes.
+ */
+export const prerender = true;
+
+import type { GetStaticPaths } from "astro";
+import LearnLayout from "@/layouts/LearnLayout.astro";
+import { fetchCourseModules, fetchSLTs, fetchLesson } from "@/lib/gateway.server";
+import { renderMarkdown } from "@/lib/markdown";
+import { COURSE_ID } from "astro:env/server";
+import { getPageTitle } from "@/config/branding";
+import CodeCopyButton from "@/components/CodeCopyButton.astro";
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  if (!COURSE_ID) return [];
+
+  const modules = await fetchCourseModules(COURSE_ID);
+  const paths = [];
+
+  for (const mod of modules) {
+    if (!mod.moduleCode) continue;
+    const slts = await fetchSLTs(COURSE_ID, mod.moduleCode);
+
+    for (const slt of slts) {
+      const idx = slt.moduleIndex ?? 0;
+      const lesson = await fetchLesson(COURSE_ID, mod.moduleCode, idx);
+      if (!lesson) continue;
+
+      paths.push({
+        params: { moduleCode: mod.moduleCode, lessonIndex: String(idx) },
+        props: { module: mod, slts, lesson },
+      });
+    }
+  }
+
+  return paths;
+};
+
+const { moduleCode, lessonIndex: lessonIndexStr } = Astro.params;
+const { module, slts, lesson } = Astro.props;
+
+const lessonIndex = parseInt(lessonIndexStr!, 10);
+
+// Render lesson content to HTML
+const contentHtml = renderMarkdown(lesson.contentJson);
+
+// Determine prev/next indices from SLT list
+const sortedIndices = slts
+  .map((s: any) => s.moduleIndex ?? 0)
+  .sort((a: number, b: number) => a - b);
+const currentPos = sortedIndices.indexOf(lessonIndex);
+const prevIndex = currentPos > 0 ? sortedIndices[currentPos - 1] : null;
+const nextIndex =
+  currentPos < sortedIndices.length - 1
+    ? sortedIndices[currentPos + 1]
+    : null;
+const totalLessons = slts.length;
+
+const title = getPageTitle(lesson.title ?? "Lesson");
+---
+
+<LearnLayout
+  title={title}
+  moduleCode={moduleCode!}
+  moduleTitle={module.title ?? "Untitled Module"}
+  moduleDescription={module.description}
+  slts={slts}
+  currentLessonIndex={lessonIndex}
+  isAssignment={false}
+>
+  <div class="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
+    <!-- Lesson header -->
+    <div class="mb-6 sm:mb-8">
+      <p class="mb-2 text-sm text-mn-text-muted">
+        Lesson {lessonIndex} of {totalLessons}
+      </p>
+      {lesson.title && (
+        <h1 class="text-2xl font-bold font-heading text-mn-text sm:text-3xl">
+          {lesson.title}
+        </h1>
+      )}
+    </div>
+
+    <!-- Lesson content -->
+    <section class="mb-12">
+      {contentHtml ? (
+        <>
+          <article class="prose-midnight" set:html={contentHtml} />
+          <CodeCopyButton />
+        </>
+      ) : (
+        <div class="rounded-sm border border-midnight-border bg-midnight-surface/50 p-8 text-center">
+          <p class="text-mn-text-muted">
+            No content available for this lesson yet.
+          </p>
+        </div>
+      )}
+    </section>
+
+    <!-- Previous / Next navigation -->
+    <nav class="flex flex-col gap-3 border-t border-midnight-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+      {prevIndex !== null ? (
+        <a href={`/learn/${moduleCode}/${prevIndex}`} class="w-full sm:w-auto">
+          <button
+            class="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary border border-midnight-border bg-transparent text-mn-text hover:bg-midnight-surface px-5 py-2.5 text-sm rounded-sm"
+          >
+            <span class="truncate">Previous Lesson</span>
+          </button>
+        </a>
+      ) : (
+        <div />
+      )}
+
+      {nextIndex !== null ? (
+        <a href={`/learn/${moduleCode}/${nextIndex}`} class="w-full sm:w-auto">
+          <button
+            class="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary bg-mn-primary text-midnight hover:bg-mn-primary-hover shadow-sm px-5 py-2.5 text-sm rounded-sm"
+          >
+            <span class="truncate">Next Lesson</span>
+          </button>
+        </a>
+      ) : (
+        <a href={`/learn/${moduleCode}/assignment`} class="w-full sm:w-auto">
+          <button
+            class="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary bg-mn-primary text-midnight hover:bg-mn-primary-hover shadow-sm px-5 py-2.5 text-sm rounded-sm"
+          >
+            <span class="truncate">View Assignment</span>
+          </button>
+        </a>
+      )}
+    </nav>
+  </div>
+</LearnLayout>

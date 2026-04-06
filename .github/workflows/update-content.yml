@@ -1,0 +1,17 @@
+name: Update Content (Rebuild)
+
+# Rebuilds and deploys after content has been imported locally via andamio CLI.
+# Content import requires a signing key — run that on your machine, then trigger this.
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "What content changed?"
+        required: false
+        default: "Content update"
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit

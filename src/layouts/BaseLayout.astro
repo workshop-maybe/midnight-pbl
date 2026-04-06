@@ -1,0 +1,49 @@
+---
+/**
+ * Base HTML layout.
+ *
+ * Provides the <html> shell with charset, viewport, Google Fonts,
+ * and global CSS. All other layouts compose on top of this.
+ */
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+
+import "@/styles/globals.css";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Process shim: Mesh SDK transitive deps reference `process` which
+         doesn't exist in the browser. The full vite-plugin-node-polyfills
+         process shim can't be used because it shadows Node's real process.env
+         in the server build. This inline script runs before any module scripts
+         (which are deferred), providing the global before islands hydrate. -->
+    <script is:inline>
+      if (typeof globalThis.process === "undefined") {
+        globalThis.process = {
+          env: {},
+          version: "",
+          browser: true,
+          nextTick: function(cb) { var args = Array.prototype.slice.call(arguments, 1); queueMicrotask(function() { cb.apply(null, args); }); }
+        };
+      }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Urbanist:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-midnight text-mn-text font-body antialiased">
+    <slot />
+  </body>
+</html>
