@@ -1,4 +1,10 @@
-# What's in a Midnight Project
+# Lesson 101.2: What's in a Midnight Project
+
+**SLT:** I can identify the key components of a Midnight project and relate them to Cardano equivalents.
+
+**Type:** Exploration
+
+---
 
 ## The Scaffolded Project
 

@@ -1,4 +1,10 @@
-# Designing a Dual-Chain Credential Architecture
+# Lesson 106.1: Designing a Dual-Chain Credential Architecture
+
+**SLT:** I can design a dual-chain architecture where public credential verification runs on Cardano and private attribute proofs run on Midnight.
+
+**Type:** Exploration
+
+---
 
 ## The Design Question
 

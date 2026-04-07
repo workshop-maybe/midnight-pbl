@@ -1,6 +1,6 @@
 ---
-title: The Privacy Model in Practice
-code: 104
+title: "The Privacy Model in Practice"
+code: "104"
 ---
 
 ## SLTs

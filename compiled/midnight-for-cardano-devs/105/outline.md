@@ -1,6 +1,6 @@
 ---
-title: Token Economics and Application Design
-code: 105
+title: "Token Economics and Application Design"
+code: "105"
 ---
 
 ## SLTs

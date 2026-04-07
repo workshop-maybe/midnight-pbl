@@ -1,4 +1,10 @@
-# Privacy Annotations and the Client/Server Mental Model
+# Lesson 103.2: Privacy Annotations and the Client/Server Mental Model
+
+**SLT:** I can compare Compact's privacy annotations to the client-side/server-side mental model.
+
+**Type:** Exploration
+
+---
 
 ## You Already Make This Decision
 

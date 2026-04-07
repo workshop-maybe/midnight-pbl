@@ -1,6 +1,6 @@
 ---
-title: Compact for Cardano Developers
-code: 103
+title: "Compact for Cardano Developers"
+code: "103"
 ---
 
 ## SLTs

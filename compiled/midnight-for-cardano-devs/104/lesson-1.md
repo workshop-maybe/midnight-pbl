@@ -1,4 +1,10 @@
-# Build a Privacy-Preserving Application
+# Lesson 104.1: Build a Privacy-Preserving Application
+
+**SLT:** I can build a privacy-preserving application on Midnight that uses ZK proofs to hide user inputs while updating public state.
+
+**Type:** Developer Documentation
+
+---
 
 ## What You're Building
 

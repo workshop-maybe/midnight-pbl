@@ -1,4 +1,10 @@
-# Anonymous Membership with MerkleTree and Nullifiers
+# Lesson 105.3: Anonymous Membership with MerkleTree and Nullifiers
+
+**SLT:** I can use MerkleTree commitments and nullifiers to prove credential membership without exposing which credential.
+
+**Type:** Developer Documentation
+
+---
 
 ## Beyond Individual Verification
 

@@ -1,6 +1,6 @@
 ---
-title: Midnight Architecture Through Cardano Eyes
-code: 102
+title: "Midnight Architecture Through Cardano Eyes"
+code: "102"
 ---
 
 ## SLTs

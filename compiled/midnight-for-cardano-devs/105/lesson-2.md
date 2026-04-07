@@ -1,4 +1,10 @@
-# Verifying Credentials Without Revealing Them
+# Lesson 105.2: Verifying Credentials Without Revealing Them
+
+**SLT:** I can design a Compact circuit that verifies a credential without revealing its attributes.
+
+**Type:** Developer Documentation
+
+---
 
 ## The Problem
 
@@ -251,5 +257,5 @@ Design a Compact contract for professional certification verification:
 1. Define a `CertificationCredential` struct with: holder ID, certification type, issuing authority, issue date, expiry date
 2. Write a `verify_certification` circuit that checks: trusted authority, not expired, holder matches caller
 3. Decide what gets disclosed — the verifier needs to know the certification type but not the holder's identity
-4. Which disclosure level (boolean, derived, partial) is appropriate for each attribute?
-5. Write the witness function signature in TypeScript
+4. Write the witness function signature in TypeScript
+5. Which disclosure level (boolean, derived, partial) is appropriate for each attribute?

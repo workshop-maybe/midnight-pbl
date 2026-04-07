@@ -1,6 +1,6 @@
 ---
-title: Your First Midnight DApp
-code: 101
+title: "Your First Midnight DApp"
+code: "101"
 ---
 
 ## SLTs

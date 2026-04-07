@@ -1,4 +1,10 @@
-# Midnight's Relationship to Cardano
+# Lesson 102.3: Midnight's Relationship to Cardano
+
+**SLT:** I can describe Midnight's relationship to Cardano as a partner chain.
+
+**Type:** Exploration
+
+---
 
 ## What Midnight Is Not
 

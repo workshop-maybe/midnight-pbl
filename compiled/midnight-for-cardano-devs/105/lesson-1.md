@@ -1,4 +1,10 @@
-# Midnight's Token Architecture
+# Lesson 105.1: Midnight's Token Architecture
+
+**SLT:** I can explain Midnight's token architecture and map it to Cardano equivalents.
+
+**Type:** Exploration
+
+---
 
 ## One Token vs Two
 

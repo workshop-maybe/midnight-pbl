@@ -1,4 +1,10 @@
-# Writing a Compact Contract with disclose()
+# Lesson 103.1: Writing a Compact Contract with disclose()
+
+**SLT:** I can write a Compact contract that uses `disclose()` to control what crosses the public/private boundary.
+
+**Type:** Developer Documentation
+
+---
 
 ## One Function, Two Contracts
 

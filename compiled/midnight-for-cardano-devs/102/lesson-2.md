@@ -1,4 +1,10 @@
-# How Kachina Transcripts Handle Concurrency
+# Lesson 102.2: How Kachina Transcripts Handle Concurrency
+
+**SLT:** I can explain how Kachina transcripts handle concurrent state updates.
+
+**Type:** Exploration
+
+---
 
 ## The Problem Midnight Has to Solve
 

@@ -1,4 +1,10 @@
-# The Cost of Privacy
+# Lesson 104.3: The Cost of Privacy
+
+**SLT:** I can evaluate the cost of privacy in a concrete scenario and articulate when the cost is justified.
+
+**Type:** Exploration
+
+---
 
 ## Privacy Is Not Free
 

@@ -1,4 +1,10 @@
-# Two Transaction Lifecycles
+# Lesson 104.2: Two Transaction Lifecycles
+
+**SLT:** I can compare the transaction lifecycle of a shielded Midnight transaction to an equivalent Cardano transaction.
+
+**Type:** Exploration
+
+---
 
 ## Same Goal, Different Paths
 

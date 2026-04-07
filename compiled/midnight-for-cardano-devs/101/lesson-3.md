@@ -1,4 +1,10 @@
-# Proof Generation and the Transaction Lifecycle
+# Lesson 101.3: Proof Generation and the Transaction Lifecycle
+
+**SLT:** I can describe proof generation and its role in the Midnight transaction lifecycle.
+
+**Type:** Exploration
+
+---
 
 ## What the Wait Is For
 
@@ -151,6 +157,12 @@ The fundamental tradeoff: Cardano makes the user's experience fast (quick tx bui
 - Proof generation takes ~1.2 seconds for a simple circuit and will take longer for complex ones. At what circuit complexity does this become a UX problem? What's the threshold where users stop waiting?
 - The proof server sees your private inputs. For a voting app, it sees your vote. For a credential app, it sees your credentials. If the proof server ran on a third-party server (to avoid users running Docker), what trust model would you need?
 - On Cardano, you can predict ExUnits before submitting. On Midnight, proof generation time is harder to predict — it depends on circuit complexity and hardware. How would you communicate this uncertainty to users?
+
+---
+
+## What's Next
+
+Module 101 is complete. You've scaffolded a project (101.1), identified its components and their Cardano equivalents (101.2), and understood proof generation (101.3). Module 102 goes deeper into Midnight's architecture — the dual-state model, Kachina transcripts, and the partner chain relationship.
 
 ---
 

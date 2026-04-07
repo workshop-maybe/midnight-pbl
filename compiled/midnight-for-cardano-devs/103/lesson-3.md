@@ -1,4 +1,10 @@
-# Writing Witness Functions in TypeScript
+# Lesson 103.3: Writing Witness Functions in TypeScript
+
+**SLT:** I can implement a TypeScript witness function that provides private data to a Compact circuit.
+
+**Type:** Developer Documentation
+
+---
 
 ## Where Private Data Comes From
 

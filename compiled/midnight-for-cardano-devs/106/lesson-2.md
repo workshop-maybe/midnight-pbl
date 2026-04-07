@@ -1,4 +1,10 @@
-# When Cardano, When Midnight, When Both
+# Lesson 106.2: When Cardano, When Midnight, When Both
+
+**SLT:** I can evaluate a use case and recommend when to use Cardano, Midnight, or both.
+
+**Type:** Exploration
+
+---
 
 ## The Question the Course Built
 

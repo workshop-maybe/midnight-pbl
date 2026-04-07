@@ -1,4 +1,10 @@
-# Two State Models, One Goal
+# Lesson 102.1: Two State Models, One Goal
+
+**SLT:** I can compare Midnight's dual-state model to Cardano's EUTXO model.
+
+**Type:** Exploration
+
+---
 
 ## One Model vs Two
 
