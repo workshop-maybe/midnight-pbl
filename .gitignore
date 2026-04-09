@@ -13,6 +13,7 @@ build/
 .next/
 out/
 .react-router/
+compiled/
 
 # OS
 .DS_Store
