@@ -2,13 +2,20 @@
 
 Learn Midnight as a Cardano developer. 6 modules, 18 SLTs, hands-on from lesson one.
 
+One source of truth — whether you read it in a browser, learn it with an AI instructor, or fork it to teach your own version, the content, SLTs, assignments, and credentials are the same.
+
 Built on the [Andamio API](https://preprod.api.andamio.io).
 
 ## Three ways to use this repo
 
 ### 1. Take the course in Claude Code
 
-Clone the repo, open it in [Claude Code](https://claude.ai/code), and type `/learn`.
+```bash
+git clone https://github.com/workshop-maybe/midnight-pbl.git
+cd midnight-pbl
+```
+
+Open in [Claude Code](https://claude.ai/code) and type `/learn`.
 
 An AI instructor delivers lessons conversationally, guides exercises, and adapts to your level. When you finish a module, an assessor evaluates your work against the SLT rubrics. Progress is tracked locally in `progress.json`.
 
@@ -16,11 +23,17 @@ If you have an Andamio access token and headless auth set up, you can submit ass
 
 ### 2. Take the course on the web
 
-The course is deployed at [midnight-pbl.io](https://midnight-pbl.io). Lessons are prerendered, assignments are submitted on-chain via wallet connection.
+Visit [midnight-pbl.io](https://midnight-pbl.io) and start reading. Lessons are prerendered, assignments are submitted on-chain via wallet connection. No setup required.
 
 ### 3. Fork it as a template
 
-This repo is an open-source example of Andamio tooling for course delivery. It shows how to build a course app that works both as a deployed web app and as an agent-consumable learning experience. Fork it and adapt the structure for your own course.
+[Fork this repo](https://github.com/workshop-maybe/midnight-pbl/fork), then:
+
+1. Replace the content in `content/` with your own course
+2. Import to Andamio: `andamio course import-all compiled/<your-course> --course-id <YOUR_COURSE_ID>`
+3. Deploy — the same Astro app serves your course on the web, and the same `.claude/` harness powers agent-based learning
+
+This repo is an open-source example of Andamio tooling for course delivery. It shows how to build a course that works as a deployed web app, an agent-consumable experience, and a forkable template.
 
 ## Course: Midnight for Cardano Developers
 

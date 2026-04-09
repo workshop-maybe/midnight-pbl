@@ -52,6 +52,69 @@ const sorted = [...modules].sort((a, b) => {
       </p>
     </div>
 
+    <!-- Three ways to take this course -->
+    <div class="mb-12 sm:mb-16">
+      <h2 class="mb-6 text-sm font-medium uppercase tracking-wider text-mn-text-muted">
+        Three ways to learn
+      </h2>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <!-- Web -->
+        <div class="flex flex-col justify-between border border-midnight-border bg-midnight-surface p-5 rounded-sm">
+          <div>
+            <h3 class="font-heading text-base font-medium text-mn-text">On the web</h3>
+            <p class="mt-2 text-sm text-mn-text-muted leading-relaxed">
+              Browse lessons in your browser. Submit assignments on-chain via wallet.
+            </p>
+          </div>
+          <a
+            href={sorted.length > 0 ? `/learn/${sorted[0].moduleCode}/1` : "#"}
+            class="mt-4 inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary border border-midnight-border bg-transparent text-mn-text hover:bg-midnight-card px-4 py-2 text-sm rounded-sm min-h-[44px]"
+          >
+            Start learning
+          </a>
+        </div>
+
+        <!-- Agent harness -->
+        <div class="flex flex-col justify-between border border-midnight-border bg-midnight-surface p-5 rounded-sm">
+          <div>
+            <h3 class="font-heading text-base font-medium text-mn-text">In Claude Code</h3>
+            <p class="mt-2 text-sm text-mn-text-muted leading-relaxed">
+              Clone the repo, run <code class="text-mn-primary">/learn</code>. An AI instructor adapts to your pace.
+            </p>
+          </div>
+          <a
+            href="https://github.com/workshop-maybe/midnight-pbl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-4 inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary border border-midnight-border bg-transparent text-mn-text hover:bg-midnight-card px-4 py-2 text-sm rounded-sm min-h-[44px]"
+          >
+            Clone and <code class="text-mn-primary">/learn</code>
+          </a>
+        </div>
+
+        <!-- Fork as template -->
+        <div class="flex flex-col justify-between border border-midnight-border bg-midnight-surface p-5 rounded-sm">
+          <div>
+            <h3 class="font-heading text-base font-medium text-mn-text">Fork and teach</h3>
+            <p class="mt-2 text-sm text-mn-text-muted leading-relaxed">
+              Fork the repo, swap in your content, issue credentials on the same protocol.
+            </p>
+          </div>
+          <a
+            href="https://github.com/workshop-maybe/midnight-pbl/fork"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-4 inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mn-primary border border-midnight-border bg-transparent text-mn-text hover:bg-midnight-card px-4 py-2 text-sm rounded-sm min-h-[44px]"
+          >
+            Fork this repo
+          </a>
+        </div>
+      </div>
+      <p class="mt-4 text-sm text-mn-text-muted">
+        One source of truth. Three interfaces. Same SLTs, same assignments, same credentials.
+      </p>
+    </div>
+
     <!-- Module list -->
     <div class="mb-12 sm:mb-16">
       <h2 class="mb-6 text-sm font-medium uppercase tracking-wider text-mn-text-muted">
