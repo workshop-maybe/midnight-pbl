@@ -5,7 +5,8 @@
  * and server endpoints. Uses astro:env for validated env var access.
  */
 
-import { ANDAMIO_API_KEY, ANDAMIO_GATEWAY_URL } from "astro:env/server";
+import { ANDAMIO_API_KEY } from "astro:env/server";
+import { CURRENT_NETWORK } from "@/config/network";
 import { fetchWithRetry, withTimeout, ApiError } from "@/lib/api-utils";
 import {
   type CourseModule,
@@ -36,7 +37,7 @@ async function gatewayFetch(
   path: string,
   init?: RequestInit
 ): Promise<Response> {
-  const url = `${ANDAMIO_GATEWAY_URL}/api/v2${path}`;
+  const url = `${CURRENT_NETWORK.gatewayUrl}/api/v2${path}`;
 
   return withTimeout(
     fetchWithRetry(url, {

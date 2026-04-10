@@ -6,15 +6,18 @@ The app runs as a standalone Node.js server via Astro's Node adapter. The includ
 
 | Variable | Required | Context | Description |
 |----------|----------|---------|-------------|
-| `ANDAMIO_API_KEY` | Yes | Server (secret) | Andamio API key (never exposed to client) |
-| `ANDAMIO_GATEWAY_URL` | Yes | Server | Gateway URL, e.g. `https://preprod.api.andamio.io` |
-| `CARDANO_NETWORK` | No | Server | `preprod` (default), `mainnet`, or `preview` |
-| `COURSE_ID` | No | Server | Course ID for single-course deployment |
-| `PUBLIC_ACCESS_TOKEN_POLICY_ID` | No | Client | Policy ID for wallet auth |
-| `PUBLIC_GATEWAY_URL` | No | Client | Gateway URL exposed to client islands |
-| `PUBLIC_CARDANO_NETWORK` | No | Client | Network name exposed to client islands |
+| `ANDAMIO_API_KEY` | Yes | Server (secret) | Andamio API key. Runtime-resolved, never exposed to the client. |
+| `PUBLIC_ANDAMIO_NETWORK` | No | Client (public) | `preprod` (default) or `mainnet`. Selects a profile from `src/config/networks.ts`. |
 
-**Note:** Server variables are read at runtime from `process.env`. Client `PUBLIC_*` variables are embedded in the client bundle at build time. `ANDAMIO_GATEWAY_URL` and `COURSE_ID` are inlined at build time for server routes but `ANDAMIO_API_KEY` (secret) is always read at runtime.
+That's it. Every other network-dependent value (gateway URL, course ID, access token policy ID, Cardano network name) is resolved at build time from the profile you pick. To flip networks, change one variable.
+
+**Note:** `ANDAMIO_API_KEY` must be present at build time because Astro validates the env schema during `astro build`. `PUBLIC_ANDAMIO_NETWORK` is inlined into both server and client bundles at build time, so a rebuild is required to change networks.
+
+## Switching from preprod to mainnet
+
+1. Fill in `src/config/networks.ts` → `mainnet` entry with the real `accessTokenPolicyId` and `courseId`.
+2. Set `PUBLIC_ANDAMIO_NETWORK=mainnet` (in `.env` for local, or the `ANDAMIO_NETWORK` variable in `.github/workflows/deploy.yml`).
+3. Rebuild. That's it — the gateway URL, policy ID, course ID, and Cardano network flip together.
 
 ## Prerequisites
 
@@ -37,6 +40,8 @@ gcloud auth configure-docker us-central1-docker.pkg.dev
 # Build the image
 docker build \
   --platform linux/amd64 \
+  --build-arg ANDAMIO_API_KEY=<key> \
+  --build-arg PUBLIC_ANDAMIO_NETWORK=preprod \
   -t us-central1-docker.pkg.dev/built-on-andamio/andamio-apps/midnight-pbl:latest \
   .
 
@@ -55,9 +60,7 @@ gcloud run deploy midnight-pbl \
   --allow-unauthenticated \
   --memory 1Gi \
   --update-env-vars ANDAMIO_API_KEY=<key> \
-  --update-env-vars ANDAMIO_GATEWAY_URL=https://preprod.api.andamio.io \
-  --update-env-vars CARDANO_NETWORK=preprod \
-  --update-env-vars COURSE_ID=<course-id>
+  --update-env-vars PUBLIC_ANDAMIO_NETWORK=preprod
 ```
 
 ### 3. Map a custom domain (optional)
@@ -74,7 +77,11 @@ gcloud run domain-mappings create \
 ### 1. Build
 
 ```bash
-docker build --platform linux/amd64 -t midnight-pbl .
+docker build \
+  --platform linux/amd64 \
+  --build-arg ANDAMIO_API_KEY=<key> \
+  --build-arg PUBLIC_ANDAMIO_NETWORK=preprod \
+  -t midnight-pbl .
 ```
 
 ### 2. Run
@@ -83,9 +90,7 @@ docker build --platform linux/amd64 -t midnight-pbl .
 docker run -d \
   -p 3000:3000 \
   -e ANDAMIO_API_KEY=<key> \
-  -e ANDAMIO_GATEWAY_URL=https://preprod.api.andamio.io \
-  -e CARDANO_NETWORK=preprod \
-  -e COURSE_ID=<course-id> \
+  -e PUBLIC_ANDAMIO_NETWORK=preprod \
   midnight-pbl
 ```
 
@@ -94,7 +99,11 @@ docker run -d \
 ### 1. Install and build
 
 ```bash
+ANDAMIO_API_KEY=<key> \
+PUBLIC_ANDAMIO_NETWORK=preprod \
 npm ci
+ANDAMIO_API_KEY=<key> \
+PUBLIC_ANDAMIO_NETWORK=preprod \
 npm run build
 ```
 
@@ -102,9 +111,7 @@ npm run build
 
 ```bash
 ANDAMIO_API_KEY=<key> \
-ANDAMIO_GATEWAY_URL=https://preprod.api.andamio.io \
-CARDANO_NETWORK=preprod \
-COURSE_ID=<course-id> \
+PUBLIC_ANDAMIO_NETWORK=preprod \
 node ./dist/server/entry.mjs
 ```
 

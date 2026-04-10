@@ -5,6 +5,19 @@
  *
  * Dark-mode only. Warm charcoal palette with amber accent.
  * Content-first — no glassmorphism, no gradients, no glow.
+ *
+ * ── Source of truth for colors and fonts ──────────────────────────────
+ * This file is the ONE place where brand colors and fonts live. Tailwind
+ * v4 needs compile-time theme tokens, so they can't be imported from TS.
+ *
+ * When you fork this template:
+ *   1. Edit the `@theme` block below (colors + fonts).
+ *   2. Edit the `:root` block below (same values, for non-Tailwind CSS).
+ *   3. Edit src/config/branding.ts (text, links, asset paths).
+ *
+ * Keep `@theme` and `:root` in sync — they're intentionally duplicated so
+ * vanilla CSS (like .prose-midnight below) can reference --mn-* vars
+ * without depending on Tailwind utilities.
  */
 
 /* ── Tailwind v4 theme tokens ─────────────────────────────────────────── */

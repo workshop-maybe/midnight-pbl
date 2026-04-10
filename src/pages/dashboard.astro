@@ -15,15 +15,17 @@ import AppLayout from "@/layouts/AppLayout.astro";
 import { fetchCourseModules } from "@/lib/gateway.server";
 import { getPageTitle } from "@/config/branding";
 import { MIDNIGHT_PBL } from "@/config/midnight";
-import { COURSE_ID } from "astro:env/server";
+import { CURRENT_NETWORK } from "@/config/network";
 import DashboardInteractive from "@/components/dashboard/DashboardInteractive";
 
-if (!COURSE_ID) {
+const courseId = CURRENT_NETWORK.courseId;
+
+if (!courseId) {
   return Astro.redirect("/");
 }
 
 // Fetch modules server-side (public endpoint, no auth)
-const modules = await fetchCourseModules(COURSE_ID);
+const modules = await fetchCourseModules(courseId);
 const modulesJson = JSON.stringify(modules);
 
 const title = getPageTitle("Dashboard");
@@ -46,7 +48,7 @@ const title = getPageTitle("Dashboard");
     <DashboardInteractive
       client:only="react"
       modulesJson={modulesJson}
-      courseId={COURSE_ID}
+      courseId={courseId}
     />
   </div>
 </AppLayout>

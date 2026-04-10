@@ -6,7 +6,8 @@
  */
 
 import type { APIRoute } from "astro";
-import { ANDAMIO_API_KEY, ANDAMIO_GATEWAY_URL } from "astro:env/server";
+import { ANDAMIO_API_KEY } from "astro:env/server";
+import { CURRENT_NETWORK } from "@/config/network";
 import {
   isValidTransactionType,
   getTransactionUI,
@@ -43,7 +44,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const ui = getTransactionUI(txType);
-  const gatewayUrl = `${ANDAMIO_GATEWAY_URL}${ui.endpoint}`;
+  const gatewayUrl = `${CURRENT_NETWORK.gatewayUrl}${ui.endpoint}`;
 
   try {
     const headers: Record<string, string> = {

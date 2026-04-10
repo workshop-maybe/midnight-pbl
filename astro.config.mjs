@@ -35,38 +35,18 @@ export default defineConfig({
 
   env: {
     schema: {
+      // Server-only secret — runtime-resolved, never inlined to client.
       ANDAMIO_API_KEY: envField.string({
         context: "server",
         access: "secret",
       }),
-      ANDAMIO_GATEWAY_URL: envField.string({
-        context: "server",
-        access: "public",
-      }),
-      CARDANO_NETWORK: envField.string({
-        context: "server",
-        access: "public",
-        default: "preprod",
-        optional: true,
-      }),
-      COURSE_ID: envField.string({
-        context: "server",
-        access: "public",
-        optional: true,
-      }),
-      PUBLIC_ACCESS_TOKEN_POLICY_ID: envField.string({
+      // Selects which entry in src/config/networks.ts is active.
+      // Client-public so the same value drives both bundles; read via
+      // `CURRENT_NETWORK` from src/config/network.ts.
+      PUBLIC_ANDAMIO_NETWORK: envField.enum({
         context: "client",
         access: "public",
-        optional: true,
-      }),
-      PUBLIC_GATEWAY_URL: envField.string({
-        context: "client",
-        access: "public",
-        optional: true,
-      }),
-      PUBLIC_CARDANO_NETWORK: envField.string({
-        context: "client",
-        access: "public",
+        values: ["preprod", "mainnet"],
         default: "preprod",
         optional: true,
       }),

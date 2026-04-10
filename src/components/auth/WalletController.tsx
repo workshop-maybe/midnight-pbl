@@ -15,6 +15,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { MeshProvider, CardanoWallet, useWallet } from "@meshsdk/react";
 import "@meshsdk/react/styles.css";
 import { authStore, useAuthStore } from "@/stores/auth-store";
+import { CURRENT_NETWORK } from "@/config/network";
 import {
   buildSession,
   validateSignature,
@@ -37,15 +38,8 @@ const CIP30_DELAY_MS = 500;
 /** Polling interval for wallet address change detection */
 const WALLET_POLL_MS = 10_000;
 
-/**
- * Access token policy ID from env.
- * Astro uses PUBLIC_ prefix for client-accessible env vars.
- * Fall back to VITE_ prefix for backward compatibility.
- */
-const ACCESS_TOKEN_POLICY_ID =
-  import.meta.env.PUBLIC_ACCESS_TOKEN_POLICY_ID ??
-  import.meta.env.VITE_ACCESS_TOKEN_POLICY_ID ??
-  "";
+/** Andamio global access-token policy ID — resolved from the active network. */
+const ACCESS_TOKEN_POLICY_ID = CURRENT_NETWORK.accessTokenPolicyId;
 
 // =============================================================================
 // Helpers

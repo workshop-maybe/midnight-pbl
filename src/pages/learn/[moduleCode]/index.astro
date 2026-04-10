@@ -6,16 +6,17 @@ export const prerender = true;
 
 import type { GetStaticPaths } from "astro";
 import { fetchCourseModules, fetchSLTs } from "@/lib/gateway.server";
-import { COURSE_ID } from "astro:env/server";
+import { CURRENT_NETWORK } from "@/config/network";
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  if (!COURSE_ID) return [];
-  const modules = await fetchCourseModules(COURSE_ID);
+  const courseId = CURRENT_NETWORK.courseId;
+  if (!courseId) return [];
+  const modules = await fetchCourseModules(courseId);
   const paths = [];
 
   for (const mod of modules) {
     if (!mod.moduleCode) continue;
-    const slts = await fetchSLTs(COURSE_ID, mod.moduleCode);
+    const slts = await fetchSLTs(courseId, mod.moduleCode);
     const firstIndex = slts.length > 0 ? (slts[0].moduleIndex ?? 0) : 1;
     paths.push({
       params: { moduleCode: mod.moduleCode },

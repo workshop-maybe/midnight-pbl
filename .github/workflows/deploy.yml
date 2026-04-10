@@ -17,6 +17,10 @@ env:
   SERVICE: midnight-pbl
   REGISTRY: us-central1-docker.pkg.dev/built-on-andamio/andamio-apps
   IMAGE: midnight-pbl
+  # Flip to "mainnet" to ship a mainnet build. All other network-dependent
+  # values (gateway URL, course ID, access token policy ID) are resolved
+  # from src/config/networks.ts at build time.
+  ANDAMIO_NETWORK: preprod
 
 jobs:
   deploy:
@@ -44,9 +48,7 @@ jobs:
           docker build \
             --platform linux/amd64 \
             --build-arg ANDAMIO_API_KEY=${{ secrets.ANDAMIO_API_KEY }} \
-            --build-arg ANDAMIO_GATEWAY_URL=https://preprod.api.andamio.io \
-            --build-arg COURSE_ID=${{ secrets.COURSE_ID }} \
-            --build-arg PUBLIC_ACCESS_TOKEN_POLICY_ID=aa1cbea2524d369768283d7c8300755880fd071194a347cf0a4e274f \
+            --build-arg PUBLIC_ANDAMIO_NETWORK=${{ env.ANDAMIO_NETWORK }} \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }} \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest \
             .
@@ -63,9 +65,7 @@ jobs:
             --allow-unauthenticated \
             --memory 1Gi \
             --update-env-vars ANDAMIO_API_KEY=${{ secrets.ANDAMIO_API_KEY }} \
-            --update-env-vars ANDAMIO_GATEWAY_URL=https://preprod.api.andamio.io \
-            --update-env-vars CARDANO_NETWORK=preprod \
-            --update-env-vars COURSE_ID=${{ secrets.COURSE_ID }}
+            --update-env-vars PUBLIC_ANDAMIO_NETWORK=${{ env.ANDAMIO_NETWORK }}
 
       - name: Show URL
         run: |

@@ -10,14 +10,16 @@ export const prerender = true;
 import AppLayout from "@/layouts/AppLayout.astro";
 import ModuleCard from "@/components/course/ModuleCard.astro";
 import { fetchCourseModules } from "@/lib/gateway.server";
-import { COURSE_ID } from "astro:env/server";
+import { CURRENT_NETWORK } from "@/config/network";
 import { BRANDING } from "@/config/branding";
 
-if (!COURSE_ID) {
+const courseId = CURRENT_NETWORK.courseId;
+
+if (!courseId) {
   return Astro.redirect("/");
 }
 
-const modules = await fetchCourseModules(COURSE_ID);
+const modules = await fetchCourseModules(courseId);
 
 const sorted = [...modules].sort((a, b) => {
   const codeA = parseInt(a.moduleCode ?? "0", 10);
@@ -28,19 +30,21 @@ const sorted = [...modules].sort((a, b) => {
 
 <AppLayout title={BRANDING.fullTitle}>
   <div class="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
-    <!-- Midnight mark + wordmark -->
+    <!-- Hero symbol + wordmark -->
     <div class="mb-12 sm:mb-16 flex items-start gap-5">
-      <img
-        src="/midnight_logo_pack/02_Symbol/Midnight-RGB_Symbol-White.svg"
-        alt=""
-        class="mt-1 h-12 w-12 opacity-40 sm:h-14 sm:w-14"
-      />
+      {BRANDING.logo.heroSymbol && (
+        <img
+          src={BRANDING.logo.heroSymbol}
+          alt=""
+          class="mt-1 h-12 w-12 opacity-40 sm:h-14 sm:w-14"
+        />
+      )}
       <div>
         <p class="font-heading text-4xl font-bold tracking-tight text-mn-text sm:text-5xl md:text-6xl">
-          midnight pbl
+          {BRANDING.hero.title}
         </p>
         <p class="mt-1 font-heading text-lg text-mn-text-muted sm:text-xl">
-          From Aiken to Compact
+          {BRANDING.hero.subtitle}
         </p>
       </div>
     </div>
@@ -121,7 +125,7 @@ const sorted = [...modules].sort((a, b) => {
             Clone the repo, run <code class="text-mn-primary" style="font-family: var(--font-mono); font-size: 0.85em; background-color: #2a2a2a; border-radius: 2px; padding: 0.15em 0.4em;">/learn</code>. An AI instructor delivers lessons conversationally, guides exercises, and adapts to your pace. Progress tracked locally — no account needed.
           </p>
           <a
-            href="https://github.com/workshop-maybe/midnight-pbl"
+            href={BRANDING.links.github}
             target="_blank"
             rel="noopener noreferrer"
             class="text-mn-primary transition-colors hover:text-mn-text"
@@ -140,7 +144,7 @@ const sorted = [...modules].sort((a, b) => {
             Fork the repo, swap in your own content, issue credentials on the same protocol. The repo is the course — you own the compiler.
           </p>
           <a
-            href="https://github.com/workshop-maybe/midnight-pbl/fork"
+            href={BRANDING.links.githubFork}
             target="_blank"
             rel="noopener noreferrer"
             class="text-mn-primary transition-colors hover:text-mn-text"
@@ -164,7 +168,7 @@ const sorted = [...modules].sort((a, b) => {
         or could be better, that's a contribution waiting to happen.
       </p>
       <a
-        href="https://github.com/workshop-maybe/midnight-pbl/issues"
+        href={BRANDING.links.githubIssues}
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -176,15 +180,17 @@ const sorted = [...modules].sort((a, b) => {
       </a>
     </div>
 
-    <!-- Midnight mark -->
-    <div class="mt-16 flex justify-center sm:mt-20">
-      <a href="https://midnight.network" target="_blank" rel="noopener noreferrer">
-        <img
-          src="/midnight_logo_pack/01_symbol_wordmark/Horizontal/Midnight-RGB_Logo-Horizontal-White.svg"
-          alt="Midnight"
-          class="h-6 opacity-20 transition-opacity hover:opacity-40"
-        />
-      </a>
-    </div>
+    <!-- Wordmark footer -->
+    {BRANDING.logo.wordmark && (
+      <div class="mt-16 flex justify-center sm:mt-20">
+        <a href={BRANDING.links.midnight} target="_blank" rel="noopener noreferrer">
+          <img
+            src={BRANDING.logo.wordmark}
+            alt=""
+            class="h-6 opacity-20 transition-opacity hover:opacity-40"
+          />
+        </a>
+      </div>
+    )}
   </div>
 </AppLayout>

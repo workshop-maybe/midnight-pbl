@@ -27,13 +27,9 @@ Visit [midnight-pbl.io](https://midnight-pbl.io) and start reading. Lessons are 
 
 ### 3. Fork it as a template
 
-[Fork this repo](https://github.com/workshop-maybe/midnight-pbl/fork), then:
+[Fork this repo](https://github.com/workshop-maybe/midnight-pbl/fork), then follow the [Fork this template](#fork-this-template) checklist below.
 
-1. Replace the content in `content/` with your own course
-2. Import to Andamio: `andamio course import-all compiled/<your-course> --course-id <YOUR_COURSE_ID>`
-3. Deploy — the same Astro app serves your course on the web, and the same `.claude/` harness powers agent-based learning
-
-This repo is an open-source example of Andamio tooling for course delivery. It shows how to build a course that works as a deployed web app, an agent-consumable experience, and a forkable template.
+---
 
 ## Course: Midnight for Cardano Developers
 
@@ -59,6 +55,11 @@ content/midnight-for-cardano-devs/   # Source of truth for all course content
 
 compiled/                            # Build artifact for Andamio API import
 src/                                 # Astro 6 web app source
+  config/
+    branding.ts                      # Brand strings, links, asset paths
+    networks.ts                      # Network profiles (preprod/mainnet)
+    network.ts                       # Resolves CURRENT_NETWORK at build time
+  styles/globals.css                 # Colors, fonts, design tokens
 .claude/                             # Agent harness (skills, agents)
 ```
 
@@ -75,3 +76,96 @@ Content update workflow:
 andamio course import-all compiled/midnight-for-cardano-devs --course-id <COURSE_ID>
 npm run build
 ```
+
+## Switching networks
+
+Flip one env var:
+
+```bash
+PUBLIC_ANDAMIO_NETWORK=mainnet  # or "preprod"
+```
+
+Everything network-dependent (gateway URL, course ID, access token policy ID, Cardano network) is resolved at build time from `src/config/networks.ts`. See [`docs/DEPLOY.md`](./docs/DEPLOY.md) for the full list of env vars (there are only two).
+
+---
+
+## Fork this template
+
+This repo is structured so that a rebrand touches a known, small set of files. Work through the checklist below in order.
+
+### 1. Andamio prerequisites
+
+Before you can deploy, you need:
+
+- An **Andamio API key** — request one from the Andamio team.
+- A **course ID** — publish your course to Andamio (see step 4 below) and grab the ID that `andamio course import-all` prints.
+- A **minted access token** for each learner — the Andamio global access-token policy is per-network and already hardcoded in `src/config/networks.ts`. Learners connect a wallet that holds one of these tokens.
+
+### 2. Edit `src/config/branding.ts`
+
+This is the single source of truth for every brand-specific string and link. Edit every field:
+
+- `name`, `tagline`, `fullTitle`, `description`, `longDescription` — text shown in nav, titles, and meta tags
+- `hero.title`, `hero.subtitle` — the big title and subtitle on the homepage
+- `logo.favicon`, `logo.ogImage`, `logo.heroSymbol`, `logo.wordmark` — paths to asset files under `public/`
+- `links.midnight`, `links.andamio`, `links.docs` — external links shown in footer / landing
+- `links.github`, `links.githubFork`, `links.githubIssues` — **your** forked repo URLs
+
+### 3. Edit `src/config/networks.ts`
+
+Fill in `courseId` for the network(s) you're publishing to. `accessTokenPolicyId` stays as the Andamio global value unless you're running your own Andamio instance.
+
+```ts
+preprod: {
+  gatewayUrl: "https://preprod.api.andamio.io",
+  cardanoNetwork: "preprod",
+  accessTokenPolicyId: "aa1cbea2524d369768283d7c8300755880fd071194a347cf0a4e274f", // leave as-is
+  courseId: "<YOUR_COURSE_ID>",                                                    // fill this
+},
+```
+
+### 4. Edit `src/styles/globals.css`
+
+Colors and fonts live here, not in `branding.ts` — Tailwind v4's `@theme` block needs compile-time tokens. Edit the `@theme` block at the top, then duplicate the same values into the `:root` block right below. The file has inline comments telling you which tokens to change.
+
+### 5. Replace files in `public/`
+
+- `favicon.ico`
+- `og-image.png`
+- Any logo files referenced by `BRANDING.logo.*` (the default template uses a Midnight logo pack under `/midnight_logo_pack/`)
+
+### 6. Replace course content
+
+Swap out `content/midnight-for-cardano-devs/` for your own course directory. Keep the same structure:
+
+```
+content/<your-course>/
+  00-course.md
+  01-slts.md
+  lessons/module-<code>/
+  assignments/m<code>-assignment.md
+```
+
+Then import to Andamio and rebuild:
+
+```bash
+andamio course import-all compiled/<your-course> --course-id <YOUR_COURSE_ID>
+npm run build
+```
+
+### 7. Update the agent harness references
+
+The Claude Code agent harness (`.claude/`) points learners at the upstream repo's issue tracker in a few places. Update these to your fork:
+
+- `.claude/agents/assessor.md` — feedback URL
+- `.claude/skills/learn/SKILL.md` — feedback URL
+
+### 8. Deploy
+
+Follow [`docs/DEPLOY.md`](./docs/DEPLOY.md) — only two env vars to set.
+
+---
+
+## Architecture
+
+See [`CLAUDE.md`](./CLAUDE.md) for the full architectural overview (Astro rendering strategy, two-tier API access, React islands, auth flow, transaction flow, and key constraints).

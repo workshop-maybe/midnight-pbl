@@ -6,10 +6,13 @@ FROM base AS deps
 RUN npm ci
 
 FROM base AS build
+# ANDAMIO_API_KEY is a runtime secret, but Astro validates the env
+# schema during `astro build`, so it must be present at build time.
 ARG ANDAMIO_API_KEY
-ARG ANDAMIO_GATEWAY_URL
-ARG COURSE_ID
-ARG PUBLIC_ACCESS_TOKEN_POLICY_ID
+# PUBLIC_ANDAMIO_NETWORK picks a profile from src/config/networks.ts.
+# Everything network-dependent (gateway URL, course ID, access token
+# policy ID) is resolved from that profile at build time.
+ARG PUBLIC_ANDAMIO_NETWORK=preprod
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build

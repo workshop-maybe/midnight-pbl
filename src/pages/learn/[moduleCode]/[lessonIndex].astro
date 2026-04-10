@@ -11,23 +11,24 @@ import type { GetStaticPaths } from "astro";
 import LearnLayout from "@/layouts/LearnLayout.astro";
 import { fetchCourseModules, fetchSLTs, fetchLesson } from "@/lib/gateway.server";
 import { renderMarkdown } from "@/lib/markdown";
-import { COURSE_ID } from "astro:env/server";
+import { CURRENT_NETWORK } from "@/config/network";
 import { getPageTitle } from "@/config/branding";
 import CodeCopyButton from "@/components/CodeCopyButton.astro";
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  if (!COURSE_ID) return [];
+  const courseId = CURRENT_NETWORK.courseId;
+  if (!courseId) return [];
 
-  const modules = await fetchCourseModules(COURSE_ID);
+  const modules = await fetchCourseModules(courseId);
   const paths = [];
 
   for (const mod of modules) {
     if (!mod.moduleCode) continue;
-    const slts = await fetchSLTs(COURSE_ID, mod.moduleCode);
+    const slts = await fetchSLTs(courseId, mod.moduleCode);
 
     for (const slt of slts) {
       const idx = slt.moduleIndex ?? 0;
-      const lesson = await fetchLesson(COURSE_ID, mod.moduleCode, idx);
+      const lesson = await fetchLesson(courseId, mod.moduleCode, idx);
       if (!lesson) continue;
 
       paths.push({

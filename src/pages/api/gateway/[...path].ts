@@ -6,7 +6,8 @@
  */
 
 import type { APIRoute } from "astro";
-import { ANDAMIO_API_KEY, ANDAMIO_GATEWAY_URL } from "astro:env/server";
+import { ANDAMIO_API_KEY } from "astro:env/server";
+import { CURRENT_NETWORK } from "@/config/network";
 
 /** Allowed API path prefixes. Reject anything outside this set. */
 const ALLOWED_PREFIXES = [
@@ -40,7 +41,7 @@ async function proxyRequest(
     const url = new URL(request.url);
     const queryString = url.searchParams.toString();
     const fullPath = `${path}${queryString ? `?${queryString}` : ""}`;
-    const gatewayUrl = `${ANDAMIO_GATEWAY_URL}/${fullPath}`;
+    const gatewayUrl = `${CURRENT_NETWORK.gatewayUrl}/${fullPath}`;
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json;charset=utf-8",

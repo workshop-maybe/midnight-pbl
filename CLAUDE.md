@@ -43,11 +43,11 @@ compiled/midnight-for-cardano-devs/  # Import artifact — don't edit directly
 
 Content update workflow:
 ```bash
-andamio course import-all compiled/midnight-for-cardano-devs --course-id 5f74e419a291825c637626c196b40a7aa63313cad6e69916cfdec9e5
+andamio course import-all compiled/midnight-for-cardano-devs --course-id f681a4ba15d0ff635dbe574fa15a7dd2f1a233140b04b051865c88e6
 npm run build   # prerendered pages pull fresh content at build time
 ```
 
-Course ID (preprod): `5f74e419a291825c637626c196b40a7aa63313cad6e69916cfdec9e5`
+Course ID is version-controlled in `src/config/networks.ts` per network — no env var needed. Current preprod course: `f681a4ba15d0ff635dbe574fa15a7dd2f1a233140b04b051865c88e6`.
 
 ## Autonomous Session Guardrails
 
@@ -141,7 +141,7 @@ Lessons stored as TipTap JSON in the Andamio API. Rendered server-side: `src/lib
 
 - **Polyfills:** `vite-plugin-node-polyfills` provides crypto/buffer for Mesh SDK. `process` must be excluded (`globals: { process: false }`) or it shadows `process.env` in the server build.
 - **Env vars:** Defined via Astro's `env.schema` in `astro.config.mjs`. Server secrets use `access: "secret"`, client vars use `PUBLIC_` prefix. `ANDAMIO_API_KEY` is never exposed to the client.
-- **Docker build args:** `ANDAMIO_API_KEY`, `ANDAMIO_GATEWAY_URL`, and `COURSE_ID` are passed as build args because prerendered pages need them at build time.
+- **Docker build args:** `ANDAMIO_API_KEY` and `PUBLIC_ANDAMIO_NETWORK` are passed as build args because prerendered pages need them at build time. Network-dependent values (gateway URL, course ID, access token policy ID) are resolved from `src/config/networks.ts` during the build.
 
 ## Deploy
 

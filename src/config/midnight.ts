@@ -22,13 +22,3 @@ export const MIDNIGHT_PBL = {
     dashboard: "/dashboard",
   },
 } as const;
-
-/**
- * Public environment values exposed to client-side islands.
- */
-export interface PublicEnv {
-  ANDAMIO_GATEWAY_URL: string;
-  CARDANO_NETWORK: string;
-  COURSE_ID: string | undefined;
-  ACCESS_TOKEN_POLICY_ID: string | undefined;
-}
