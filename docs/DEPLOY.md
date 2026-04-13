@@ -40,6 +40,16 @@ export GCP_REGISTRY="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/your-repo"
 
 For the GitHub Actions deploy, set the same four values as repository variables in **Settings → Secrets and variables → Actions → Variables** (`GCP_PROJECT_ID`, `GCP_REGION`, `GCP_SERVICE`, `GCP_REGISTRY`). The workflow in `.github/workflows/deploy.yml` reads them at build time.
 
+You also need three repository secrets under **Settings → Secrets and variables → Actions → Secrets**:
+
+| Secret | Description |
+|--------|-------------|
+| `ANDAMIO_API_KEY` | Andamio API key. Passed as a Docker build arg and a Cloud Run env var. |
+| `WIF_PROVIDER` | Full resource name of the Workload Identity Federation provider (e.g. `projects/123/locations/global/workloadIdentityPools/github/providers/github`). |
+| `WIF_SERVICE_ACCOUNT` | Email of the GCP service account WIF impersonates (e.g. `deploy@your-project.iam.gserviceaccount.com`). The account needs `roles/run.admin`, `roles/artifactregistry.writer`, and `roles/iam.serviceAccountUser`. |
+
+See [Google's Workload Identity Federation guide](https://github.com/google-github-actions/auth#setting-up-workload-identity-federation) for creating the provider and service account.
+
 ## Option A: GCP Cloud Run (Recommended)
 
 ### 1. Build and push the Docker image
