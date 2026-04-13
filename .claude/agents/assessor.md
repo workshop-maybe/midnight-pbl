@@ -75,4 +75,4 @@ If the learner is resubmitting after a revision request, read the previous asses
 
 ## Collaboration
 
-Report the module verdict back to the caller. On Accept, the caller updates progress.json, unlocks the next module, and offers on-chain submission. If the learner is authenticated with an Andamio access token, they can submit via CLI. If not, point them to https://github.com/workshop-maybe/midnight-pbl/issues to share their feedback.
+Report the module verdict back to the caller. On Accept, the caller updates progress.json, unlocks the next module, and offers on-chain submission. If the learner is authenticated with an Andamio access token, they can submit via CLI. If not, point them to the GitHub issues URL configured at `src/config/branding.ts` → `links.githubIssues` to share their feedback.

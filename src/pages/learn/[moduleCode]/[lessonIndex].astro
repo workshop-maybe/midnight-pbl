@@ -14,6 +14,13 @@ import { renderMarkdown } from "@/lib/markdown";
 import { CURRENT_NETWORK } from "@/config/network";
 import { getPageTitle } from "@/config/branding";
 import CodeCopyButton from "@/components/CodeCopyButton.astro";
+import type { CourseModule, SLT, Lesson } from "@/types/course";
+
+interface Props {
+  module: CourseModule;
+  slts: SLT[];
+  lesson: Lesson;
+}
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const courseId = CURRENT_NETWORK.courseId;
@@ -42,7 +49,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
 };
 
 const { moduleCode, lessonIndex: lessonIndexStr } = Astro.params;
-const { module, slts, lesson } = Astro.props;
+const { module, slts, lesson } = Astro.props as Props;
 
 const lessonIndex = parseInt(lessonIndexStr!, 10);
 
@@ -51,8 +58,8 @@ const contentHtml = renderMarkdown(lesson.contentJson);
 
 // Determine prev/next indices from SLT list
 const sortedIndices = slts
-  .map((s: any) => s.moduleIndex ?? 0)
-  .sort((a: number, b: number) => a - b);
+  .map((s) => s.moduleIndex ?? 0)
+  .sort((a, b) => a - b);
 const currentPos = sortedIndices.indexOf(lessonIndex);
 const prevIndex = currentPos > 0 ? sortedIndices[currentPos - 1] : null;
 const nextIndex =

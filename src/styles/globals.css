@@ -634,31 +634,6 @@ samp {
   overflow: hidden;
 }
 
-/* Assignment link in sidebar — min 44px touch target */
-.sidebar-assignment-link {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 0.5rem;
-  min-height: 44px;
-  border-radius: 2px;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--mn-text-muted);
-  text-decoration: none;
-  transition: background-color 0.15s, color 0.15s;
-}
-
-.sidebar-assignment-link:hover {
-  background-color: #ffffff08;
-  color: var(--mn-text-on-dark);
-}
-
-.sidebar-assignment-link--active {
-  background-color: #d4a05318;
-  color: var(--mn-text-on-dark);
-}
-
 /* Desktop: show sidebar, hide toggle */
 @media (min-width: 1024px) {
   .learn-sidebar {

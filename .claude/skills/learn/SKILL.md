@@ -124,7 +124,7 @@ After an assignment is accepted, offer the learner two paths to submit their fee
 - This registers their evidence on-chain and starts the credential path.
 
 **If not authenticated:**
-- Tell the learner: "You can also share your feedback as a GitHub issue: https://github.com/workshop-maybe/midnight-pbl/issues"
+- Tell the learner they can share feedback as a GitHub issue. Read the URL from `src/config/branding.ts` → `links.githubIssues` so it stays correct across forks.
 - This ensures all learners have a way to contribute back regardless of wallet/auth setup.
 
 ### Phase 4: Progress Update

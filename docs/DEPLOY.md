@@ -26,8 +26,19 @@ That's it. Every other network-dependent value (gateway URL, course ID, access t
 - **GCP CLI** (`gcloud`) installed and authenticated (Cloud Run only):
   ```bash
   gcloud auth login
-  gcloud config set project built-on-andamio
+  gcloud config set project "$GCP_PROJECT_ID"
   ```
+
+The commands below use shell variables for the GCP target. Set these first (or substitute your own values inline):
+
+```bash
+export GCP_PROJECT_ID="your-gcp-project"
+export GCP_REGION="us-central1"
+export GCP_SERVICE="your-service-name"        # e.g. "midnight-pbl"
+export GCP_REGISTRY="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/your-repo"
+```
+
+For the GitHub Actions deploy, set the same four values as repository variables in **Settings → Secrets and variables → Actions → Variables** (`GCP_PROJECT_ID`, `GCP_REGION`, `GCP_SERVICE`, `GCP_REGISTRY`). The workflow in `.github/workflows/deploy.yml` reads them at build time.
 
 ## Option A: GCP Cloud Run (Recommended)
 
@@ -35,26 +46,26 @@ That's it. Every other network-dependent value (gateway URL, course ID, access t
 
 ```bash
 # Authenticate with GCP
-gcloud auth configure-docker us-central1-docker.pkg.dev
+gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev"
 
 # Build the image
 docker build \
   --platform linux/amd64 \
   --build-arg ANDAMIO_API_KEY=<key> \
   --build-arg PUBLIC_ANDAMIO_NETWORK=preprod \
-  -t us-central1-docker.pkg.dev/built-on-andamio/andamio-apps/midnight-pbl:latest \
+  -t "${GCP_REGISTRY}/${GCP_SERVICE}:latest" \
   .
 
 # Push to Artifact Registry
-docker push us-central1-docker.pkg.dev/built-on-andamio/andamio-apps/midnight-pbl:latest
+docker push "${GCP_REGISTRY}/${GCP_SERVICE}:latest"
 ```
 
 ### 2. Deploy to Cloud Run
 
 ```bash
-gcloud run deploy midnight-pbl \
-  --image us-central1-docker.pkg.dev/built-on-andamio/andamio-apps/midnight-pbl:latest \
-  --region us-central1 \
+gcloud run deploy "$GCP_SERVICE" \
+  --image "${GCP_REGISTRY}/${GCP_SERVICE}:latest" \
+  --region "$GCP_REGION" \
   --platform managed \
   --port 3000 \
   --allow-unauthenticated \
@@ -67,9 +78,9 @@ gcloud run deploy midnight-pbl \
 
 ```bash
 gcloud run domain-mappings create \
-  --service midnight-pbl \
-  --domain midnight.andamio.io \
-  --region us-central1
+  --service "$GCP_SERVICE" \
+  --domain your-domain.example.com \
+  --region "$GCP_REGION"
 ```
 
 ## Option B: Any Docker Host

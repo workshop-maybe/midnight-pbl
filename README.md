@@ -155,10 +155,14 @@ npm run build
 
 ### 7. Update the agent harness references
 
-The Claude Code agent harness (`.claude/`) points learners at the upstream repo's issue tracker in a few places. Update these to your fork:
+The Claude Code agent harness (`.claude/`) references the course directory by name in several skill and agent files (the instructor and assessor read lessons and rubrics from there). If you renamed the content directory in step 6, update those references:
 
-- `.claude/agents/assessor.md` — feedback URL
-- `.claude/skills/learn/SKILL.md` — feedback URL
+```bash
+grep -rl "midnight-for-cardano-devs" .claude/
+# then edit each match to point at content/<your-course>/
+```
+
+Feedback URLs are already resolved from `src/config/branding.ts` → `links.githubIssues`, so no extra step is needed once step 2 is done.
 
 ### 8. Deploy
 

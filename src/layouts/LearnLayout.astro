@@ -166,32 +166,31 @@ const sortedSlts = [...slts].sort(
                 </li>
               );
             })}
+            <li>
+              <a
+                href={`/learn/${moduleCode}/assignment`}
+                class={`sidebar-slt-item ${isAssignment ? "sidebar-slt-item--active" : ""}`}
+                aria-current={isAssignment ? "page" : undefined}
+              >
+                <span class="sidebar-slt-index" aria-hidden="true">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="2" width="10" height="12" rx="1.5"></rect>
+                    <path d="M6 5h4M6 8h4M6 11h2"></path>
+                  </svg>
+                </span>
+                <span class="sidebar-slt-text">Module Assignment</span>
+              </a>
+            </li>
           </ul>
-        </div>
-
-        <!-- Assignment link -->
-        <div class="border-t border-midnight-border px-2 py-3">
-          <a
-            href={`/learn/${moduleCode}/assignment`}
-            class={`sidebar-assignment-link ${isAssignment ? "sidebar-assignment-link--active" : ""}`}
-            aria-current={isAssignment ? "page" : undefined}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="3" y="2" width="10" height="12" rx="1.5"></rect>
-              <path d="M6 5h4M6 8h4M6 11h2"></path>
-            </svg>
-            <span>Module Assignment</span>
-          </a>
         </div>
       </nav>
     </aside>

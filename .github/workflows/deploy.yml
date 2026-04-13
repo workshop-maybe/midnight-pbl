@@ -12,11 +12,14 @@ on:
         default: "Manual deploy"
 
 env:
-  PROJECT_ID: built-on-andamio
-  REGION: us-central1
-  SERVICE: midnight-pbl
-  REGISTRY: us-central1-docker.pkg.dev/built-on-andamio/andamio-apps
-  IMAGE: midnight-pbl
+  # GCP deploy target — configure as repository variables in
+  # Settings → Secrets and variables → Actions → Variables.
+  # Required: GCP_PROJECT_ID, GCP_REGION, GCP_SERVICE, GCP_REGISTRY.
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
+  SERVICE: ${{ vars.GCP_SERVICE }}
+  REGISTRY: ${{ vars.GCP_REGISTRY }}
+  IMAGE: ${{ vars.GCP_SERVICE }}
   # Flip to "preprod" for a preprod build. All other network-dependent
   # values (gateway URL, course ID, access token policy ID) are resolved
   # from src/config/networks.ts at build time.

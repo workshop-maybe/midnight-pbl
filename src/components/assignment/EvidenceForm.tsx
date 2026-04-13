@@ -7,7 +7,7 @@
  * No Mesh SDK imports — safe for any rendering context.
  */
 
-import { useState, useCallback, type FormEvent } from "react";
+import { useState, useCallback, type SyntheticEvent } from "react";
 import { Button } from "@/components/ui/button";
 import type { EvidencePayload } from "@/hooks/api/course/use-assignment-commitment";
 
@@ -97,7 +97,7 @@ export function EvidenceForm({
   }, []);
 
   const handleSubmit = useCallback(
-    (e: FormEvent) => {
+    (e: SyntheticEvent<HTMLFormElement>) => {
       e.preventDefault();
       setValidationError(null);
 
