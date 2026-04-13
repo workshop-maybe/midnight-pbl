@@ -44,10 +44,9 @@ export const NETWORKS: Record<AndamioNetwork, NetworkConfig> = {
   mainnet: {
     gatewayUrl: "https://api.andamio.io",
     cardanoNetwork: "mainnet",
-    // TODO: fill when publishing to mainnet.
-    accessTokenPolicyId: "",
-    // TODO: fill when publishing to mainnet.
-    courseId: "",
+    accessTokenPolicyId:
+      "ff5d0640b5a2717646d3f3151d100d57d194fdfa88cacf03f9edc568",
+    courseId: "dd29e3da6227720a8600a41c95e4f40e74785e2831da036ac95843ff",
   },
 };
 

@@ -17,10 +17,10 @@ env:
   SERVICE: midnight-pbl
   REGISTRY: us-central1-docker.pkg.dev/built-on-andamio/andamio-apps
   IMAGE: midnight-pbl
-  # Flip to "mainnet" to ship a mainnet build. All other network-dependent
+  # Flip to "preprod" for a preprod build. All other network-dependent
   # values (gateway URL, course ID, access token policy ID) are resolved
   # from src/config/networks.ts at build time.
-  ANDAMIO_NETWORK: preprod
+  ANDAMIO_NETWORK: mainnet
 
 jobs:
   deploy:
