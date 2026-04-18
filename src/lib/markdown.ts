@@ -102,6 +102,50 @@ export function renderRawMarkdown(markdown: string): string {
   return sanitizeHtml(marked.parse(markdown) as string);
 }
 
+/**
+ * Extract plain text from TipTap JSON content, suitable for a meta
+ * description. Skips code blocks (too dense, poor SEO snippets),
+ * collapses whitespace, truncates at a word boundary, and appends
+ * an ellipsis if truncated.
+ *
+ * Returns empty string if the tree has no text content.
+ */
+export function extractPlainText(
+  contentJson: JSONContent | null | undefined,
+  maxLen = 160,
+): string {
+  if (!contentJson) return "";
+
+  const parts: string[] = [];
+  collectText(contentJson, parts);
+
+  const raw = parts.join(" ").replace(/\s+/g, " ").trim();
+  if (!raw) return "";
+  if (raw.length <= maxLen) return raw;
+
+  // Truncate at last word boundary before maxLen
+  const truncated = raw.slice(0, maxLen);
+  const lastSpace = truncated.lastIndexOf(" ");
+  const boundary = lastSpace > 80 ? lastSpace : maxLen;
+  return `${raw.slice(0, boundary).trimEnd()}…`;
+}
+
+function collectText(node: JSONContent, out: string[]): void {
+  // Skip dense blocks that degrade SEO snippets.
+  if (node.type === "codeBlock") return;
+
+  if (node.type === "text" && typeof node.text === "string") {
+    out.push(node.text);
+    return;
+  }
+
+  if (node.content) {
+    for (const child of node.content) {
+      collectText(child, out);
+    }
+  }
+}
+
 // =============================================================================
 // TipTap JSON -> Markdown extraction
 // =============================================================================
