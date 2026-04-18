@@ -12,6 +12,7 @@ import ModuleCard from "@/components/course/ModuleCard.astro";
 import { fetchCourseModules } from "@/lib/gateway.server";
 import { CURRENT_NETWORK } from "@/config/network";
 import { BRANDING } from "@/config/branding";
+import { buildCourseSchema, buildFAQPage, type FAQEntry } from "@/lib/seo/schema";
 
 const courseId = CURRENT_NETWORK.courseId;
 
@@ -26,9 +27,60 @@ const sorted = [...modules].sort((a, b) => {
   const codeB = parseInt(b.moduleCode ?? "0", 10);
   return codeA - codeB;
 });
+
+// Homepage SEO description: includes the niche keyword targets naturally.
+const homepageDescription =
+  "Midnight for Cardano developers. Learn to take Aiken smart contracts to Compact on Midnight Network, earn on-chain Midnight credentials, and practice proof-of-learned via project-based assignments.";
+
+// FAQ: single source of truth. Rendered once as visible HTML, once as
+// FAQPage JSON-LD. Keep the strings identical on both sides — Google
+// penalizes FAQ rich results when schema text drifts from the DOM.
+const FAQ_ENTRIES: FAQEntry[] = [
+  {
+    question: "Do I need ADA to take this course?",
+    answer:
+      "No. You sign in with a Cardano wallet, but the course itself is free and transactions are sponsored where needed, so you do not need ADA to earn credentials.",
+  },
+  {
+    question: "What is the difference between Aiken and Compact?",
+    answer:
+      "Aiken is a smart contract language for the Cardano main chain. Compact is the smart contract language for Midnight Network, which extends Cardano with privacy-preserving programmability. The course moves you from Aiken fundamentals into Compact so you can build on Midnight with context you already have.",
+  },
+  {
+    question: "Are my credentials verifiable outside Andamio?",
+    answer:
+      "Yes. Credentials are issued on-chain via the Andamio protocol, so anyone with the credential reference can verify authenticity independently of the Andamio app.",
+  },
+  {
+    question: "Can I fork this course?",
+    answer:
+      "Yes. The repo is the course. Fork it, edit src/config/branding.ts and the content/ directory, and ship your own version on the same Andamio tooling. The SEO plumbing is fork-safe — change BRANDING.siteUrl and every canonical, OG, sitemap, and robots.txt entry updates.",
+  },
+  {
+    question: "How long does the course take?",
+    answer:
+      "Self-paced across six modules. Most learners complete it in roughly 15 to 25 hours of focused work, depending on prior Cardano and smart-contract experience.",
+  },
+];
+
+const courseJsonLd = buildCourseSchema({
+  courseName: BRANDING.fullTitle,
+  courseDescription: homepageDescription,
+  siteUrl: BRANDING.siteUrl,
+  modules: sorted,
+  credentialAwarded:
+    "On-chain Midnight credential issued via the Andamio protocol",
+});
+
+const faqJsonLd = buildFAQPage(FAQ_ENTRIES);
 ---
 
-<AppLayout title={BRANDING.fullTitle}>
+<AppLayout
+  title={BRANDING.fullTitle}
+  description={homepageDescription}
+  canonical="/"
+  jsonLd={[courseJsonLd, faqJsonLd]}
+>
   <div class="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
     <!-- Hero symbol + wordmark -->
     <div class="mb-12 sm:mb-16 flex items-start gap-5">
@@ -88,6 +140,38 @@ const sorted = [...modules].sort((a, b) => {
         </a>.
       </p>
     </div>
+
+    <!-- What is a Midnight credential? -->
+    <section id="what-is-a-midnight-credential" class="mb-12 sm:mb-16 scroll-mt-24">
+      <h2 class="mb-4 font-heading text-2xl font-semibold text-mn-text sm:text-3xl">
+        What is a Midnight credential?
+      </h2>
+      <p class="max-w-2xl text-base text-mn-text-muted leading-relaxed sm:text-lg">
+        A Midnight credential is an on-chain record that you completed a
+        specific learning outcome in this course. It is minted via the
+        Andamio protocol, tied to your wallet, and verifiable by anyone —
+        no proprietary database, no platform lock-in. Because Andamio
+        runs on Cardano, the same infrastructure used for Midnight
+        badges also secures your other Cardano credentials, so a single
+        wallet proves a portfolio of learning.
+      </p>
+    </section>
+
+    <!-- How proof-of-learned works -->
+    <section id="how-proof-of-learned-works" class="mb-12 sm:mb-16 scroll-mt-24">
+      <h2 class="mb-4 font-heading text-2xl font-semibold text-mn-text sm:text-3xl">
+        How proof-of-learned works
+      </h2>
+      <p class="max-w-2xl text-base text-mn-text-muted leading-relaxed sm:text-lg">
+        Each module defines Student Learning Targets — concrete,
+        observable outcomes a learner can demonstrate. You work through
+        the lessons, complete the module assignment, and submit evidence
+        on-chain. When the evidence meets the rubric, an Andamio-issued
+        credential is minted to your wallet. Proof-of-learned means the
+        artifact of your learning is the credential itself, not a grade
+        locked inside a course platform.
+      </p>
+    </section>
 
     <!-- Three ways to take this course -->
     <div class="mb-12 sm:mb-16">
@@ -159,6 +243,25 @@ const sorted = [...modules].sort((a, b) => {
         One source of truth. Three interfaces. Same SLTs, same assignments, same credentials.
       </p>
     </div>
+
+    <!-- FAQ -->
+    <section id="faq" class="mb-12 sm:mb-16 scroll-mt-24">
+      <h2 class="mb-6 font-heading text-2xl font-semibold text-mn-text sm:text-3xl">
+        Frequently asked questions
+      </h2>
+      <dl class="divide-y divide-midnight-border border-t border-b border-midnight-border">
+        {FAQ_ENTRIES.map((entry) => (
+          <div class="py-5">
+            <dt class="mb-2 font-heading text-base font-semibold text-mn-text sm:text-lg">
+              {entry.question}
+            </dt>
+            <dd class="max-w-2xl text-sm text-mn-text-muted leading-relaxed sm:text-base">
+              {entry.answer}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
 
     <!-- Community -->
     <div class="border-t border-midnight-border pt-10 sm:pt-12">
