@@ -1,6 +1,7 @@
 import { defineConfig, envField } from "astro/config";
 import node from "@astrojs/node";
 import react from "@astrojs/react";
+import sitemap from "@astrojs/sitemap";
 import tailwindcss from "@tailwindcss/vite";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 // Site origin lives in BRANDING so forkers edit one file. `@astrojs/sitemap`
@@ -16,7 +17,16 @@ export default defineConfig({
     mode: "standalone",
   }),
 
-  integrations: [react()],
+  integrations: [
+    react(),
+    sitemap({
+      // Exclude auth-gated SSR pages. The homepage and every
+      // /learn/[moduleCode]/[lessonIndex] page are prerendered and
+      // auto-discovered by the integration.
+      filter: (page) =>
+        !page.includes("/dashboard") && !page.includes("/assignment"),
+    }),
+  ],
 
   vite: {
     plugins: [
