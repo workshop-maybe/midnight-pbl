@@ -1,0 +1,141 @@
+---
+/**
+ * Single owner of SEO-relevant head tags.
+ *
+ * Renders:
+ *   - `<title>`
+ *   - `<meta name="description">` and `<meta name="keywords">`
+ *   - `<link rel="canonical">`
+ *   - Open Graph (`og:*`) tags
+ *   - Twitter Card tags
+ *   - `theme-color`, `author`
+ *   - `robots` (with `noindex, nofollow` when requested)
+ *   - Optional `google-site-verification`
+ *   - One or more JSON-LD `<script type="application/ld+json">` blocks
+ *
+ * All defaults come from `BRANDING` — forkers who edit
+ * `src/config/branding.ts` inherit correct SEO behavior for their
+ * own course without touching this component.
+ */
+import { BRANDING } from "@/config/branding";
+
+export interface Props {
+  /** Page title. Rendered verbatim in `<title>` and OG/Twitter titles. */
+  title: string;
+  /** Meta description. Defaults to `BRANDING.description`. */
+  description?: string;
+  /**
+   * Canonical URL. Accepts either:
+   *   - an absolute URL (used as-is), or
+   *   - a path starting with `/` (prefixed with `BRANDING.siteUrl`).
+   * If omitted, derived from `Astro.url.pathname` + `BRANDING.siteUrl`.
+   */
+  canonical?: string;
+  /**
+   * OG image URL (absolute or path). Defaults to `BRANDING.logo.ogImage`.
+   * Paths are resolved against `BRANDING.siteUrl`.
+   */
+  ogImage?: string;
+  /** OG type. `"website"` for most pages, `"article"` for lessons/posts. */
+  ogType?: "website" | "article";
+  /**
+   * When true, emits `<meta name="robots" content="noindex, nofollow">`.
+   * The canonical tag is still rendered — Google recommends keeping
+   * canonicals on noindexed pages for consolidation.
+   */
+  noindex?: boolean;
+  /**
+   * JSON-LD objects to serialize into `<script type="application/ld+json">`
+   * tags. Each entry becomes a separate script tag. Pass output from
+   * `src/lib/seo/schema.ts` builders.
+   */
+  jsonLd?: unknown[];
+}
+
+const {
+  title,
+  description = BRANDING.description,
+  canonical: canonicalProp,
+  ogImage: ogImageProp,
+  ogType = "website",
+  noindex = false,
+  jsonLd = [],
+} = Astro.props;
+
+/** Resolve a path-or-absolute-URL against the site origin. */
+function toAbsoluteUrl(
+  pathOrUrl: string | undefined,
+  base: string,
+): string | undefined {
+  if (!pathOrUrl) return undefined;
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  const path = pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`;
+  return `${base}${path}`;
+}
+
+const siteUrl = BRANDING.siteUrl;
+const canonicalUrl =
+  toAbsoluteUrl(canonicalProp, siteUrl) ??
+  toAbsoluteUrl(Astro.url.pathname, siteUrl) ??
+  siteUrl;
+
+const ogImageUrl =
+  toAbsoluteUrl(ogImageProp, siteUrl) ??
+  toAbsoluteUrl(BRANDING.logo.ogImage, siteUrl);
+
+const keywordsAttr =
+  BRANDING.keywords && BRANDING.keywords.length > 0
+    ? BRANDING.keywords.join(", ")
+    : undefined;
+
+const twitterHandle = BRANDING.twitterHandle?.trim();
+const gscVerification = BRANDING.gscVerification?.trim();
+---
+
+<title>{title}</title>
+<meta name="description" content={description} />
+{keywordsAttr && <meta name="keywords" content={keywordsAttr} />}
+<meta name="author" content={BRANDING.name} />
+<meta name="theme-color" content="#000000" />
+
+<link rel="canonical" href={canonicalUrl} />
+
+{noindex ? (
+  <meta name="robots" content="noindex, nofollow" />
+) : (
+  <meta name="robots" content="index, follow" />
+)}
+
+{gscVerification && (
+  <meta name="google-site-verification" content={gscVerification} />
+)}
+
+<!-- Open Graph -->
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:type" content={ogType} />
+<meta property="og:url" content={canonicalUrl} />
+<meta property="og:site_name" content={BRANDING.name} />
+{ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
+{ogImageUrl && <meta property="og:image:width" content="1200" />}
+{ogImageUrl && <meta property="og:image:height" content="630" />}
+{ogImageUrl && (
+  <meta property="og:image:alt" content={`${BRANDING.name} — ${BRANDING.tagline}`} />
+)}
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+{ogImageUrl && <meta name="twitter:image" content={ogImageUrl} />}
+{twitterHandle && <meta name="twitter:site" content={twitterHandle} />}
+{twitterHandle && <meta name="twitter:creator" content={twitterHandle} />}
+
+<!-- Structured data (JSON-LD) -->
+{jsonLd.map((entry) => (
+  <script
+    is:inline
+    type="application/ld+json"
+    set:html={JSON.stringify(entry)}
+  />
+))}

@@ -3,9 +3,14 @@ import node from "@astrojs/node";
 import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
+// Site origin lives in BRANDING so forkers edit one file. `@astrojs/sitemap`
+// and prerendered canonical URLs both derive their absolute URLs from `site`.
+import { BRANDING } from "./src/config/branding.ts";
 
 export default defineConfig({
   output: "server",
+
+  site: BRANDING.siteUrl,
 
   adapter: node({
     mode: "standalone",

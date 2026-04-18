@@ -6,9 +6,10 @@
  * The sidebar toggle for mobile uses an inline <script> tag.
  */
 import AppLayout from "@/layouts/AppLayout.astro";
+import type { SEOProps } from "@/layouts/BaseLayout.astro";
 import type { SLT } from "@/types/course";
 
-interface Props {
+interface Props extends SEOProps {
   title: string;
   moduleCode: string;
   moduleTitle: string;
@@ -26,6 +27,12 @@ const {
   slts,
   currentLessonIndex,
   isAssignment,
+  description,
+  canonical,
+  ogImage,
+  ogType,
+  noindex,
+  jsonLd,
 } = Astro.props;
 
 // Sort SLTs by moduleIndex for consistent ordering
@@ -34,7 +41,15 @@ const sortedSlts = [...slts].sort(
 );
 ---
 
-<AppLayout title={title}>
+<AppLayout
+  title={title}
+  description={description}
+  canonical={canonical}
+  ogImage={ogImage}
+  ogType={ogType}
+  noindex={noindex}
+  jsonLd={jsonLd}
+>
   <div class="learn-layout">
     <!-- Mobile sidebar toggle (FAB) -->
     <button
