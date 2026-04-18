@@ -10,9 +10,13 @@ export const prerender = true;
 import type { GetStaticPaths } from "astro";
 import LearnLayout from "@/layouts/LearnLayout.astro";
 import { fetchCourseModules, fetchSLTs, fetchLesson } from "@/lib/gateway.server";
-import { renderMarkdown } from "@/lib/markdown";
+import { renderMarkdown, extractPlainText } from "@/lib/markdown";
 import { CURRENT_NETWORK } from "@/config/network";
-import { getPageTitle } from "@/config/branding";
+import { getPageTitle, BRANDING } from "@/config/branding";
+import {
+  buildLearningResourceSchema,
+  buildBreadcrumbList,
+} from "@/lib/seo/schema";
 import CodeCopyButton from "@/components/CodeCopyButton.astro";
 import type { CourseModule, SLT, Lesson } from "@/types/course";
 
@@ -69,6 +73,40 @@ const nextIndex =
 const totalLessons = slts.length;
 
 const title = getPageTitle(lesson.title ?? "Lesson");
+
+// SEO description: prefer the lesson's own description, then a trimmed
+// plain-text excerpt from the TipTap content, then a module-level
+// fallback so every lesson gets a unique, non-empty description.
+const fallbackDescription = `${module.title ?? "Module"} — lesson ${lessonIndex} of ${BRANDING.name}.`;
+const lessonDescription =
+  (lesson.description && lesson.description.trim()) ||
+  extractPlainText(lesson.contentJson, 160) ||
+  fallbackDescription;
+
+const canonicalPath = `/learn/${moduleCode}/${lessonIndex}`;
+
+const learningResourceJsonLd = buildLearningResourceSchema({
+  lesson,
+  module,
+  lessonIndex,
+  description: lessonDescription,
+  siteUrl: BRANDING.siteUrl,
+});
+
+// Module landing is `/learn/:moduleCode/` which redirects into the
+// first lesson at build time. Link the breadcrumb at `/1` so crawlers
+// land on a real prerendered page.
+const breadcrumbJsonLd = buildBreadcrumbList(
+  [
+    { name: "Home", item: "/" },
+    {
+      name: module.title ?? `Module ${moduleCode}`,
+      item: `/learn/${moduleCode}/1`,
+    },
+    { name: lesson.title ?? `Lesson ${lessonIndex}`, item: canonicalPath },
+  ],
+  BRANDING.siteUrl,
+);
 ---
 
 <LearnLayout
@@ -79,6 +117,11 @@ const title = getPageTitle(lesson.title ?? "Lesson");
   slts={slts}
   currentLessonIndex={lessonIndex}
   isAssignment={false}
+  description={lessonDescription}
+  canonical={canonicalPath}
+  ogImage={lesson.imageUrl}
+  ogType="article"
+  jsonLd={[learningResourceJsonLd, breadcrumbJsonLd]}
 >
   <div class="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
     <!-- Lesson header -->

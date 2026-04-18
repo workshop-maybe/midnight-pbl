@@ -27,6 +27,48 @@ export const BRANDING = {
   longDescription:
     "Six modules that take you from Aiken smart contract fundamentals to Compact development on Midnight Network. Complete assignments, submit evidence, and earn verifiable on-chain credentials through Andamio.",
 
+  /**
+   * Canonical origin for this deployment. Drives every SEO surface:
+   * `<link rel="canonical">`, `og:url`, sitemap entries, `robots.txt`.
+   *
+   * Forker edit point. Include the scheme, drop the trailing slash
+   * (e.g. `"https://courses.example.com"`, NOT `"https://example.com/"`).
+   * Every SEO consumer builds absolute URLs by concatenating a path onto
+   * this value — trailing slashes break that.
+   */
+  siteUrl: "https://midnight-pbl.io",
+
+  /**
+   * Twitter/X handle used for `twitter:site` (and rendered as `@handle`
+   * in share cards). Leave empty to omit the `twitter:site` meta tag.
+   * Forker edit point.
+   */
+  twitterHandle: "",
+
+  /**
+   * Google Search Console verification token. Paste the value Google
+   * gives you (the `content` attribute of their `<meta>` snippet) here.
+   * Leave empty to omit the meta tag entirely.
+   * Forker edit point.
+   */
+  gscVerification: "",
+
+  /**
+   * Niche SEO keywords emitted as `<meta name="keywords">`. Low ranking
+   * value on modern Google but useful for internal search / LLM crawlers.
+   * Forker edit point.
+   */
+  keywords: [
+    "midnight credentials",
+    "midnight badges",
+    "proof of learned",
+    "midnight for cardano developers",
+    "aiken to compact",
+    "compact language tutorial",
+    "learn midnight network",
+    "cardano credentials",
+  ] as readonly string[],
+
   /** Homepage hero text — the big title + subtitle at the top of `/`. */
   hero: {
     title: "midnight pbl",

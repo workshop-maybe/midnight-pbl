@@ -4,12 +4,35 @@
  *
  * Provides the <html> shell with charset, viewport, Google Fonts,
  * and global CSS. All other layouts compose on top of this.
+ *
+ * All SEO-relevant meta tags are owned by `<SEOHead />`. Do not add
+ * meta tags here directly — if a new SEO surface is needed, extend
+ * `SEOHead.astro` and the `SEOProps` type below.
  */
-interface Props {
+import SEOHead from "@/components/seo/SEOHead.astro";
+
+export interface SEOProps {
+  description?: string;
+  canonical?: string;
+  ogImage?: string;
+  ogType?: "website" | "article";
+  noindex?: boolean;
+  jsonLd?: unknown[];
+}
+
+interface Props extends SEOProps {
   title: string;
 }
 
-const { title } = Astro.props;
+const {
+  title,
+  description,
+  canonical,
+  ogImage,
+  ogType,
+  noindex,
+  jsonLd,
+} = Astro.props;
 
 import "@/styles/globals.css";
 ---
@@ -19,7 +42,15 @@ import "@/styles/globals.css";
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
+    <SEOHead
+      title={title}
+      description={description}
+      canonical={canonical}
+      ogImage={ogImage}
+      ogType={ogType}
+      noindex={noindex}
+      jsonLd={jsonLd}
+    />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <!-- Process shim: Mesh SDK transitive deps reference `process` which
          doesn't exist in the browser. The full vite-plugin-node-polyfills
