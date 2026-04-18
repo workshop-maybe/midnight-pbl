@@ -110,6 +110,7 @@ This is the single source of truth for every brand-specific string and link. Edi
 - `logo.favicon`, `logo.ogImage`, `logo.heroSymbol`, `logo.wordmark` — paths to asset files under `public/`
 - `links.midnight`, `links.andamio`, `links.docs` — external links shown in footer / landing
 - `links.github`, `links.githubFork`, `links.githubIssues` — **your** forked repo URLs
+- `siteUrl`, `twitterHandle`, `gscVerification`, `keywords` — SEO fields (see [SEO for forks](#seo-for-forks) below)
 
 ### 3. Edit `src/config/networks.ts`
 
@@ -167,6 +168,39 @@ Feedback URLs are already resolved from `src/config/branding.ts` → `links.gith
 ### 8. Deploy
 
 Follow [`docs/DEPLOY.md`](./docs/DEPLOY.md) — only two env vars to set.
+
+---
+
+## SEO for forks
+
+All SEO plumbing (canonical URLs, Open Graph, Twitter Cards, JSON-LD structured data, `sitemap.xml`, `robots.txt`) resolves from `src/config/branding.ts`. You do not need to edit layout or meta-tag code — just fill in the four fields below and replace the OG image.
+
+### BRANDING fields that matter
+
+In `src/config/branding.ts`:
+
+- **`siteUrl`** — the canonical origin for your deployment (e.g. `"https://courses.example.com"`). **No trailing slash.** Drives every absolute URL: `<link rel="canonical">`, `og:url`, sitemap entries, the `Sitemap:` directive in `robots.txt`, and every JSON-LD `url` field.
+- **`twitterHandle`** — your Twitter/X handle without the `@` (e.g. `"mycourse"`). Used for the `twitter:site` meta tag. Leave empty to omit the tag entirely.
+- **`gscVerification`** — the Google Search Console verification token. Paste only the `content` attribute value from Google's `<meta>` snippet. Leave empty to omit the tag.
+- **`keywords`** — an array of niche terms you want indexed. Low ranking value on modern Google but useful for internal search and LLM crawlers.
+
+### Replace `public/og-image.png`
+
+The default OG image is a `1200×630` PNG showing the Midnight wordmark on the course dark background. Swap in your own image with the same dimensions (Open Graph spec). `BRANDING.logo.ogImage` points at `/og-image.png` by default — keep the filename or update the config to match.
+
+### Google Search Console
+
+After your first deploy to the new `siteUrl`:
+
+1. Create a Search Console property at [search.google.com/search-console](https://search.google.com/search-console) for your domain.
+2. Choose the **HTML tag** verification method. Copy the `content` value from the `<meta>` snippet Google gives you.
+3. Paste that value into `BRANDING.gscVerification`. Rebuild and redeploy.
+4. Back in Search Console, click **Verify**.
+5. Submit your sitemap: in Search Console, go to **Sitemaps** and add `sitemap-index.xml`. The full URL is `{siteUrl}/sitemap-index.xml`.
+
+### Post-deploy validation
+
+A validation checklist (Rich Results Test, social card validators, sitemap/robots checks) lives at [`docs/plans/2026-04-18-001-feat-seo-phase-1-validation-checklist.md`](./docs/plans/2026-04-18-001-feat-seo-phase-1-validation-checklist.md). Run it after your first deploy to confirm rich result eligibility and that social cards render correctly.
 
 ---
 

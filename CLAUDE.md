@@ -146,3 +146,7 @@ Lessons stored as TipTap JSON in the Andamio API. Rendered server-side: `src/lib
 ## Deploy
 
 Auto-deploys on push to `main` via `.github/workflows/deploy.yml` → Docker build → GCP Artifact Registry → Cloud Run (`built-on-andamio` / `us-central1`). Manual content rebuilds via `update-content.yml` workflow dispatch.
+
+## SEO config
+
+All SEO plumbing (canonical, OG, Twitter, JSON-LD, sitemap, robots) resolves from `BRANDING` in `src/config/branding.ts` — specifically `siteUrl`, `twitterHandle`, `gscVerification`, and `keywords`. No hardcoded domain anywhere. See the "SEO for forks" section in `README.md` for forker-facing guidance.
