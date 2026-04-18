@@ -12,6 +12,16 @@ Run this once after the Phase 1 PR merges and the new head block, sitemap, and r
 
 All URLs below assume the production origin is `https://midnight-pbl.io`. For a fork, substitute the value of `BRANDING.siteUrl`.
 
+## 0. Pre-merge blockers — DO NOT MERGE until these are resolved
+
+These land in the same PR as the Phase 1 commits so the deploy ships with them already in place.
+
+- [ ] **OG image asset.** Replace the placeholder at `public/og-image.png` with a real 1200×630 PNG (Midnight wordmark + "From Aiken to Compact" on the course dark background). Verify with `npm run build` that it's copied into `dist/client/og-image.png`.
+
+Deferred (not blocking):
+- `BRANDING.twitterHandle` — intentionally skipped for launch. Can land later in a one-line follow-up commit without a new PR.
+- `BRANDING.gscVerification` — intentionally left empty. `midnight-pbl.io` is a GSC **Domain** property verified via DNS, so the HTML-tag meta is not needed. The field stays in `BRANDING` for forkers who lack DNS control and want HTML-tag verification on their own domain.
+
 ## 1. Google Rich Results Test — homepage
 
 URL: <https://search.google.com/test/rich-results>
@@ -89,14 +99,13 @@ For the homepage and 3 lesson pages from different modules:
 - [ ] `curl -sL https://midnight-pbl.io/dashboard | grep -E 'name="robots"'` — confirm `content="noindex, nofollow"`.
 - [ ] Repeat for one assignment URL (e.g. `/learn/101/assignment`) — same result.
 
-## 11. Google Search Console (after verification)
+## 11. Google Search Console
 
-Requires `BRANDING.gscVerification` to be set and redeployed first.
+`midnight-pbl.io` is already a GSC Domain property (DNS-verified). No `gscVerification` token needed.
 
-- [ ] GSC property is **Verified** (HTML tag method).
-- [ ] Sitemap `sitemap-index.xml` submitted in GSC — status `Success`, discovered URL count matches step 8.
-- [ ] Request indexing for the homepage and the top 3 lesson URLs.
-- [ ] Baseline metric captured: GSC Performance tab shows zero impressions/clicks on merge day. Re-check at the 2-week and 4-week marks against the origin doc's success criteria.
+- [ ] In GSC, select the `midnight-pbl.io` property. Sidebar → **Sitemaps** → submit `sitemap-index.xml` — confirm status `Success` and discovered URL count matches step 8.
+- [ ] Sidebar → **URL Inspection** → paste the homepage URL → click **Request indexing**. Repeat for the top 3 lesson URLs.
+- [ ] Baseline metric captured: Performance tab shows zero impressions/clicks on merge day. Re-check at the 2-week and 4-week marks against the origin doc's success criteria.
 
 ## 12. Fork-safety grep
 
@@ -104,4 +113,4 @@ Requires `BRANDING.gscVerification` to be set and redeployed first.
 
 ---
 
-If every checkbox above is green and pasted into the PR, Phase 1 is done. Any red items become follow-up issues, not blockers on the merge — indexing takes days to weeks regardless.
+Section 0 is pre-merge and blocks shipping. Sections 1–12 run post-deploy; their red items become follow-up issues, not blockers on the merge — indexing takes days to weeks regardless. Paste section-1-through-12 results into the PR body or a merge comment.
