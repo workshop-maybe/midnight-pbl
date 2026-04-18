@@ -89,12 +89,25 @@ export function buildCourseSchema(args: BuildCourseSchemaArgs) {
     ],
     hasPart: modules
       .filter((m) => m.moduleCode)
-      .map((m) => ({
-        "@type": "Course",
-        name: m.title ?? `Module ${m.moduleCode}`,
-        ...(m.description ? { description: m.description } : {}),
-        url: absUrl(siteUrl, `/learn/${m.moduleCode}/1`),
-      })),
+      .map((m) => {
+        const moduleName = m.title ?? `Module ${m.moduleCode}`;
+        return {
+          "@type": "Course",
+          name: moduleName,
+          // Google's Course rich result requires description + provider on every
+          // Course item, including children. Fall back to a derived description
+          // when the API doesn't supply one so no child item is invalid.
+          description:
+            m.description ??
+            `${moduleName} — a module of ${courseName}.`,
+          url: absUrl(siteUrl, `/learn/${m.moduleCode}/1`),
+          provider: {
+            "@type": "Organization",
+            name: "Andamio",
+            url: BRANDING.links.andamio,
+          },
+        };
+      }),
   };
 }
 
@@ -155,10 +168,11 @@ export function buildBreadcrumbList(items: BreadcrumbItem[], siteUrl: string) {
 // FAQPage
 // =============================================================================
 
-export function buildFAQPage(entries: FAQEntry[]) {
+export function buildFAQPage(entries: FAQEntry[], name?: string) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
+    name: name ?? `${BRANDING.name} — Frequently Asked Questions`,
     mainEntity: entries.map((entry) => ({
       "@type": "Question",
       name: entry.question,
