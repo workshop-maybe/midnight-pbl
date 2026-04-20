@@ -7,7 +7,7 @@ tooling_used:
   - "manual keyboard walk"
   - "manual screen-reader walk (Orca 44 on Linux)"
 status: draft
-site_commit: 065ed99
+site_commit: b089512
 ---
 
 # Marketing + dashboard + auth — Accessibility & Readability Audit
