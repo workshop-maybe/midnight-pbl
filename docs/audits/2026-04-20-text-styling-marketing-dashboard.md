@@ -24,8 +24,12 @@ Every URL audited, with the environment each was tested against.
 
 | URL | Env | Auth required |
 |---|---|---|
-| `/learn/101/1` | `https://midnight-pbl.io` | no |
-| … | … | … |
+| `/` | `https://midnight-pbl.io` | no |
+| `/learn` | `https://midnight-pbl.io` | no (redirects to `/` via `<meta http-equiv="refresh">` — see `src/pages/learn/index.astro:6`) |
+| `/dashboard` | `https://midnight-pbl.io` | yes |
+| `/learn/101/assignment` | `https://midnight-pbl.io` | yes |
+| `/404` | `https://midnight-pbl.io` | no |
+| `/500` | `https://midnight-pbl.io` | no |
 
 ## Findings
 
