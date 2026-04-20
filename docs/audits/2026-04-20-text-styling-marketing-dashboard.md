@@ -4,8 +4,8 @@ surface: marketing-dashboard
 tooling_used:
   - "@axe-core/cli@4.11.2 (rule engine axe-core 4.11.3)"
   - "Lighthouse 13.1.0 (npx headless Chrome)"
-  - "manual keyboard walk (pending — Unit 5)"
-  - "manual screen-reader walk (pending — Unit 5; target tool: Orca 44 on Linux)"
+  - "manual keyboard walk"
+  - "manual screen-reader walk (Orca 44 on Linux)"
 status: draft
 site_commit: 065ed99
 ---
