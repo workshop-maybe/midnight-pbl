@@ -61,7 +61,8 @@ export const BRANDING = {
   keywords: [
     "midnight credentials",
     "midnight badges",
-    "proof of learned",
+    "andamio credentials",
+    "andamio learning credentials",
     "midnight for cardano developers",
     "aiken to compact",
     "compact language tutorial",
