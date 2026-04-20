@@ -47,10 +47,16 @@ jobs:
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
       - name: Build and push
+        env:
+          # Exposed to the step shell so `--secret id=...,env=ANDAMIO_API_KEY`
+          # can resolve it without interpolating the value into the command
+          # (which would land it in the step log, albeit masked).
+          ANDAMIO_API_KEY: ${{ secrets.ANDAMIO_API_KEY }}
+          DOCKER_BUILDKIT: 1
         run: |
           docker build \
             --platform linux/amd64 \
-            --build-arg ANDAMIO_API_KEY=${{ secrets.ANDAMIO_API_KEY }} \
+            --secret id=ANDAMIO_API_KEY,env=ANDAMIO_API_KEY \
             --build-arg PUBLIC_ANDAMIO_NETWORK=${{ env.ANDAMIO_NETWORK }} \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }} \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest \

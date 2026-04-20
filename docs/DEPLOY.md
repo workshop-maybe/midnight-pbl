@@ -44,7 +44,7 @@ You also need three repository secrets under **Settings → Secrets and variable
 
 | Secret | Description |
 |--------|-------------|
-| `ANDAMIO_API_KEY` | Andamio API key. Passed as a Docker build arg and a Cloud Run env var. |
+| `ANDAMIO_API_KEY` | Andamio API key. Mounted as a BuildKit secret at build time and set as a Cloud Run env var at runtime. |
 | `WIF_PROVIDER` | Full resource name of the Workload Identity Federation provider (e.g. `projects/123/locations/global/workloadIdentityPools/github/providers/github`). |
 | `WIF_SERVICE_ACCOUNT` | Email of the GCP service account WIF impersonates (e.g. `deploy@your-project.iam.gserviceaccount.com`). The account needs `roles/run.admin`, `roles/artifactregistry.writer`, and `roles/iam.serviceAccountUser`. |
 
@@ -58,10 +58,13 @@ See [Google's Workload Identity Federation guide](https://github.com/google-gith
 # Authenticate with GCP
 gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev"
 
-# Build the image
+# Build the image. Export ANDAMIO_API_KEY in your shell first; BuildKit
+# (enabled by default on recent Docker, otherwise set DOCKER_BUILDKIT=1)
+# is required for the --secret flag.
+export ANDAMIO_API_KEY=<key>
 docker build \
   --platform linux/amd64 \
-  --build-arg ANDAMIO_API_KEY=<key> \
+  --secret id=ANDAMIO_API_KEY,env=ANDAMIO_API_KEY \
   --build-arg PUBLIC_ANDAMIO_NETWORK=preprod \
   -t "${GCP_REGISTRY}/${GCP_SERVICE}:latest" \
   .
@@ -98,9 +101,13 @@ gcloud run domain-mappings create \
 ### 1. Build
 
 ```bash
+# Export ANDAMIO_API_KEY in your shell first; BuildKit (enabled by
+# default on recent Docker, otherwise set DOCKER_BUILDKIT=1) is
+# required for the --secret flag.
+export ANDAMIO_API_KEY=<key>
 docker build \
   --platform linux/amd64 \
-  --build-arg ANDAMIO_API_KEY=<key> \
+  --secret id=ANDAMIO_API_KEY,env=ANDAMIO_API_KEY \
   --build-arg PUBLIC_ANDAMIO_NETWORK=preprod \
   -t midnight-pbl .
 ```
