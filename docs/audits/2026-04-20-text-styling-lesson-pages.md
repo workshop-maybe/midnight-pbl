@@ -200,7 +200,7 @@ Tab through the page in order. For every focus stop, record whether focus is **v
 
 | # | Expected focus target | Visible? (Y/N) | Notes | WCAG |
 |---|---|---|---|---|
-| 1 | Skip-link (if present) — first Tab from URL bar | – | Not observed as a distinct first stop — to confirm in a follow-up pass | 2.4.1 |
+| 1 | Skip-link (if present) — first Tab from URL bar | – | Not observed as a distinct first stop — to confirm in a follow-up pass. Deferred — not a WCAG failure (2.4.1 is satisfied by other bypass mechanisms; no skip-link is not a per-se failure). | 2.4.1 |
 | 2 | Main-nav logo / home link | Y | Ring visible on all top-nav stops | 2.4.7 |
 | 3 | Main-nav section links (left → right) | Y |  | 2.4.7 |
 | 4 | Main-nav auth / wallet control | Y |  | 2.4.7 |
@@ -228,7 +228,7 @@ Blast radius: lesson pages **and likely marketing/dashboard** wherever `<CodeCop
 
 Keyboard traps / issues: none observed — Tab eventually reaches "Next lesson" without trapping.
 
-Focus-appearance summary (WCAG 2.4.11 / 2.4.13): where the ring IS visible (top nav, sidebar, prev/next, footer), it's the global `outline: 2px solid var(--mn-primary)` at `outline-offset: 2px` defined in `src/styles/globals.css:114–117`. Contrast against the `#1e1e1e`-family dark surface needs a spot check, but the primary token is the brand green — likely passes ≥ 3:1. To measure in a follow-up pass.
+Focus-appearance summary (WCAG 2.4.11 / 2.4.13): where the ring IS visible (top nav, sidebar, prev/next, footer), it's the global `outline: 2px solid var(--mn-primary)` at `outline-offset: 2px` defined in `src/styles/globals.css:114–117`. Contrast against the `#1e1e1e`-family dark surface needs a spot check, but the primary token is the brand green — likely passes ≥ 3:1. To measure in a follow-up pass. Deferred — not a WCAG failure (brand-green token visually passes the 3:1 non-text-contrast target; explicit measurement left to a follow-up pass).
 
 Target-size summary (WCAG 2.5.8 — ≥ 24×24 CSS px): `.code-copy-btn` is `1.75rem × 1.75rem` = 28×28 px (`CodeCopyButton.astro:56–57`) — passes the 24×24 minimum once visibility is fixed. No other sub-24px interactive elements observed on the top/side/footer walk.
 
@@ -238,12 +238,12 @@ Target-size summary (WCAG 2.5.8 — ≥ 24×24 CSS px): `.code-copy-btn` is `1.7
 
 | Check | Result |
 |---|---|
-| Landmark list — banner / nav / main / contentinfo present | **Partial pass.** `<main>`, `<footer>`, and `<aside id="learn-sidebar">` (aria-label: "Module navigation") all present. No `<header role="banner">` landmark — the top nav is only tagged as a `<nav>` with no banner role above it. Note: implicit `<header>` `banner` role only applies when not nested in another landmark; inspection did not find a top-level `<header>`. |
-| Heading outline — h1 → h2 → h3 logical, no skipped levels | **Pass (with a spot-check).** Main flow is h1 → h2 → h3 monotone, 18 visible headings. One h2 ("Your First Midnight DApp") appears in DOM order before the h1 and reports `offsetParent = null` from a desktop viewport — confirmed source: the sidebar's module-title heading at `src/layouts/LearnLayout.astro:145`. It's inside the labeled `<aside>` landmark (valid scoping) and likely becomes `display: none` at certain breakpoints; not a finding, but worth a manual recheck at mobile width. |
+| Landmark list — banner / nav / main / contentinfo present | **Partial pass.** `<main>`, `<footer>`, and `<aside id="learn-sidebar">` (aria-label: "Module navigation") all present. No `<header role="banner">` landmark — the top nav is only tagged as a `<nav>` with no banner role above it. Note: implicit `<header>` `banner` role only applies when not nested in another landmark; inspection did not find a top-level `<header>`. Deferred — not a WCAG failure (partial pass; implicit-role rule is inconclusive without a designated top-level `<header>` element). |
+| Heading outline — h1 → h2 → h3 logical, no skipped levels | **Pass (with a spot-check).** Main flow is h1 → h2 → h3 monotone, 18 visible headings. One h2 ("Your First Midnight DApp") appears in DOM order before the h1 and reports `offsetParent = null` from a desktop viewport — confirmed source: the sidebar's module-title heading at `src/layouts/LearnLayout.astro:145`. It's inside the labeled `<aside>` landmark (valid scoping) and likely becomes `display: none` at certain breakpoints; not a finding, but worth a manual recheck at mobile width. Deferred — not a WCAG failure (scoped inside the labeled `<aside>`, no AA violation). |
 | All nav links have accessible name | Pass — no interactive element missing an accessible name anywhere on the page. |
 | `<nav>` landmarks disambiguated (axe flagged `landmark-unique`) | **Fail, confirmed and sharpened.** Three `<nav>` landmarks, **zero** with an aria-label: (1) top nav `Nav.astro:14` id=`main-nav`, (2) sidebar lesson list `LearnLayout.astro:124`, (3) prev/next lesson `[lessonIndex].astro:156`. Candidate finding L-2. |
-| Inline code / `<code>` narration reasonable | Not verified — requires actual SR. Left for future re-audit when hardware allows. |
-| Code-block content announced with language / context | Not verified — same reason. |
+| Inline code / `<code>` narration reasonable | Not verified — requires actual SR. Left for future re-audit when hardware allows. Deferred — not a WCAG failure (no SR hardware available this pass). |
+| Code-block content announced with language / context | Not verified — same reason. Deferred — not a WCAG failure (no SR hardware available this pass). |
 | Prev / Next lesson buttons have action-describing names | Pass — visible text "Previous Lesson" / "Next Lesson" / "View Assignment" available via accessible name. |
 | Wallet / login control has accessible name + state | Pass — no interactive element on the page came up in the "missing accessible name" console filter. |
 
@@ -254,7 +254,7 @@ Target-size summary (WCAG 2.5.8 — ≥ 24×24 CSS px): `.code-copy-btn` is `1.7
 
 Blast radius: `Nav.astro` is the shared top nav — affects **every page**, strong cross-surface (`X-`) candidate. The other two navs are lesson-page-specific.
 
-**Spot-checks deferred to a future re-audit with actual SR hardware:**
+**Spot-checks deferred to a future re-audit with actual SR hardware (Deferred — not a WCAG failure, no SR hardware available this pass):**
 - Inline `<code>` narration (letter-by-letter vs as-a-word behaviour varies by SR and by content)
 - Code-block content / language announcement (depends on highlight.js output + any `<pre aria-label>` hints)
 - Live-region / error-state behaviour on dynamic pages (not relevant for the prerendered lesson view)
