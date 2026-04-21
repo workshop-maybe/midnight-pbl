@@ -14,9 +14,9 @@ site_commit: 065ed99
 
 ## Summary
 
-<One paragraph: scope, method, headline finding.>
+This audit covers the lesson-page surface — one representative URL (`/learn/101/1`) walked at `site_commit` `065ed99` — using automated `axe-core` + Lighthouse sweeps (axe reported 2 violations across 9 nodes; Lighthouse scored 96/100), a manual keyboard walk, a degraded screen-reader check via Chrome DevTools DOM inspection (no Orca hardware this pass), typography measurements at 375 / 768 / 1440 px, and a `src/components/` grep for ad-hoc text utilities. Headline finding: keyboard focus disappears for a run of **19 consecutive Tab stops** across in-content code-copy buttons because `.code-copy-btn` is `opacity: 0` with no `:focus-visible` / `:focus-within` escape (row L-1, WCAG 2.4.7 Level AA failure). Additional notable findings: `.hljs-comment` code-comment text drops to 2.23:1 contrast against the dark code background (WCAG 1.4.3 AA failure, 8 nodes), three sibling `<nav>` landmarks ship unlabeled (axe `landmark-unique`), the lesson-page H1 renders smaller than its in-content H2 / H3 — inverting the visible hierarchy — and line measure overshoots the 75 ch upper bound at tablet and desktop widths.
 
-**Severity counts:** P0: <n>  ·  P1: <n>  ·  P2: <n>  ·  Cross-surface (X-): <n>
+**Severity counts:** P0: 3  ·  P1: 4  ·  P2: 1  ·  Cross-surface (X-): 5
 
 ## Audit URL Inventory
 
