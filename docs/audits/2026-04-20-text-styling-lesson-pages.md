@@ -16,7 +16,7 @@ site_commit: 065ed99
 
 This audit covers the lesson-page surface — one representative URL (`/learn/101/1`) walked at `site_commit` `065ed99` — using automated `axe-core` + Lighthouse sweeps (axe reported 2 violations across 9 nodes; Lighthouse scored 96/100), a manual keyboard walk, a degraded screen-reader check via Chrome DevTools DOM inspection (no Orca hardware this pass), typography measurements at 375 / 768 / 1440 px, and a `src/components/` grep for ad-hoc text utilities. Headline finding: keyboard focus disappears for a run of **19 consecutive Tab stops** across in-content code-copy buttons because `.code-copy-btn` is `opacity: 0` with no `:focus-visible` / `:focus-within` escape (row L-1, WCAG 2.4.7 Level AA failure). Additional notable findings: `.hljs-comment` code-comment text drops to 2.23:1 contrast against the dark code background (WCAG 1.4.3 AA failure, 8 nodes), three sibling `<nav>` landmarks ship unlabeled (axe `landmark-unique`), the lesson-page H1 renders smaller than its in-content H2 / H3 — inverting the visible hierarchy — and line measure overshoots the 75 ch upper bound at tablet and desktop widths.
 
-**Severity counts:** P0: 3  ·  P1: 4  ·  P2: 1  ·  Cross-surface (X-): 5
+**Severity counts:** P0: 3  ·  P1: 4  ·  P2: 1  ·  Cross-surface (X-): 3 (X-1, X-2, X-3 — see Cross-Surface Patterns below; L-1, L-2, L-8 also have cross-surface blast radius but did not reappear as distinct findings on marketing/dashboard surfaces so they are not lifted into X-IDs)
 
 ## Audit URL Inventory
 
@@ -44,11 +44,13 @@ Each finding row is self-contained — severity, criterion, current state with a
 
 ## Cross-Surface Patterns
 
-Populated after both per-surface audits are complete (see plan Unit 7). Each row maps an `X-N` ID to the per-surface findings it spans.
+Populated after both per-surface audits are complete (see plan Unit 7). Each row maps an `X-N` ID to the per-surface findings it spans. IDs are stable — once introduced, they are not renumbered, so both audit docs can reference the same `X-N` by name.
 
 | ID | Pattern | Root cause (file) | Appears in | Consolidating issue # |
 |---|---|---|---|---|
-| X-1 | <Token X fails AA across all prose contexts> | `src/styles/globals.css:N — --color-…` | lesson pages, marketing | #<tbd> |
+| X-1 | H1 renders at the 17 px root font-size on every surface audited — `text-2xl` / `sm:text-3xl` / `sm:text-3xl md:text-4xl` utilities on `<h1>` elements do not override Tailwind v4's preflight `h1 { font-size: inherit }` reset | Tailwind v4 preflight + utility-cascade failure for the `h1` element. Surfaces it at: `src/pages/learn/[moduleCode]/[lessonIndex].astro:133` (lesson), `src/pages/dashboard.astro:38` (dashboard), `src/pages/learn/[moduleCode]/assignment.astro` (assignment H1), and hero-title `<p>` at `src/pages/index.astro:96` (landing has no `<h1>` — see marketing/dashboard M-2). | lesson pages (L-5), marketing/dashboard (M-1 at H1 level; also landing + assignment) | #<tbd> |
+| X-2 | `.prose-midnight` body prose renders at ~14.9 px (0.875rem @ 17 px root), below the 16 px readability target at every viewport | `src/styles/globals.css:141` — `.prose-midnight { font-size: 0.875rem }` | lesson pages (L-4); marketing/dashboard — assignment surface inherits `.prose-midnight` (14.88 px at 375/768 px per typography script); fix propagates without a separate M-ID | #<tbd> |
+| X-3 | `.prose-midnight` line measure overshoots the 75 ch upper bound at ≥ 768 px — no prose-level `max-width` cap on the reading container | `src/pages/learn/[moduleCode]/[lessonIndex].astro:126` (lesson, `max-w-5xl`) and the assignment layout both let `.prose-midnight` grow with the outer container; fix likely at `.prose-midnight` in `src/styles/globals.css` via `max-width: 75ch` on body copy | lesson pages (L-6: ~95 ch @ 768 px, ~139 ch @ 1440 px); marketing/dashboard — assignment surface ~79.7 ch @ 768 px; fix propagates without a separate M-ID | #<tbd> |
 
 ## Validation Checklist
 
