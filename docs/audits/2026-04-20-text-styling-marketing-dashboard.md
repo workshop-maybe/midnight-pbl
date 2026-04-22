@@ -456,7 +456,105 @@ Manual-review audits Lighthouse cannot automate:
 
 ### Manual walk-through notes
 
-- **Keyboard:** <what focused where, visible vs invisible, any trap>
-- **Screen reader:** <heading structure, landmarks, labels, code-block pronunciation>
-- **Typography measurements:** <viewport → font-size / line-height / measure in ch>
-- **Component sweep:** <ad-hoc text utility classes found outside of design-system tokens>
+**Scope note (2026-04-22):** This pass covers AC-3 (typography hierarchy comparison) only. Keyboard walk (AC-1), screen-reader walk (AC-2), and error-page notes (AC-4) are deferred to a post-deploy re-audit — the expectation is that the H1-at-root-size defect (X-N candidate below) lands a fix first, after which the full manual walk runs against the fixed site. #16 stays open until all four ACs are covered.
+
+Typography measurements are captured by an automated Playwright script committed at `scripts/audit/measure-typography.mjs`. Rerun at any time: `node scripts/audit/measure-typography.mjs` for public pages, or `STORAGE_STATE=scripts/audit/.auth/user.json node scripts/audit/measure-typography.mjs` for auth-gated surfaces after running `scripts/audit/save-auth.mjs` with an injected JWT.
+
+#### Keyboard walk-through
+
+**Deferred** to post-deploy re-audit. Scope choice by the audit owner for this pass.
+
+#### Screen-reader walk-through
+
+**Deferred** to post-deploy re-audit.
+
+#### Typography measurements
+
+Captured 2026-04-22 11:42 UTC against `https://midnight-pbl.io` via the Playwright script. The script visits each URL at 375 / 768 / 1440 CSS px, waits for `document.fonts.ready`, reads `getComputedStyle().fontSize` and `lineHeight` on the first *visible* H1 / H2 / H3 / `<p>` inside each page's declared content container, and computes `ch` measure from the actual "0"-glyph advance in that paragraph's font (i.e., the browser's own `ch` unit — the same unit Tailwind's `max-w-[75ch]` utility resolves against).
+
+**Targets (from plan):** body ≥ 16 px, line-height ≥ 1.5, measure 45–75 ch.
+
+**Baseline from `src/styles/globals.css:141` (static):** `.prose-midnight` body = `0.875rem / 1.7`. Root font-size measured at runtime: **17 px** across all four surfaces.
+
+##### Landing — `/`
+
+Content container: `main`. Title selector fallback: `main h1, main h2` (see matched-text note below — the landing has no distinct H1).
+
+| Viewport | Container (px) | body `<p>` px / LH (ratio) | measure (ch) | H1 px / LH | H2 px / LH | H3 px / LH |
+|---|---|---|---|---|---|---|
+| 375px  | 375  | 38.25 / 42.5 (1.11) | ~8.7 | 17 / 24.29 (1.43) | 17 / 24.29 (1.43) | — |
+| 768px  | 768  | 63.75 / 63.75 (1)   | ~8.6 | 17 / 24.29 (1.43) | 17 / 24.29 (1.43) | — |
+| 1440px | 1440 | 63.75 / 63.75 (1)   | ~8.6 | 17 / 24.29 (1.43) | 17 / 24.29 (1.43) | — |
+
+Matched text at 1440 px: H1/title = **"Modules"**, H2 = **"Modules"**, body `<p>` = **"midnight pbl"**. The only paragraph the script could find is the site title rendered at display size; the only headings are both the "Modules" section label. See M-2 finding below.
+
+##### Dashboard — `/dashboard`
+
+Content container: `main`. Auth: injected JWT via `scripts/audit/save-auth.mjs`.
+
+| Viewport | Container (px) | body `<p>` px / LH (ratio) | measure (ch) | H1 px / LH | H2 px / LH | H3 px / LH |
+|---|---|---|---|---|---|---|
+| 375px  | 375  | 17 / 25.5 (1.5)     | ~34.1 | 17 / 22.67 (1.33) | 17 / 26.44 (1.56) | 17 / 23.38 (1.38) |
+| 768px  | 768  | 19.13 / 29.75 (1.56)| ~64.9 | 17 / 18.89 (1.11) | 17 / 26.44 (1.56) | 17 / 23.38 (1.38) |
+| 1440px | 1440 | 19.13 / 29.75 (1.56)| ~64.9 | 17 / 18.89 (1.11) | 17 / 26.44 (1.56) | 17 / 23.38 (1.38) |
+
+Matched text at 1440 px: H1 = **"Your Progress"**, H2 = **"Account"**, H3 = **"Your First Midnight DApp"**, body `<p>` = **"Track your enrollment status across all 6 modules…"**. Body copy passes the 16 px target; every heading is at 17 px = root font-size. See M-1 finding below.
+
+##### Assignment — `/learn/101/assignment`
+
+Content container: `main`. Auth: same injected JWT.
+
+| Viewport | Container (px) | body `<p>` px / LH (ratio) | measure (ch) | H1 px / LH | H2 px / LH | H3 px / LH |
+|---|---|---|---|---|---|---|
+| 375px  | 375  | 14.88 / 25.29 (1.7) | ~37.9 | 17 / 22.67 (1.33) | 29.75 / 38.67 (1.3)  | 21.25 / 27.63 (1.3) |
+| 768px  | 768  | 14.88 / 25.29 (1.7) | ~79.7 | 17 / 20.4  (1.2)  | 29.75 / 38.67 (1.3)  | 21.25 / 27.63 (1.3) |
+| 1440px | 1440 | 11 / 16.5 (1.5)     | ~35.7 | 17 / 20.4  (1.2)  | 17    / 21.25 (1.25) | 21.25 / 27.63 (1.3) |
+
+Matched text at 1440 px: H1 = **"Module 101 Assignment — Your First Midnight DApp"**, H2 = **"Your First Midnight DApp"**, H3 = **"SLT 101.1 — Scaffold and deploy a Midnight DApp"**, body `<p>` = **"Lessons"**. At 375/768 px the assignment mirrors the lesson page (prose container = `.prose-midnight`, body 14.88 px, in-content H2 at 29.75 px). At 1440 px the layout shifts — the first visible `<p>` inside `<main>` becomes a sidebar lesson-list item at 11 px, not the prose body. This is a layout-mode change at a `lg:` breakpoint, not a typography change per se, but it means the prose is competing for visual weight with a narrow sidebar on desktop.
+
+##### Lesson — `/learn/101/1` (reference)
+
+Content container: `.prose-midnight`. Included as cross-reference; numbers match the lesson-pages audit (Unit 3) within rounding.
+
+| Viewport | Container (px) | body `<p>` px / LH (ratio) | measure (ch) | H1 px / LH | H2 px / LH | H3 px / LH |
+|---|---|---|---|---|---|---|
+| 375px  | 341  | 14.88 / 25.29 (1.7) | ~37.9  | 17 / 22.67 (1.33) | 29.75 / 38.67 (1.3) | 21.25 / 27.63 (1.3) |
+| 768px  | 717  | 14.88 / 25.29 (1.7) | ~79.7  | 17 / 20.4  (1.2)  | 29.75 / 38.67 (1.3) | 21.25 / 27.63 (1.3) |
+| 1440px | 1037 | 14.88 / 25.29 (1.7) | ~115.2 | 17 / 20.4  (1.2)  | 29.75 / 38.67 (1.3) | 21.25 / 27.63 (1.3) |
+
+Reading note on `ch`: Unit 3's manual walk reported ~45 / ~95 / ~139 ch using the `1ch ≈ 0.5em` approximation; the script uses the browser's own `ch` unit and reports ~37.9 / ~79.7 / ~115.2. Both are over the 75 ch target at 768 px and 1440 px — the direction of the L-5 finding stands.
+
+##### AC-3 hierarchy comparison (1440 px snapshot)
+
+The AC-3 deliverable. 1440 px chosen because inversions are most visually apparent at desktop widths; the same rows at 375 px and 768 px are recoverable from the per-surface tables above.
+
+| Surface | Container (px) | H1 | H2 | H3 | Body `<p>` | Measure (ch) | Verdict |
+|---|---|---|---|---|---|---|---|
+| Landing    | 1440 | 17 | 17 | — | 63.75 *(display)* | ~8.6   | No hierarchy — only copy is the site title at display size; headings are 17 px = root |
+| Dashboard  | 1440 | 17 | 17 | 17 | 19.13           | ~64.9  | Flat — every heading at root size; body copy passes 16 px |
+| Assignment | 1440 | 17 | 17 *(sidebar)* | 21.25 | 11 *(sidebar)* | ~35.7  | Layout shift at `lg:`; sidebar wins "first visible" slot |
+| Lesson     | 1037 | 17 | 29.75 | 21.25 | 14.88          | ~115.2 | Inverted H1 only (L-4); container exceeds 75 ch by 54% |
+
+The pattern across three surfaces is the same: **H1 lands at 17 px (= root font-size) regardless of which Tailwind utility the page applies.** Only the lesson has in-content H2 / H3 rendering at their intended rem-scale sizes (29.75 px / 21.25 px from `.prose-midnight`). Dashboard and landing inherit no prose styles and their headings also collapse to 17 px.
+
+#### Observations → candidate findings (for Unit 7 issue filing, NOT populated in the main table)
+
+**Candidate X-1 (P0, UX hierarchy defect — WCAG-adjacent) — H1 renders at root font-size site-wide.**
+
+Lesson (L-4), dashboard, assignment, and landing all render H1 at **17 px** at every viewport. Same root cause as lesson L-4: `text-2xl` / `sm:text-3xl` utilities on the H1 elements are not winning the cascade against Tailwind v4's base reset (`h1 { font-size: inherit }` or equivalent). What L-4 filed as "lesson pages only" is actually cross-surface. **Blast radius: every page on the site with an H1.** Proposed fix: diagnose whether Tailwind v4's preflight is being bypassed, or whether the utilities aren't being generated for these classes; add explicit `font-size` at the layout level if the utility path cannot be fixed.
+
+**Candidate M-1 (P0, UX hierarchy defect) — Dashboard has zero visible heading hierarchy.**
+
+All three levels on `/dashboard` render at 17 px (H1 "Your Progress", H2 "Account", H3 "Your First Midnight DApp"). Body copy (19.13 px) is *larger* than every heading. No reader can scan by heading size. Likely a corollary of X-1 at the H1 level, but H2 / H3 also collapse here because the dashboard uses no `.prose-*` wrapper — whatever Tailwind defaults apply, they flatten all three levels. Proposed fix: declare explicit heading sizes for dashboard components, do not rely on prose defaults.
+
+**Candidate M-2 (P2, content/marketing defect — not strictly WCAG) — Logged-out landing has no body copy.**
+
+The only `<p>` rendered on `/` is the site title "midnight pbl" at 38–63 px. The only heading is "Modules" at 17 px. A first-time visitor sees no onboarding prose, no hero explanation, no value proposition before attempting login. Surfaced by the typography sweep but primarily a product/marketing concern — flag for triage, not a WCAG issue.
+
+**Related to L-3 (body ≥ 16 px):** Assignment inherits the same `.prose-midnight { font-size: 0.875rem }` at `src/styles/globals.css:141`, so at 375 / 768 px the assignment prose also renders at 14.88 px. When L-3 is fixed, assignment gets the fix for free — no separate M-finding needed.
+
+**Related to L-5 (measure 45–75 ch):** Assignment at 768 px measures ~79.7 ch, over the 75 ch target. The container shares the `.prose-midnight` ancestry, so L-5's fix propagates. No separate M-finding.
+
+#### Component sweep
+
+**Deferred to the cross-surface synthesis (#18).** Unit 3's sweep of `src/components/` and `src/layouts/` (lesson-pages.md line 325–337) surfaced three `text-[11px]` occurrences, one in `LearnLayout.astro` and two in `EvidenceEditor.tsx`. A spot-check of `src/pages/dashboard.astro` and `src/pages/learn/[moduleCode]/assignment.astro` in this pass did not surface additional ad-hoc text utilities, but a full repeat against `src/pages/` is scoped to #18 so the cross-surface view is coherent with Unit 3's output.
