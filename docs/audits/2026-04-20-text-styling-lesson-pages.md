@@ -14,9 +14,9 @@ site_commit: 065ed99
 
 ## Summary
 
-<One paragraph: scope, method, headline finding.>
+This audit covers the lesson-page surface — one representative URL (`/learn/101/1`) walked at `site_commit` `065ed99` — using automated `axe-core` + Lighthouse sweeps (axe reported 2 violations across 9 nodes; Lighthouse scored 96/100), a manual keyboard walk, a degraded screen-reader check via Chrome DevTools DOM inspection (no Orca hardware this pass), typography measurements at 375 / 768 / 1440 px, and a `src/components/` grep for ad-hoc text utilities. Headline finding: keyboard focus disappears for a run of **19 consecutive Tab stops** across in-content code-copy buttons because `.code-copy-btn` is `opacity: 0` with no `:focus-visible` / `:focus-within` escape (row L-1, WCAG 2.4.7 Level AA failure). Additional notable findings: `.hljs-comment` code-comment text drops to 2.23:1 contrast against the dark code background (WCAG 1.4.3 AA failure, 8 nodes), three sibling `<nav>` landmarks ship unlabeled (axe `landmark-unique`), the lesson-page H1 renders smaller than its in-content H2 / H3 — inverting the visible hierarchy — and line measure overshoots the 75 ch upper bound at tablet and desktop widths.
 
-**Severity counts:** P0: <n>  ·  P1: <n>  ·  P2: <n>  ·  Cross-surface (X-): <n>
+**Severity counts:** P0: 3  ·  P1: 4  ·  P2: 1  ·  Cross-surface (X-): 5
 
 ## Audit URL Inventory
 
@@ -33,8 +33,14 @@ Each finding row is self-contained — severity, criterion, current state with a
 
 | ID | Severity | Criterion | Page | Current (`file:line`) | Expected | Blast radius | Issue # |
 |---|---|---|---|---|---|---|---|
-| L-1 | P0 | WCAG 2.2 AA — 1.4.3 Contrast (Minimum) | `/learn/101/1` | `src/styles/globals.css:N — .prose-midnight a @ color: #…` yields 3.1:1 on `--color-midnight` | Raise to ≥ 4.5:1 (small text) or ≥ 3:1 (large text) | lesson pages only | #<tbd> |
-| L-2 | … | … | … | … | … | … | … |
+| L-1 | P0 | WCAG 2.2 AA — 2.4.7 Focus Visible | `/learn/101/1` | `src/components/CodeCopyButton.astro:48–71` — `.code-copy-btn { opacity: 0 }` with visibility gated only on `pre:hover`; no `:focus-visible` / `:focus-within` rule, so 19 consecutive Tab stops paint the global focus ring on a transparent element (see Appendix keyboard walk) | Add `.prose-midnight pre:focus-within .code-copy-btn { opacity: 1 }` and `.code-copy-btn:focus-visible { opacity: 1 }`; keep the existing hover rule for mouse users | cross-surface — `<CodeCopyButton>` renders wherever `.prose-midnight` does (lesson pages, assignments, and other prose surfaces) | #<tbd> |
+| L-2 | P1 | WCAG 2.2 AA — 1.3.1 Info and Relationships / 2.4.1 Bypass Blocks | `/learn/101/1` | Three unlabeled `<nav>` landmarks on every lesson page: `src/components/layout/Nav.astro:14` (top nav `#main-nav`), `src/layouts/LearnLayout.astro:124` (sidebar lesson list), `src/pages/learn/[moduleCode]/[lessonIndex].astro:156` (prev/next pagination) — axe `landmark-unique` violation plus DOM-inspection confirmation | Add `aria-label="Primary"` to top nav, `aria-label="Lesson navigation"` (or `role="none"` nested under the already-labeled `<aside>`) to sidebar nav, `aria-label="Lesson pagination"` to prev/next nav | cross-surface — `Nav.astro` is the shared site top nav and ships on every page | #<tbd> |
+| L-3 | P0 | WCAG 2.2 AA — 1.4.3 Contrast (Minimum) | `/learn/101/1` | 8 nodes, all `.hljs-comment` @ 2.23:1 on `#555555` over `#1e1e1e` (9.6 pt / 12.75 px) — token defined in `src/styles/globals.css` (hljs-theme block) — see Appendix axe-core | Raise the `.hljs-comment` foreground token to ≥ 4.5:1 against the `#1e1e1e` code-block background | cross-surface — `globals.css` token affects every surface rendering highlight.js code blocks | #<tbd> |
+| L-4 | P1 | Readability target (plan §Context — body ≥ 16 px) + WCAG 2.2 AA 1.4.4 Resize Text adjacent | `/learn/101/1` | `src/styles/globals.css:141` — `.prose-midnight { font-size: 0.875rem }` yields ~14.9 px at the measured 17 px root, flat across 375 / 768 / 1440 | Raise `.prose-midnight` body to ≥ 1 rem (16 px) at the default root font-size | cross-surface — `.prose-midnight` renders wherever long-form content lives (lessons, assignments, and any future prose surface) | #<tbd> |
+| L-5 | P0 | Readability: modular hierarchy (plan §Context) — H1 must render larger than H2/H3 | `/learn/101/1` | `src/pages/learn/[moduleCode]/[lessonIndex].astro:133` — lesson-page H1 computes to 17 px at every viewport (smaller than in-content H2 @ 29.75 px and H3 @ 21.25 px); `text-2xl` / `sm:text-3xl` utilities are not overriding Tailwind v4's base-reset `h1 { font-size: inherit }` | Diagnose the cascade / utility-generation failure and ensure the lesson title H1 renders visibly larger than any in-content H2 / H3 across all breakpoints | lesson pages only | #<tbd> |
+| L-6 | P1 | Readability target (plan §Context — measure 45–75 ch) | `/learn/101/1` | `src/pages/learn/[moduleCode]/[lessonIndex].astro:126` — container is `max-w-5xl` with no prose-level measure cap; measured ~45 ch @ 375 px (in-band), ~95 ch @ 768 px (+27% over 75 ch), ~139 ch @ 1440 px (+85% over 75 ch) | Narrow the prose container (e.g. `max-w-3xl` ≈ 48 rem) or apply `max-width: 75ch` to `.prose-midnight` body copy | lesson pages only | #<tbd> |
+| L-7 | P2 | Readability target (plan §Context — line-height ≥ 1.5) | `/learn/101/1` | `src/pages/learn/[moduleCode]/[lessonIndex].astro:133` — lesson-page H1 computed line-height is 1.2 (20.4 / 17 px), below the ≥ 1.5 target | Resolves with L-5 fix (H1 size), plus an explicit layout-level `line-height ≥ 1.5` on the lesson H1 since it renders outside `.prose-midnight` | lesson pages only | #<tbd> |
+| L-8 | P1 | Readability target (plan §Context — sub-12 px text) + WCAG 2.2 AA 1.4.4 Resize Text adjacent | global | 3 occurrences of the arbitrary `text-[11px]` utility: `src/layouts/LearnLayout.astro:160` (TOC label), `src/components/editor/EvidenceEditor.tsx:150` (H2 toolbar button), `src/components/editor/EvidenceEditor.tsx:153` (H3 toolbar button) | Replace the arbitrary `text-[11px]` with `text-xs` (12 px) or a dedicated label token in the design system | cross-surface — spans the lesson-page TOC label and the `EvidenceEditor` toolbar, which renders on authored-flow pages outside the lesson view | #<tbd> |
 
 ## Cross-Surface Patterns
 
@@ -194,7 +200,7 @@ Tab through the page in order. For every focus stop, record whether focus is **v
 
 | # | Expected focus target | Visible? (Y/N) | Notes | WCAG |
 |---|---|---|---|---|
-| 1 | Skip-link (if present) — first Tab from URL bar | – | Not observed as a distinct first stop — to confirm in a follow-up pass | 2.4.1 |
+| 1 | Skip-link (if present) — first Tab from URL bar | – | Not observed as a distinct first stop — to confirm in a follow-up pass. Deferred — not a WCAG failure (2.4.1 is satisfied by other bypass mechanisms; no skip-link is not a per-se failure). | 2.4.1 |
 | 2 | Main-nav logo / home link | Y | Ring visible on all top-nav stops | 2.4.7 |
 | 3 | Main-nav section links (left → right) | Y |  | 2.4.7 |
 | 4 | Main-nav auth / wallet control | Y |  | 2.4.7 |
@@ -222,7 +228,7 @@ Blast radius: lesson pages **and likely marketing/dashboard** wherever `<CodeCop
 
 Keyboard traps / issues: none observed — Tab eventually reaches "Next lesson" without trapping.
 
-Focus-appearance summary (WCAG 2.4.11 / 2.4.13): where the ring IS visible (top nav, sidebar, prev/next, footer), it's the global `outline: 2px solid var(--mn-primary)` at `outline-offset: 2px` defined in `src/styles/globals.css:114–117`. Contrast against the `#1e1e1e`-family dark surface needs a spot check, but the primary token is the brand green — likely passes ≥ 3:1. To measure in a follow-up pass.
+Focus-appearance summary (WCAG 2.4.11 / 2.4.13): where the ring IS visible (top nav, sidebar, prev/next, footer), it's the global `outline: 2px solid var(--mn-primary)` at `outline-offset: 2px` defined in `src/styles/globals.css:114–117`. Contrast against the `#1e1e1e`-family dark surface needs a spot check, but the primary token is the brand green — likely passes ≥ 3:1. To measure in a follow-up pass. Deferred — not a WCAG failure (brand-green token visually passes the 3:1 non-text-contrast target; explicit measurement left to a follow-up pass).
 
 Target-size summary (WCAG 2.5.8 — ≥ 24×24 CSS px): `.code-copy-btn` is `1.75rem × 1.75rem` = 28×28 px (`CodeCopyButton.astro:56–57`) — passes the 24×24 minimum once visibility is fixed. No other sub-24px interactive elements observed on the top/side/footer walk.
 
@@ -232,12 +238,12 @@ Target-size summary (WCAG 2.5.8 — ≥ 24×24 CSS px): `.code-copy-btn` is `1.7
 
 | Check | Result |
 |---|---|
-| Landmark list — banner / nav / main / contentinfo present | **Partial pass.** `<main>`, `<footer>`, and `<aside id="learn-sidebar">` (aria-label: "Module navigation") all present. No `<header role="banner">` landmark — the top nav is only tagged as a `<nav>` with no banner role above it. Note: implicit `<header>` `banner` role only applies when not nested in another landmark; inspection did not find a top-level `<header>`. |
-| Heading outline — h1 → h2 → h3 logical, no skipped levels | **Pass (with a spot-check).** Main flow is h1 → h2 → h3 monotone, 18 visible headings. One h2 ("Your First Midnight DApp") appears in DOM order before the h1 and reports `offsetParent = null` from a desktop viewport — confirmed source: the sidebar's module-title heading at `src/layouts/LearnLayout.astro:145`. It's inside the labeled `<aside>` landmark (valid scoping) and likely becomes `display: none` at certain breakpoints; not a finding, but worth a manual recheck at mobile width. |
+| Landmark list — banner / nav / main / contentinfo present | **Partial pass.** `<main>`, `<footer>`, and `<aside id="learn-sidebar">` (aria-label: "Module navigation") all present. No `<header role="banner">` landmark — the top nav is only tagged as a `<nav>` with no banner role above it. Note: implicit `<header>` `banner` role only applies when not nested in another landmark; inspection did not find a top-level `<header>`. Deferred — not a WCAG failure (partial pass; implicit-role rule is inconclusive without a designated top-level `<header>` element). |
+| Heading outline — h1 → h2 → h3 logical, no skipped levels | **Pass (with a spot-check).** Main flow is h1 → h2 → h3 monotone, 18 visible headings. One h2 ("Your First Midnight DApp") appears in DOM order before the h1 and reports `offsetParent = null` from a desktop viewport — confirmed source: the sidebar's module-title heading at `src/layouts/LearnLayout.astro:145`. It's inside the labeled `<aside>` landmark (valid scoping) and likely becomes `display: none` at certain breakpoints; not a finding, but worth a manual recheck at mobile width. Deferred — not a WCAG failure (scoped inside the labeled `<aside>`, no AA violation). |
 | All nav links have accessible name | Pass — no interactive element missing an accessible name anywhere on the page. |
 | `<nav>` landmarks disambiguated (axe flagged `landmark-unique`) | **Fail, confirmed and sharpened.** Three `<nav>` landmarks, **zero** with an aria-label: (1) top nav `Nav.astro:14` id=`main-nav`, (2) sidebar lesson list `LearnLayout.astro:124`, (3) prev/next lesson `[lessonIndex].astro:156`. Candidate finding L-2. |
-| Inline code / `<code>` narration reasonable | Not verified — requires actual SR. Left for future re-audit when hardware allows. |
-| Code-block content announced with language / context | Not verified — same reason. |
+| Inline code / `<code>` narration reasonable | Not verified — requires actual SR. Left for future re-audit when hardware allows. Deferred — not a WCAG failure (no SR hardware available this pass). |
+| Code-block content announced with language / context | Not verified — same reason. Deferred — not a WCAG failure (no SR hardware available this pass). |
 | Prev / Next lesson buttons have action-describing names | Pass — visible text "Previous Lesson" / "Next Lesson" / "View Assignment" available via accessible name. |
 | Wallet / login control has accessible name + state | Pass — no interactive element on the page came up in the "missing accessible name" console filter. |
 
@@ -248,7 +254,7 @@ Target-size summary (WCAG 2.5.8 — ≥ 24×24 CSS px): `.code-copy-btn` is `1.7
 
 Blast radius: `Nav.astro` is the shared top nav — affects **every page**, strong cross-surface (`X-`) candidate. The other two navs are lesson-page-specific.
 
-**Spot-checks deferred to a future re-audit with actual SR hardware:**
+**Spot-checks deferred to a future re-audit with actual SR hardware (Deferred — not a WCAG failure, no SR hardware available this pass):**
 - Inline `<code>` narration (letter-by-letter vs as-a-word behaviour varies by SR and by content)
 - Code-block content / language announcement (depends on highlight.js output + any `<pre aria-label>` hints)
 - Live-region / error-state behaviour on dynamic pages (not relevant for the prerendered lesson view)
