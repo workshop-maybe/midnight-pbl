@@ -38,3 +38,6 @@ midnight-pbl-scaffold/
 
 # Learner progress (local state)
 progress.json
+
+# Audit tooling — saved auth sessions (contains JWTs)
+scripts/audit/.auth/
