@@ -563,3 +563,28 @@ The only `<p>` rendered on `/` is the site title "midnight pbl" at 38–63 px. T
 #### Component sweep
 
 **Deferred to the cross-surface synthesis (#18).** Unit 3's sweep of `src/components/` and `src/layouts/` (lesson-pages.md line 325–337) surfaced three `text-[11px]` occurrences, one in `LearnLayout.astro` and two in `EvidenceEditor.tsx`. A spot-check of `src/pages/dashboard.astro` and `src/pages/learn/[moduleCode]/assignment.astro` in this pass did not surface additional ad-hoc text utilities, but a full repeat against `src/pages/` is scoped to #18 so the cross-surface view is coherent with Unit 3's output.
+
+### Triage dispositions — dismissals and absorptions
+
+Every raw failure surfaced by axe, Lighthouse, or the typography script is accounted for in one of three places: it lives as an `M-N` row in the Findings table, as an `X-N` row in the Cross-Surface Patterns table, or it is explicitly dismissed / absorbed below. A row below is **not** a WCAG free pass — it is an explicit record that the finding was seen, considered, and either rolled into another finding or judged out-of-scope.
+
+| Raw finding | URL | Disposition | Reason |
+|---|---|---|---|
+| axe `link-name` (1 node — footer wordmark `<a>`) | `/` | **Absorbed into M-3** | Same physical element; M-3 is the canonical row. |
+| Lighthouse `link-name` (score 0) | `/` | **Duplicate of axe `link-name` — absorbed into M-3** | Lighthouse and axe both flag the same `<a>` at `src/pages/index.astro:287–295`. One fix clears both. |
+| axe `page-has-heading-one` (1 node — no H1 on page) | `/` | **Absorbed into M-2** | Root cause is the hero title rendered as `<p>` at `src/pages/index.astro:96`. Promoting to `<h1>` clears the axe rule; M-2 is the canonical row. |
+| axe `html-has-lang` (1 node — shim HTML missing `lang`) | `/learn` | **Absorbed into M-4** | The shim HTML emitted by `Astro.redirect("/")` at `src/pages/learn/index.astro:6` is not rendered through `BaseLayout.astro` (which sets `lang="en"` at line 41), so it has no `lang`. Deleting the shim or switching to an HTTP redirect clears all five `/learn` rules — M-4 is the consolidating row. |
+| axe `landmark-one-main` (1 node — shim body has no `<main>`) | `/learn` | **Absorbed into M-4** | Same shim-structure root cause. |
+| axe `page-has-heading-one` (1 node — shim has no H1) | `/learn` | **Absorbed into M-4** | Same shim-structure root cause. |
+| axe `meta-refresh` (1 node — `<meta http-equiv="refresh" content="2;url=/">`, impact critical) | `/learn` | **Canonical — drives M-4** | The meta-refresh *is* the finding; the other four `/learn` rules are side-effects of the shim structure. M-4 is written so a single fix resolves all five. |
+| axe `region` (1 node — fallback `<a>` outside any landmark) | `/learn` | **Absorbed into M-4** | Same shim-structure root cause. |
+| Lighthouse `link-name` (score 0) | `/learn` | **Duplicate — absorbed into M-3** | Lighthouse followed the `meta-refresh` to `/` and audited the landing page (see `finalDisplayedUrl` in the appendix), so this is the same finding as the `/` `link-name` result. |
+| axe `landmark-one-main` (1 node) | `/404` | **Absorbed into M-5** | `BaseLayout.astro:78` renders `<slot />` without a `<main>` wrapper; M-5 is the canonical row covering both `/404` and `/500`. |
+| axe `region` (1 node — content div outside any landmark) | `/404` | **Absorbed into M-5** | Same root cause as `landmark-one-main`; one wrapper fix clears both rules. |
+| axe `landmark-one-main` (1 node) | `/500` | **Absorbed into M-5** | Same as `/404`. |
+| axe `region` (1 node) | `/500` | **Absorbed into M-5** | Same as `/404`. |
+| Typography script "Landing has no body copy" observation (Playwright typography pass, 1440 px) | `/` | **Dismissed as a measurement artifact of M-2** | The script's "first visible `<p>` in `<main>`" selector matched the hero-title `<p>` at `src/pages/index.astro:96` (display-size text) rather than the course-description `<p>` at line 107. Promoting the hero title to `<h1>` (per M-2) makes the script select the real course-description body copy. The "no body copy" framing is not a WCAG finding — the page does have body copy (the `BRANDING.longDescription` paragraph), just not as the *first* `<p>` in the DOM. |
+| Typography observation — "assignment body inherits `.prose-midnight` at 14.88 px" | `/learn/101/assignment` | **Absorbed into X-2** | Same `src/styles/globals.css:141` token as the lesson page. No separate M-finding; X-2 documents the cross-surface pattern. |
+| Typography observation — "assignment measure ~79.7 ch at 768 px" | `/learn/101/assignment` | **Absorbed into X-3** | Same absence of a prose-level measure cap. No separate M-finding; X-3 documents the cross-surface pattern. |
+| Lighthouse "manual-review" audits: `focusable-controls`, `interactive-element-affordance`, `logical-tab-order`, `visual-order-follows-dom`, `focus-traps`, `managed-focus`, `use-landmarks`, `offscreen-content-hidden`, `custom-controls-labels`, `custom-controls-roles` | `/`, `/learn` | **Deferred — not dismissed** | These are items Lighthouse cannot automate; they are covered by the deferred manual keyboard + screen-reader walk flagged in the "Manual walk-through notes" scope note. Not filed as M-findings in this pass; re-audit post-X-1 fix will either surface real findings or confirm pass. |
+| axe headless viewport was `780x437` (not standard mobile/tablet/desktop) | all | **Deferred — not dismissed** | Reflow-sensitive rules (`1.4.10`, `1.4.12`) that depend on narrow viewports may have been missed. Rerun at `375` / `768` / `1440` flagged as a gap on the manual re-audit pass. Not a per-finding dismissal. |
